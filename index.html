@@ -901,7 +901,7 @@ function renderWorkOrder(){
       +'<td style="padding:1.5mm 1.5mm;width:12mm;text-align:center;font-size:8pt;border-left:0.5px solid #999;background:'+dc+';">'+dept+'</td>'
       +'<td style="padding:1.5mm 1.5mm;width:14mm;text-align:center;font-size:8pt;border-left:0.3px solid #ccc;">'+(estH||'-')+'</td>'
       +'<td style="padding:1.5mm 2mm;width:24mm;border-left:1.5px solid #555;">'
-        +'<input type="number" step="0.1" min="0" max="99" placeholder="　" value="'+(t._actualH||'')+'" '
+        +'<input type="number" step="0.1" min="0" max="99" placeholder="　" value="" '
         +'oninput="woUpdateActualH(\''+tid+'\',this.value)" '
         +'style="width:100%;border:none;border-bottom:1px solid #aaa;background:transparent;font-size:12pt;text-align:center;padding:2px;outline:none;font-family:Meiryo,sans-serif;"></td>'
       +'<td style="padding:1mm 1.5mm;width:22mm;border-left:0.5px solid #999;border-right:0.3px solid #ccc;">'
@@ -952,14 +952,14 @@ function renderWorkOrder(){
     +'<th style="padding:2mm 1.5mm;width:7mm;border-right:0.3px solid #ccc;">No</th>'
     +'<th style="padding:2mm;text-align:left;">作業項目</th>'
     +'<th style="padding:2mm;width:16mm;border-left:0.3px solid #ccc;">工程</th>'
-    +'<th style="padding:2mm;width:12mm;border-left:0.5px solid #999;">担当</th>'
+    +'<th style="padding:2mm;width:12mm;border-left:0.5px solid #999;">区分</th>'
     +'<th style="padding:2mm;width:14mm;border-left:0.3px solid #ccc;">標準(h)</th>'
     +'<th style="padding:2mm;width:24mm;border-left:1.5px solid #555;">実作業時間(h)</th>'
     +'<th style="padding:2mm;width:22mm;border-left:0.5px solid #999;">担当者</th>'
     +'</tr></thead>'
     +'<tbody>'+rows+'</tbody></table>'
     +'<div style="margin-top:3mm;display:flex;gap:6mm;font-size:8pt;">'
-    +'<div style="flex:1;"><div style="font-weight:bold;margin-bottom:1mm;">担当凡例：</div>'
+    +'<div style="flex:1;"><div style="font-weight:bold;margin-bottom:1mm;">区分凡例：</div>'
     +'<div style="display:flex;gap:4mm;flex-wrap:wrap;">'
     +['脱着','鈑金','塗装','ガラス','整備','エーミング','内装','仕上げ','確認'].map(function(d){
       var dc={'脱着':'#fff3e0','鈑金':'#fce4ec','塗装':'#e3f2fd','ガラス':'#e8f5e9','整備':'#fff8e1','エーミング':'#f3e5f5','内装':'#f9fbe7','仕上げ':'#e0f7fa','確認':'#fafafa'}[d]||'#fafafa';
@@ -3212,17 +3212,6 @@ function renderSelectedTasks(fullMode){
   h += '<button onclick="headerMode=\'none\';rIP()" style="padding:3px 9px;font-size:11px;border-radius:4px;border:1px solid #aaa;cursor:pointer;background:'+(hm==='none'?'#1a3a6b':'#fff')+';color:'+(hm==='none'?'white':'#333')+';">なし</button>';
   h += '</div></div>';
 
-  // 行の背景色（tag別・薄く）
-  var ROW_BG = {
-    'remove':  '#fff9f0', // 取外し系：薄オレンジ
-    'attach':  '#f0f7ff', // 取付系：薄青
-    'paint':   '#f0fff0', // 塗装系：薄緑
-    'booth':   '#f5f0ff', // ブース：薄紫
-    'body':    '#fff0f5', // 鈑金：薄ピンク
-    'other':   '#f8f8f8', // その他：薄グレー
-    'replace': '#f0f7ff', // 交換：薄青
-    'confirm': '#fffdf0', // 確認：薄黄
-  };
 
   var prevOrder = -1;
   var prevGroup = '';
@@ -3253,29 +3242,29 @@ function renderSelectedTasks(fullMode){
     var dispH=(s.h>0)?s.h:'';
     var dispCost=s.cost||s.price||0;
     var tagClass='tag '+(TC4[s.tag]||'tag-remove');
-    // 行背景色：tag別に薄く色分け
-    var rowBg = ROW_BG[s.tag] || '#ffffff';
+    // 作業名の（右）→薄青、（左）→薄緑 でハイライト（行は白）
+    var dispName = s.name
+      .replace(/（右）/g, '<span style="background:#cfe8ff;border-radius:3px;padding:1px 3px;font-weight:bold;">（右）</span>')
+      .replace(/（左）/g, '<span style="background:#c8f0c8;border-radius:3px;padding:1px 3px;font-weight:bold;">（左）</span>');
     h+='<tr draggable="true" data-idx="'+rowIdx+'" ondragstart="dS(event)" ondragover="dO(event)" ondrop="dP(event,'+rowIdx+')"';
-    h+=' style="border-bottom:1px solid #eee;background:'+rowBg+';">';
-    // 左側：作業名列（さらに薄く色付け）
-    h+='<td style="padding:4px 6px;text-align:center;cursor:move;color:#bbb;background:rgba(0,0,0,0.02)">&#8286;</td>';
-    h+='<td style="padding:4px 8px;border-right:2px solid rgba(0,0,0,0.06)">';
-    h+='<div style="font-weight:bold;font-size:12px">'+s.name+'</div>';
+    h+=' style="border-bottom:1px solid #eee;background:#ffffff;">';
+    h+='<td style="padding:4px 6px;text-align:center;cursor:move;color:#bbb">&#8286;</td>';
+    h+='<td style="padding:4px 8px;border-right:1px solid #e8e8e8">';
+    h+='<div style="font-weight:bold;font-size:12px">'+dispName+'</div>';
     h+='</td>';
-    // 右側：工程タグ以降（わずかに暗く）
-    h+='<td style="padding:4px 6px;background:rgba(0,0,0,0.025)"><span class="'+tagClass+'">'+s.process+'</span></td>';
-    h+='<td style="padding:4px 6px;text-align:center;color:#999;font-size:11px;background:rgba(0,0,0,0.025)">'+stdDisp+'</td>';
-    h+='<td style="padding:4px 6px;background:rgba(0,0,0,0.025)">';
+    h+='<td style="padding:4px 6px"><span class="'+tagClass+'">'+s.process+'</span></td>';
+    h+='<td style="padding:4px 6px;text-align:center;color:#999;font-size:11px">'+stdDisp+'</td>';
+    h+='<td style="padding:4px 6px">';
     h+='<input type="number" step="0.1" min="0"';
     h+=' value="'+dispH+'"';
     h+=' placeholder="'+(s.hours||'')+'"';
     h+=' style="width:68px;padding:3px 4px;border:1px solid #ddd;border-radius:4px;text-align:right;font-size:12px"';
     h+=' onchange="selUpdateH('+rowIdx+',this.value)">';
     h+='</td>';
-    h+='<td style="padding:4px 6px;text-align:right;font-size:12px;font-weight:bold;color:#1a3a6b;background:rgba(0,0,0,0.025)">';
+    h+='<td style="padding:4px 6px;text-align:right;font-size:12px;font-weight:bold;color:#1a3a6b">';
     h+=(dispCost>0?('&yen;'+dispCost.toLocaleString()):'&yen;0');
     h+='</td>';
-    h+='<td style="padding:4px;text-align:center;background:rgba(0,0,0,0.025)">';
+    h+='<td style="padding:4px;text-align:center">';
     h+='<button onclick="rT('+rowIdx+')" style="background:none;border:none;cursor:pointer;color:#e53935;font-size:14px">&times;</button>';
     h+='</td>';
     h+='</tr>';
