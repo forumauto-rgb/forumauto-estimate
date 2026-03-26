@@ -885,7 +885,7 @@ function renderWorkOrder(){
     if(procOrd!==prevProc){prevProc=procOrd;prevGroup='';
       rows+='<tr><td colspan="7" style="background:#ddd;color:#000;font-weight:bold;font-size:8pt;border-top:1.5px solid #000;border-bottom:1px solid #000;padding:2px 6px;">'+(PROCESS_LABEL[procOrd]||'')+'</td></tr>';}
     var dg=getViewGroupLabel(t._viewTab||'exterior');
-    if(procOrd===0)dg='';if(procOrd===9)dg='完成検査';
+    if(procOrd===0)dg='';if(procOrd===90)dg='完成検査';
     if(dg&&dg!==prevGroup){prevGroup=dg;
       rows+='<tr><td colspan="7" style="background:#f5f5f5;color:#444;font-size:8px;padding:1px 14px;border-bottom:0.3px solid #bbb;">【'+dg+'】</td></tr>';}
     var stdH=(t.hours!=null&&t.hours!==0)?t.hours:'';
@@ -1237,43 +1237,45 @@ var PROCESS_ORDER = {
   '取外し':1, '脱着':1, '取外し取付':1, '処理':1, '廃棄':1,
   // ② 鈑金修理・板金（修正・交換）
   '修理':2, '修正':2, '交換':2, '脱着・取替':2, '修理後点検・確認':2,
-  // ③ 塗装下処理・養生（パテ・下地・養生）
+  // ③ 塗装下処理（パテ・下地）
   '下地処理（少）':3, '下地処理（中）':3, '下地処理（大）':3,
-  '養生':3, '養生（小）':3, '養生（中）':3, '養生（大）':3, '養生（特大）':3,
   '裏面塗装':3, '裏面塗装（小）':3, '裏面塗装（中）':3, '裏面塗装（全）':3,
+  // ③.5 塗装前支度・養生（塗装直前）
+  '養生':35, '養生（小）':35, '養生（中）':35, '養生（大）':35, '養生（特大）':35,
   // ④ 塗装
-  '塗装':4, 'パネル塗装':4, 'バンパー塗装':4, 'ぼかし塗装':4,
-  '新品パネル塗装':4, '修正パネル塗装':4, '塗布':4,
+  '塗装':40, 'パネル塗装':40, 'バンパー塗装':40, 'ぼかし塗装':40,
+  '新品パネル塗装':40, '修正パネル塗装':40, '塗布':40,
   // ⑤ 焼付乾燥・ブース使用
-  '乾燥':5, '乾燥（0.5h）':5, '乾燥（2h）':5, '乾燥（3h）':5,
-  '使用':5, '使用（0.5h）':5, '使用（2h）':5, '使用（3h）':5,
+  '乾燥':50, '乾燥（0.5h）':50, '乾燥（2h）':50, '乾燥（3h）':50,
+  '使用':50, '使用（0.5h）':50, '使用（2h）':50, '使用（3h）':50,
   // ⑥ 肌磨き・調整
-  '磨き肌調整':6, '点検調整':6, '調整':6,
+  '磨き肌調整':60, '点検調整':60, '調整':60,
   // ⑦ 部品取付・組付け
-  '取付':7, '取替':7, '設定':7, '作業':7, '作業料':7,
+  '取付':70, '取替':70, '設定':70, '作業':70, '作業料':70,
   // ⑧ その他・特殊作業
-  'その他':8,
+  'その他':80,
   // ⑨ エーミング・アライメント（修理後の最終調整）
-  'エーミング':9, 'アライメント':9,
+  'エーミング':90, 'アライメント':90,
   // ⑨ 完成検査（エーミング・アライメント・走行テスト）
-  '走行テスト（一般道）':9, '走行テスト（高速道路含む）':9,
+  '走行テスト（一般道）':90, '走行テスト（高速道路含む）':90,
   // ⑩ 清掃・納車・引渡し（最終仕上げ）
-  '清掃':10, '洗車':10, '外装洗車・仕上げ':10, '室内清掃':10,
-  'ガラス清掃・仕上げ':10, 'エンジンルーム清掃':10, '下回り洗浄':10
+  '清掃':100, '洗車':100, '外装洗車・仕上げ':100, '室内清掃':100,
+  'ガラス清掃・仕上げ':100, 'エンジンルーム清掃':100, '下回り洗浄':100
 };
 
 var PROCESS_LABEL = {
-  0: '⓪ 損傷確認・計測',
-  1: '① 外板取外し・脱着',
-  2: '② 交換・鈑金修理',
-  3: '③ 下処理・養生',
-  4: '④ 外板塗装',
-  5: '⑤ 焼付乾燥・ブース',
-  6: '⑥ 肌磨き・チリ調整',
-  7: '⑦ 外板取付・組付け',
-  8: '⑧ その他・特殊',
-  9: '⑨ エーミング・アライメント',
-  10: '⑩ 清掃・納車引渡し'
+  0:   '⓪ 損傷確認・計測',
+  1:   '① 外板取外し・脱着',
+  2:   '② 交換・鈑金修理',
+  3:   '③ 下処理（下地・パテ）',
+  35:  '③→④ 塗装前支度・養生',
+  40:  '④ 外板塗装',
+  50:  '⑤ 焼付乾燥・ブース',
+  60:  '⑥ 肌磨き・チリ調整',
+  70:  '⑦ 外板取付・組付け',
+  80:  '⑧ その他・特殊',
+  90:  '⑨ エーミング・アライメント',
+  100: '⑩ 清掃・納車引渡し'
 };
 
 function getProcessOrder(s){
@@ -1282,16 +1284,16 @@ function getProcessOrder(s){
   // 作業名に「計測」「確認」が含まれる場合は⓪
   if(s.name && (s.name.indexOf('計測') >= 0 || s.name.indexOf('3次元') >= 0)) return 0;
   // エーミング・アライメント・走行テストは⑨
-  if(s.name && (s.name.indexOf('エーミング') >= 0 || s.name.indexOf('アライメント') >= 0 || s.name.indexOf('走行テスト') >= 0)) return 9;
+  if(s.name && (s.name.indexOf('エーミング') >= 0 || s.name.indexOf('アライメント') >= 0 || s.name.indexOf('走行テスト') >= 0)) return 90;
   // tagでフォールバック
   if(s.tag==='remove')  return 1;
   if(s.tag==='body')    return 2;
-  if(s.tag==='paint')   return 4;
-  if(s.tag==='booth')   return 5;
-  if(s.tag==='replace') return 7;
-  if(s.tag==='attach')  return 7;
-  if(s.tag==='other')   return 8;
-  return 8;
+  if(s.tag==='paint')   return 40;
+  if(s.tag==='booth')   return 50;
+  if(s.tag==='replace') return 70;
+  if(s.tag==='attach')  return 70;
+  if(s.tag==='other')   return 80;
+  return 80;
 }
 
 var sortByProcess = true;
@@ -2894,7 +2896,7 @@ function renderPreview(){
             // ⑨エーミング・アライメントは「完成検査」固定で表示
             var displayGroup = groupLabel;
             if(procOrd === 0) displayGroup = '';
-            if(procOrd === 9) displayGroup = '完成検査';
+            if(procOrd === 90) displayGroup = '完成検査';
             if(displayGroup && displayGroup !== prevGroup){
               prevGroup = displayGroup;
               if(headerMode!=='process' && headerMode!=='none') rows += '<tr><td colspan="6" style="background:#e8f5e9;color:#2e7d32;font-size:10px;font-weight:bold;padding:2px 16px;">【'+displayGroup+'】</td></tr>';
@@ -3187,63 +3189,94 @@ function renderSelectedTasks(fullMode){
   h+='<th style="padding:6px;width:75px;text-align:right">\u5de5\u8cdb(\u5186)</th>';
   h+='<th style="padding:6px;width:28px"></th>';
   h+='</tr></thead><tbody>';
-  // 工程順ソート
-  var dispSel = sel.slice();
+  // 工程順ソート（選択順の場合はsel配列そのままの順番を使う）
+  var dispSel = sel.slice(); // 選択順：sel配列そのまま
   if(sortByProcess){
-    dispSel = dispSel.slice().sort(function(a,b){
+    dispSel = sel.slice().sort(function(a,b){
       return getProcessOrder(a) - getProcessOrder(b);
     });
   }
 
-  // 並び替えボタン
-  h += '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f0f4ff;border-bottom:1px solid #dde;">';
-  h += '<span style="font-size:11px;color:#555;">並び順：</span>';
+  // 並び替えボタン＋見出し設定（2行レイアウト）
+  h += '<div style="padding:6px 10px;background:#f0f4ff;border-bottom:1px solid #dde;">';
+  h += '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">';
+  h += '<span style="font-size:11px;color:#555;font-weight:bold;">並び順：</span>';
   h += '<button onclick="sortByProcess=false;rIP()" style="padding:3px 10px;font-size:11px;border-radius:4px;border:1px solid #aaa;cursor:pointer;background:'+(sortByProcess?'#fff':'#1a3a6b')+';color:'+(sortByProcess?'#333':'white')+';">選択順</button>';
   h += '<button onclick="sortByProcess=true;rIP()" style="padding:3px 10px;font-size:11px;border-radius:4px;border:1px solid #aaa;cursor:pointer;background:'+(sortByProcess?'#1a3a6b':'#fff')+';color:'+(sortByProcess?'white':'#333')+';">工程順</button>';
-  h += '<span style="font-size:11px;color:#555;margin-left:8px;">見出し：</span>';
+  h += '<span style="font-size:11px;color:#aaa;margin:0 4px;">｜</span>';
+  h += '<span style="font-size:11px;color:#555;font-weight:bold;">見出し：</span>';
   var hm=headerMode;
   h += '<button onclick="headerMode=\'both\';rIP()" style="padding:3px 9px;font-size:11px;border-radius:4px;border:1px solid #aaa;cursor:pointer;background:'+(hm==='both'?'#1a3a6b':'#fff')+';color:'+(hm==='both'?'white':'#333')+';">両方</button>';
   h += '<button onclick="headerMode=\'process\';rIP()" style="padding:3px 9px;font-size:11px;border-radius:4px;border:1px solid #aaa;cursor:pointer;background:'+(hm==='process'?'#1a3a6b':'#fff')+';color:'+(hm==='process'?'white':'#333')+';">工程のみ</button>';
   h += '<button onclick="headerMode=\'group\';rIP()" style="padding:3px 9px;font-size:11px;border-radius:4px;border:1px solid #aaa;cursor:pointer;background:'+(hm==='group'?'#1a3a6b':'#fff')+';color:'+(hm==='group'?'white':'#333')+';">部位のみ</button>';
-  h += '</div>';
+  h += '<button onclick="headerMode=\'none\';rIP()" style="padding:3px 9px;font-size:11px;border-radius:4px;border:1px solid #aaa;cursor:pointer;background:'+(hm==='none'?'#1a3a6b':'#fff')+';color:'+(hm==='none'?'white':'#333')+';">なし</button>';
+  h += '</div></div>';
+
+  // 行の背景色（tag別・薄く）
+  var ROW_BG = {
+    'remove':  '#fff9f0', // 取外し系：薄オレンジ
+    'attach':  '#f0f7ff', // 取付系：薄青
+    'paint':   '#f0fff0', // 塗装系：薄緑
+    'booth':   '#f5f0ff', // ブース：薄紫
+    'body':    '#fff0f5', // 鈑金：薄ピンク
+    'other':   '#f8f8f8', // その他：薄グレー
+    'replace': '#f0f7ff', // 交換：薄青
+    'confirm': '#fffdf0', // 確認：薄黄
+  };
 
   var prevOrder = -1;
-  dispSel.forEach(function(s,i){
+  var prevGroup = '';
+  dispSel.forEach(function(s,idx){
+    var realIdx = sel.indexOf(s);
+    var rowIdx = realIdx >= 0 ? realIdx : idx;
+
     // 工程順表示時はセクションヘッダーを挿入
     if(sortByProcess){
       var ord = getProcessOrder(s);
       if(ord !== prevOrder){
         prevOrder = ord;
         var secLabel = PROCESS_LABEL[ord] || '';
-        h += '<tr><td colspan="7" style="padding:4px 8px;background:#e8eaf6;font-size:11px;font-weight:bold;color:#1a3a6b;border-top:2px solid #c5cae9;">'+secLabel+'</td></tr>';
+        if(headerMode !== 'group' && headerMode !== 'none'){
+          h += '<tr><td colspan="7" style="padding:4px 8px;background:#e8eaf6;font-size:11px;font-weight:bold;color:#1a3a6b;border-top:2px solid #c5cae9;">'+secLabel+'</td></tr>';
+        }
+        prevGroup = '';
+      }
+      // 部位グループ見出し
+      var grp = s._part || '';
+      if(grp && grp !== prevGroup && (headerMode === 'group' || headerMode === 'both')){
+        prevGroup = grp;
+        h += '<tr><td colspan="7" style="padding:2px 18px;background:#e8f5e9;font-size:10px;font-weight:bold;color:#2e7d32;">【'+grp+'】</td></tr>';
       }
     }
-    var realIdx = sel.indexOf(s);
-    var i = realIdx >= 0 ? realIdx : i;
+
     var stdDisp=(s.hours!=null&&s.hours!==undefined)?s.hours:'-';
     var dispH=(s.h>0)?s.h:'';
     var dispCost=s.cost||s.price||0;
     var tagClass='tag '+(TC4[s.tag]||'tag-remove');
-    h+='<tr draggable="true" data-idx="'+i+'" ondragstart="dS(event)" ondragover="dO(event)" ondrop="dP(event,'+i+')"';
-    h+=' style="border-bottom:1px solid #eee;'+(i%2?'background:#fafafa':'')+'">';
-    h+='<td style="padding:4px 6px;text-align:center;cursor:move;color:#bbb">&#8286;</td>';
-    h+='<td style="padding:4px 8px">';
+    // 行背景色：tag別に薄く色分け
+    var rowBg = ROW_BG[s.tag] || '#ffffff';
+    h+='<tr draggable="true" data-idx="'+rowIdx+'" ondragstart="dS(event)" ondragover="dO(event)" ondrop="dP(event,'+rowIdx+')"';
+    h+=' style="border-bottom:1px solid #eee;background:'+rowBg+';">';
+    // 左側：作業名列（さらに薄く色付け）
+    h+='<td style="padding:4px 6px;text-align:center;cursor:move;color:#bbb;background:rgba(0,0,0,0.02)">&#8286;</td>';
+    h+='<td style="padding:4px 8px;border-right:2px solid rgba(0,0,0,0.06)">';
     h+='<div style="font-weight:bold;font-size:12px">'+s.name+'</div>';
     h+='</td>';
-    h+='<td style="padding:4px 6px"><span class="'+tagClass+'">'+s.process+'</span></td>';
-    h+='<td style="padding:4px 6px;text-align:center;color:#999;font-size:11px">'+stdDisp+'</td>';
-    h+='<td style="padding:4px 6px">';
+    // 右側：工程タグ以降（わずかに暗く）
+    h+='<td style="padding:4px 6px;background:rgba(0,0,0,0.025)"><span class="'+tagClass+'">'+s.process+'</span></td>';
+    h+='<td style="padding:4px 6px;text-align:center;color:#999;font-size:11px;background:rgba(0,0,0,0.025)">'+stdDisp+'</td>';
+    h+='<td style="padding:4px 6px;background:rgba(0,0,0,0.025)">';
     h+='<input type="number" step="0.1" min="0"';
     h+=' value="'+dispH+'"';
     h+=' placeholder="'+(s.hours||'')+'"';
     h+=' style="width:68px;padding:3px 4px;border:1px solid #ddd;border-radius:4px;text-align:right;font-size:12px"';
-    h+=' onchange="selUpdateH('+i+',this.value)">';
+    h+=' onchange="selUpdateH('+rowIdx+',this.value)">';
     h+='</td>';
-    h+='<td style="padding:4px 6px;text-align:right;font-size:12px;font-weight:bold;color:#1a3a6b">';
+    h+='<td style="padding:4px 6px;text-align:right;font-size:12px;font-weight:bold;color:#1a3a6b;background:rgba(0,0,0,0.025)">';
     h+=(dispCost>0?('&yen;'+dispCost.toLocaleString()):'&yen;0');
     h+='</td>';
-    h+='<td style="padding:4px;text-align:center">';
-    h+='<button onclick="rT('+i+')" style="background:none;border:none;cursor:pointer;color:#e53935;font-size:14px">&times;</button>';
+    h+='<td style="padding:4px;text-align:center;background:rgba(0,0,0,0.025)">';
+    h+='<button onclick="rT('+rowIdx+')" style="background:none;border:none;cursor:pointer;color:#e53935;font-size:14px">&times;</button>';
     h+='</td>';
     h+='</tr>';
   });
