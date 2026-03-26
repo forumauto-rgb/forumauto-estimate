@@ -3687,9 +3687,10 @@ function lookupZipForCustomer(i){
 
 async function generateEstimateNo(){
   var d=new Date();
-  var base=d.getFullYear().toString()+('0'+(d.getMonth()+1)).slice(-2)+('0'+d.getDate()).slice(-2);
+  var year=d.getFullYear().toString();
+  var base='FA-'+year+'-';
   try{
-    var res=await fetch(SUPABASE_URL+'/rest/v1/estimates?estimate_no=like.'+base+'*&order=estimate_no.desc&limit=1',{
+    var res=await fetch(SUPABASE_URL+'/rest/v1/estimates?estimate_no=like.'+encodeURIComponent(base)+'*&order=estimate_no.desc&limit=1',{
       headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
     });
     var data=await res.json();
@@ -3697,10 +3698,10 @@ async function generateEstimateNo(){
       var last=data[0].estimate_no||'';
       var parts=last.split('-');
       var seq=parseInt(parts[parts.length-1]||'0')+1;
-      return base+'-'+('00'+seq).slice(-3);
+      return base+('000'+seq).slice(-4);
     }
   }catch(e){console.error('採番エラー:',e);}
-  return base+'-001';
+  return base+'0001';
 }
 
 async function saveEstimate(){
