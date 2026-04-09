@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>フォーラムオート 受付・レンタカーシステム</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%23cc1111'/%3E%3Cg transform='translate(4,20)'%3E%3Crect x='2' y='18' width='52' height='14' rx='3' fill='%23fff'/%3E%3Crect x='0' y='14' width='56' height='6' rx='2' fill='%23eee'/%3E%3Crect x='4' y='6' width='30' height='10' rx='2' fill='%23fff'/%3E%3Crect x='8' y='8' width='22' height='6' rx='1' fill='%23bbd'/%3E%3Ccircle cx='10' cy='32' r='5' fill='%23333'/%3E%3Ccircle cx='10' cy='32' r='2.5' fill='%23888'/%3E%3Ccircle cx='46' cy='32' r='5' fill='%23333'/%3E%3Ccircle cx='46' cy='32' r='2.5' fill='%23888'/%3E%3Crect x='34' y='10' width='18' height='7' rx='1' fill='%23fff' opacity='.6'/%3E%3Crect x='2' y='16' width='6' height='3' fill='%23f80'/%3E%3Crect x='48' y='16' width='6' height='3' fill='%23f80'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+:root {
+  --red: #c0151a;
+  --red-dark: #8b0f13;
+  --red-light: #e8292e;
+  --bg: #f2f3f5;
+  --card: #ffffff;
+  --border: #dde0e6;
+  --text: #1a1c20;
+  --text2: #5a5f6e;
+  --accent: #1a56db;
+  --green: #16a34a;
+  --orange: #ea6800;
+  --tab-h: 52px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; min-height: 100vh; }
+
+/* ===== HEADER ===== */
+#header {
+  background: linear-gradient(135deg, var(--red-dark) 0%, var(--red) 60%, var(--red-light) 100%);
+  color: #fff;
+  padding: 0 16px;
+  display: flex; align-items: center; gap: 12px;
+  height: 52px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  position: sticky; top: 0; z-index: 100;
+}
+#header svg { flex-shrink: 0; }
+#header h1 { font-size: 16px; font-weight: 700; letter-spacing: .03em; flex: 1; }
+#header .clock { font-size: 13px; opacity: .9; white-space: nowrap; }
+
+/* ===== TABS ===== */
+#tabs {
+  display: flex;
+  background: #fff;
+  border-bottom: 2px solid var(--border);
+  overflow-x: auto;
+  position: sticky; top: 52px; z-index: 90;
+  scrollbar-width: none;
+}
+#tabs::-webkit-scrollbar { display: none; }
+.tab-btn {
+  flex-shrink: 0;
+  padding: 0 18px;
+  height: var(--tab-h);
+  border: none; border-bottom: 3px solid transparent;
+  background: none; cursor: pointer;
+  font-size: 13px; font-weight: 600; color: var(--text2);
+  white-space: nowrap;
+  transition: all .15s;
+  display: flex; align-items: center; gap: 6px;
+}
+.tab-btn:hover { color: var(--red); background: #fef2f2; }
+.tab-btn.active { color: var(--red); border-bottom-color: var(--red); }
+
+/* ===== PANELS ===== */
+.panel { display: none; padding: 16px; max-width: 900px; margin: 0 auto; }
+.panel.active { display: block; }
+
+/* ===== CARD ===== */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.card-title {
+  font-size: 13px; font-weight: 700; color: var(--text2);
+  text-transform: uppercase; letter-spacing: .06em;
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 6px;
+}
+.card-title span { font-size: 16px; }
+
+/* ===== FORM ELEMENTS ===== */
+.form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 140px; }
+.form-group label { font-size: 12px; font-weight: 600; color: var(--text2); }
+.form-group input, .form-group select, .form-group textarea {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  background: #fff;
+  transition: border-color .15s;
+  width: 100%;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  outline: none;
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(192,21,26,.1);
+}
+.required-mark { color: var(--red); }
+
+/* ===== BUTTONS ===== */
+.btn {
+  padding: 9px 18px;
+  border-radius: 7px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  transition: all .15s;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-primary { background: var(--red); color: #fff; }
+.btn-primary:hover { background: var(--red-dark); }
+.btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--border); }
+.btn-green { background: var(--green); color: #fff; }
+.btn-green:hover { background: #15803d; }
+.btn-accent { background: var(--accent); color: #fff; }
+.btn-accent:hover { background: #1447b0; }
+.btn-lg { padding: 12px 24px; font-size: 15px; }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+
+/* ===== TYPE SELECTOR ===== */
+.type-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.type-card {
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .15s;
+  background: #fff;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.type-card:hover { border-color: var(--red); background: #fef2f2; }
+.type-card.selected { border-color: var(--red); background: #fef2f2; color: var(--red); }
+.type-card .icon { font-size: 24px; }
+.type-card .label { font-size: 12px; font-weight: 700; }
+
+/* ===== CHECKLIST ===== */
+.checklist { display: flex; flex-direction: column; gap: 8px; }
+.check-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.check-item:hover { background: #f9fafb; }
+.check-item input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--red); cursor: pointer; }
+.check-item.checked { background: #f0fdf4; border-color: #86efac; }
+.check-item label { cursor: pointer; flex: 1; font-size: 13px; }
+
+/* ===== MAP ===== */
+#map-container { height: 300px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+.map-info { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+.map-badge { background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--text2); }
+
+/* ===== CAR DIAGRAM ===== */
+.car-views { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.car-view-wrap { position: relative; }
+.car-view-wrap label { font-size: 11px; color: var(--text2); font-weight: 600; display: block; margin-bottom: 4px; text-align: center; }
+.car-svg-container {
+  position: relative;
+  width: 100%;
+  cursor: crosshair;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #f8f9fb;
+  display: block;
+}
+.car-svg-container svg { width: 100%; height: auto; display: block; }
+.damage-mark {
+  position: absolute;
+  width: 20px; height: 20px;
+  background: rgba(192,21,26,.85);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; color: #fff; font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0,0,0,.3);
+}
+
+/* ===== SIGNATURE ===== */
+#sig-canvas {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: crosshair;
+  background: #fff;
+  touch-action: none;
+  display: block;
+  width: 100%;
+  height: 160px;
+}
+
+/* ===== TABLE ===== */
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table th { background: #f8f9fb; border-bottom: 2px solid var(--border); padding: 10px 12px; text-align: left; font-size: 12px; color: var(--text2); font-weight: 700; }
+.data-table td { border-bottom: 1px solid var(--border); padding: 10px 12px; }
+.data-table tr:hover td { background: #fafafa; }
+
+/* ===== STATUS BADGE ===== */
+.badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.badge-new { background: #dbeafe; color: #1e40af; }
+.badge-inprogress { background: #fef3c7; color: #92400e; }
+.badge-done { background: #dcfce7; color: #166534; }
+.badge-rental { background: #f3e8ff; color: #6b21a8; }
+
+/* ===== RENTAL CARD ===== */
+.rental-car-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+.rental-car-card {
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all .15s;
+  position: relative;
+}
+.rental-car-card:hover { border-color: var(--accent); }
+.rental-car-card.selected { border-color: var(--accent); background: #eff6ff; }
+.rental-car-card.unavailable { opacity: .5; cursor: not-allowed; background: #f3f4f6; }
+.rental-car-card .car-name { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+.rental-car-card .car-plate { font-size: 11px; color: var(--text2); }
+.rental-car-card .car-avail { position: absolute; top: 8px; right: 8px; width: 10px; height: 10px; border-radius: 50%; }
+.car-avail.available { background: var(--green); }
+.car-avail.rented { background: var(--orange); }
+
+/* ===== TOAST ===== */
+#toast-container { position: fixed; bottom: 24px; right: 16px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  padding: 12px 18px;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px; font-weight: 600;
+  box-shadow: 0 4px 16px rgba(0,0,0,.2);
+  animation: slideIn .25s ease;
+  max-width: 280px;
+}
+.toast-success { background: var(--green); }
+.toast-error { background: var(--red); }
+.toast-info { background: var(--accent); }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* ===== MAP PANEL ===== */
+#map-full { height: calc(100vh - 120px); border-radius: 10px; overflow: hidden; }
+
+/* ===== LOADING ===== */
+.loading { display: flex; align-items: center; gap: 8px; color: var(--text2); font-size: 13px; padding: 16px 0; }
+.spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--red); border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 600px) {
+  .car-views { grid-template-columns: 1fr; }
+  .form-row { flex-direction: column; }
+  .type-grid { grid-template-columns: repeat(3, 1fr); }
+  #header h1 { font-size: 14px; }
+}
+
+/* 5面目（上面）は全幅 */
+.car-view-top { grid-column: 1 / -1; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <svg width="36" height="28" viewBox="0 0 72 40">
+    <rect x="0" y="18" width="62" height="16" rx="3" fill="#fff"/>
+    <rect x="0" y="14" width="64" height="6" rx="2" fill="#eee"/>
+    <rect x="4" y="6" width="34" height="10" rx="2" fill="#fff"/>
+    <rect x="7" y="8" width="26" height="6" rx="1" fill="#aac"/>
+    <circle cx="12" cy="34" r="5" fill="#333"/><circle cx="12" cy="34" r="2.5" fill="#999"/>
+    <circle cx="52" cy="34" r="5" fill="#333"/><circle cx="52" cy="34" r="2.5" fill="#999"/>
+    <rect x="36" y="10" width="22" height="8" rx="1" fill="#fff" opacity=".5"/>
+    <rect x="2" y="16" width="6" height="3" fill="#f90"/>
+    <rect x="56" y="16" width="6" height="3" fill="#f90"/>
+  </svg>
+  <h1>フォーラムオート 受付・レンタカーシステム</h1>
+  <div class="clock" id="clock">--:--</div>
+</div>
+
+<!-- TABS -->
+<div id="tabs">
+  <button class="tab-btn active" onclick="switchTab('reception')" id="tab-reception">🚗 新規受付</button>
+  <button class="tab-btn" onclick="switchTab('rental')" id="tab-rental">🔑 レンタカー貸出</button>
+  <button class="tab-btn" onclick="switchTab('list')" id="tab-list">📋 案件一覧</button>
+  <button class="tab-btn" onclick="switchTab('mapview')" id="tab-mapview">🗺️ 現場マップ</button>
+</div>
+
+<!-- TOAST -->
+<div id="toast-container"></div>
+
+<!-- ==================== TAB: 新規受付 ==================== -->
+<div class="panel active" id="panel-reception">
+
+  <!-- 受付種別 -->
+  <div class="card">
+    <div class="card-title"><span>🏷️</span> 受付種別 <span class="required-mark">*</span></div>
+    <div class="type-grid">
+      <div class="type-card" onclick="selectType(this,'レッカー')" data-type="レッカー">
+        <div class="icon">🚛</div><div class="label">レッカー</div>
+      </div>
+      <div class="type-card" onclick="selectType(this,'修理入庫')" data-type="修理入庫">
+        <div class="icon">🔧</div><div class="label">修理入庫</div>
+      </div>
+      <div class="type-card" onclick="selectType(this,'板金塗装')" data-type="板金塗装">
+        <div class="icon">🎨</div><div class="label">板金塗装</div>
+      </div>
+      <div class="type-card" onclick="selectType(this,'車検')" data-type="車検">
+        <div class="icon">📋</div><div class="label">車検</div>
+      </div>
+      <div class="type-card" onclick="selectType(this,'その他')" data-type="その他">
+        <div class="icon">📝</div><div class="label">その他</div>
+      </div>
+      <div class="type-card-link" onclick="goToEstimate()" style="border:2px solid #1a56db;background:#eff6ff;border-radius:8px;padding:12px 8px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;">
+        <div class="icon">💻</div><div class="label" style="color:#1a56db;font-size:12px;font-weight:700;">見積ソフトへ</div>
+      </div>
+    </div>
+    <input type="hidden" id="rec-type" value="">
+  </div>
+
+  <!-- 顧客・車両情報 -->
+  <div class="card">
+    <div class="card-title"><span>👤</span> 顧客・車両情報</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>お客様氏名 <span class="required-mark">*</span></label>
+        <input type="text" id="rec-name" placeholder="山田 太郎">
+      </div>
+      <div class="form-group">
+        <label>電話番号</label>
+        <input type="tel" id="rec-phone" placeholder="090-0000-0000">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>車両ナンバー <span class="required-mark">*</span></label>
+        <input type="text" id="rec-plate" placeholder="浜松 300 あ 1234">
+      </div>
+      <div class="form-group">
+        <label>メーカー・車種</label>
+        <input type="text" id="rec-car" placeholder="トヨタ プリウス">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>受付日時</label>
+        <input type="datetime-local" id="rec-datetime">
+      </div>
+      <div class="form-group">
+        <label>担当者</label>
+        <input type="text" id="rec-staff" placeholder="">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>備考</label>
+        <textarea id="rec-note" rows="2" placeholder="保険会社名、事故状況など"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- 現場位置（レッカー時） -->
+  <div class="card" id="map-section" style="display:none;">
+    <div class="card-title"><span>📍</span> 現場位置・到着時間</div>
+    <div class="form-row">
+      <div class="form-group" style="flex:2">
+        <label>現場住所</label>
+        <input type="text" id="rec-location" placeholder="住所を入力..." oninput="debounceGeocode()">
+      </div>
+      <div class="form-group">
+        <label>到着予定時間</label>
+        <input type="time" id="rec-eta">
+      </div>
+    </div>
+    <div class="map-info">
+      <span class="map-badge" id="map-coords">📌 未設定</span>
+      <button class="btn btn-secondary btn-sm" onclick="getCurrentLocation()">📍 現在地取得</button>
+      <button class="btn btn-secondary btn-sm" onclick="openMapPanel()">🗺️ 地図で確認</button>
+    </div>
+    <div id="map-container" style="margin-top:10px;"></div>
+  </div>
+
+  <!-- レンタカー手配 -->
+  <div class="card">
+    <div class="card-title"><span>🔑</span> レンタカー手配</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>レンタカー必要</label>
+        <select id="rec-rental-need">
+          <option value="不要">不要</option>
+          <option value="必要">必要</option>
+          <option value="未定">未定</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>希望車種</label>
+        <input type="text" id="rec-rental-type" placeholder="軽自動車・コンパクト等">
+      </div>
+    </div>
+  </div>
+
+  <!-- 受入チェックリスト -->
+  <div class="card">
+    <div class="card-title"><span>✅</span> 受入チェックリスト</div>
+    <div class="checklist" id="checklist">
+      <div class="check-item" onclick="toggleCheck(this)">
+        <input type="checkbox"><label>車検証確認</label>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <input type="checkbox"><label>自賠責保険証確認</label>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <input type="checkbox"><label>任意保険証確認</label>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <input type="checkbox"><label>免許証確認</label>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <input type="checkbox"><label>貴重品・荷物取り出し確認</label>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <input type="checkbox"><label>キー本数確認</label>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <input type="checkbox"><label>燃料残量確認</label>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <input type="checkbox"><label>走行距離記録</label>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <input type="checkbox"><label>外観傷・へこみ確認（チェック図に記録）</label>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <input type="checkbox"><label>お客様への説明・了承取得</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- 車体傷チェック図（受付時） -->
+  <div class="card">
+    <div class="card-title"><span>🚘</span> 車体傷チェック（受付時）</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">各面をタップして傷・へこみの位置を記録</p>
+    <div class="car-views" id="rec-car-views">
+      <!-- 前面 -->
+      <div class="car-view-wrap">
+        <label>▲ 前面</label>
+        <div class="car-svg-container" id="svg-front-rec" onclick="addDamageMark(event, 'svg-front-rec')">
+          <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="30" width="180" height="70" rx="6" fill="#d0d5e0"/>
+            <rect x="20" y="38" width="70" height="30" rx="3" fill="#a0b0d0"/>
+            <rect x="110" y="38" width="70" height="30" rx="3" fill="#a0b0d0"/>
+            <rect x="10" y="85" width="180" height="15" rx="3" fill="#b0b8cc"/>
+            <ellipse cx="40" cy="100" rx="16" ry="16" fill="#333"/>
+            <ellipse cx="40" cy="100" rx="9" ry="9" fill="#777"/>
+            <ellipse cx="160" cy="100" rx="16" ry="16" fill="#333"/>
+            <ellipse cx="160" cy="100" rx="9" ry="9" fill="#777"/>
+            <rect x="30" y="30" width="140" height="4" fill="#e0e5ef"/>
+            <rect x="80" y="50" width="40" height="14" rx="2" fill="#e8e0a0" opacity=".8"/>
+            <text x="100" y="16" text-anchor="middle" font-size="10" fill="#888">前</text>
+          </svg>
+        </div>
+      </div>
+      <!-- 後面 -->
+      <div class="car-view-wrap">
+        <label>▼ 後面</label>
+        <div class="car-svg-container" id="svg-rear-rec" onclick="addDamageMark(event, 'svg-rear-rec')">
+          <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="30" width="180" height="70" rx="6" fill="#d0d5e0"/>
+            <rect x="20" y="38" width="70" height="25" rx="3" fill="#a0b0d0"/>
+            <rect x="110" y="38" width="70" height="25" rx="3" fill="#a0b0d0"/>
+            <rect x="10" y="85" width="180" height="15" rx="3" fill="#b0b8cc"/>
+            <ellipse cx="40" cy="100" rx="16" ry="16" fill="#333"/>
+            <ellipse cx="40" cy="100" rx="9" ry="9" fill="#777"/>
+            <ellipse cx="160" cy="100" rx="16" ry="16" fill="#333"/>
+            <ellipse cx="160" cy="100" rx="9" ry="9" fill="#777"/>
+            <rect x="60" y="86" width="80" height="8" rx="2" fill="#e0e0e0" opacity=".7"/>
+            <rect x="30" y="55" width="30" height="8" rx="2" fill="#ff4444" opacity=".7"/>
+            <rect x="140" y="55" width="30" height="8" rx="2" fill="#ff4444" opacity=".7"/>
+            <text x="100" y="16" text-anchor="middle" font-size="10" fill="#888">後</text>
+          </svg>
+        </div>
+      </div>
+      <!-- 左側面 -->
+      <div class="car-view-wrap">
+        <label>◁ 左側面</label>
+        <div class="car-svg-container" id="svg-left-rec" onclick="addDamageMark(event, 'svg-left-rec')">
+          <svg viewBox="0 0 240 120" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="40" width="220" height="55" rx="5" fill="#d0d5e0"/>
+            <path d="M40,40 L60,10 L160,10 L190,40 Z" fill="#c0c8d8"/>
+            <rect x="55" y="12" width="90" height="28" rx="3" fill="#a0b0d0"/>
+            <ellipse cx="42" cy="95" rx="18" ry="18" fill="#333"/>
+            <ellipse cx="42" cy="95" rx="10" ry="10" fill="#777"/>
+            <ellipse cx="188" cy="95" rx="18" ry="18" fill="#333"/>
+            <ellipse cx="188" cy="95" rx="10" ry="10" fill="#777"/>
+            <rect x="10" y="40" width="220" height="4" fill="#e0e5ef"/>
+            <text x="120" y="108" text-anchor="middle" font-size="10" fill="#888">左</text>
+          </svg>
+        </div>
+      </div>
+      <!-- 右側面 -->
+      <div class="car-view-wrap">
+        <label>▷ 右側面</label>
+        <div class="car-svg-container" id="svg-right-rec" onclick="addDamageMark(event, 'svg-right-rec')">
+          <svg viewBox="0 0 240 120" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="40" width="220" height="55" rx="5" fill="#d0d5e0"/>
+            <path d="M50,40 L80,10 L180,10 L200,40 Z" fill="#c0c8d8"/>
+            <rect x="75" y="12" width="90" height="28" rx="3" fill="#a0b0d0"/>
+            <ellipse cx="42" cy="95" rx="18" ry="18" fill="#333"/>
+            <ellipse cx="42" cy="95" rx="10" ry="10" fill="#777"/>
+            <ellipse cx="188" cy="95" rx="18" ry="18" fill="#333"/>
+            <ellipse cx="188" cy="95" rx="10" ry="10" fill="#777"/>
+            <rect x="10" y="40" width="220" height="4" fill="#e0e5ef"/>
+            <text x="120" y="108" text-anchor="middle" font-size="10" fill="#888">右</text>
+          </svg>
+        </div>
+      </div>
+      <!-- 上面 -->
+      <div class="car-view-wrap car-view-top">
+        <label>⬆ 上面（俯瞰）</label>
+        <div class="car-svg-container" id="svg-top-rec" onclick="addDamageMark(event, 'svg-top-rec')">
+          <svg viewBox="0 0 300 140" xmlns="http://www.w3.org/2000/svg">
+            <rect x="60" y="10" width="180" height="120" rx="20" fill="#d0d5e0"/>
+            <rect x="70" y="25" width="160" height="70" rx="8" fill="#a0b0d0"/>
+            <ellipse cx="75" cy="125" rx="18" ry="12" fill="#333"/>
+            <ellipse cx="225" cy="125" rx="18" ry="12" fill="#333"/>
+            <ellipse cx="75" cy="15" rx="18" ry="12" fill="#333"/>
+            <ellipse cx="225" cy="15" rx="18" ry="12" fill="#333"/>
+            <rect x="130" y="55" width="40" height="20" rx="3" fill="#c0c8d8"/>
+            <text x="150" y="135" text-anchor="middle" font-size="10" fill="#888">上（前→後）</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:8px;">
+      <button class="btn btn-secondary btn-sm" onclick="clearDamageMarks('rec')">🗑️ マーク全消去</button>
+    </div>
+  </div>
+
+  <!-- 電子サイン（受付時） -->
+  <div class="card">
+    <div class="card-title"><span>✍️</span> お客様サイン</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:8px;">上記内容を確認し、署名をお願いします。</p>
+    <canvas id="sig-canvas" width="600" height="160"></canvas>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn btn-secondary btn-sm" onclick="clearSignature()">🗑️ クリア</button>
+      <span style="font-size:12px;color:var(--text2);align-self:center;">指またはペンで署名してください</span>
+    </div>
+  </div>
+
+  <!-- 登録ボタン -->
+  <div style="display:flex;gap:10px;justify-content:flex-end;padding-bottom:20px;">
+    <button class="btn btn-secondary" onclick="resetReception()">🔄 リセット</button>
+    <button class="btn btn-primary btn-lg" onclick="submitReception()">✅ 案件登録</button>
+  </div>
+</div>
+
+<!-- ==================== TAB: レンタカー貸出 ==================== -->
+<div class="panel" id="panel-rental">
+
+  <!-- 案件選択 -->
+  <div class="card">
+    <div class="card-title"><span>🔗</span> 紐付け案件</div>
+    <div class="form-row">
+      <div class="form-group" style="flex:2">
+        <label>案件番号 / お客様名</label>
+        <input type="text" id="rental-case-search" placeholder="案件番号またはお客様名で検索..." oninput="searchCaseForRental()">
+      </div>
+      <div class="form-group">
+        <label>紐付け案件ID</label>
+        <input type="text" id="rental-case-id" placeholder="自動入力" readonly style="background:#f3f4f6">
+      </div>
+    </div>
+    <div id="case-search-results"></div>
+  </div>
+
+  <!-- 貸出車両選択 -->
+  <div class="card">
+    <div class="card-title"><span>🚗</span> 貸出車両選択 <span class="required-mark">*</span></div>
+    <div id="rental-car-list">
+      <div class="loading"><div class="spinner"></div>レンタカー情報を読み込み中...</div>
+    </div>
+    <input type="hidden" id="selected-car-id" value="">
+  </div>
+
+  <!-- 貸出情報 -->
+  <div class="card">
+    <div class="card-title"><span>📋</span> 貸出情報</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>お客様氏名 <span class="required-mark">*</span></label>
+        <input type="text" id="rental-customer-name" placeholder="山田 太郎">
+      </div>
+      <div class="form-group">
+        <label>電話番号</label>
+        <input type="tel" id="rental-phone" placeholder="090-0000-0000">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>免許証番号 <span class="required-mark">*</span></label>
+        <input type="text" id="rental-license" placeholder="123456789012" maxlength="12">
+      </div>
+      <div class="form-group">
+        <label>免許有効期限</label>
+        <input type="date" id="rental-license-exp">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>貸出日 <span class="required-mark">*</span></label>
+        <input type="date" id="rental-date-out">
+      </div>
+      <div class="form-group">
+        <label>貸出時刻</label>
+        <input type="time" id="rental-time-out">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>貸出時走行距離(km) <span class="required-mark">*</span></label>
+        <input type="number" id="rental-km-out" placeholder="12345">
+      </div>
+      <div class="form-group">
+        <label>燃料残量</label>
+        <select id="rental-fuel">
+          <option value="満タン">満タン</option>
+          <option value="3/4">3/4</option>
+          <option value="1/2">1/2</option>
+          <option value="1/4">1/4</option>
+          <option value="少ない">少ない</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>返却予定日</label>
+        <input type="date" id="rental-date-return">
+      </div>
+      <div class="form-group">
+        <label>備考</label>
+        <input type="text" id="rental-note" placeholder="">
+      </div>
+    </div>
+  </div>
+
+  <!-- 車体傷チェック（レンタカー） -->
+  <div class="card">
+    <div class="card-title"><span>🚘</span> 車体傷チェック（貸出前）</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">傷・へこみの位置をタップで記録</p>
+    <div class="car-views" id="rental-car-views">
+      <div class="car-view-wrap">
+        <label>▲ 前面</label>
+        <div class="car-svg-container" id="svg-front-rental" onclick="addDamageMark(event, 'svg-front-rental')">
+          <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="30" width="180" height="70" rx="6" fill="#d0d5e0"/>
+            <rect x="20" y="38" width="70" height="30" rx="3" fill="#a0b0d0"/>
+            <rect x="110" y="38" width="70" height="30" rx="3" fill="#a0b0d0"/>
+            <rect x="10" y="85" width="180" height="15" rx="3" fill="#b0b8cc"/>
+            <ellipse cx="40" cy="100" rx="16" ry="16" fill="#333"/><ellipse cx="40" cy="100" rx="9" ry="9" fill="#777"/>
+            <ellipse cx="160" cy="100" rx="16" ry="16" fill="#333"/><ellipse cx="160" cy="100" rx="9" ry="9" fill="#777"/>
+            <rect x="80" y="50" width="40" height="14" rx="2" fill="#e8e0a0" opacity=".8"/>
+            <text x="100" y="16" text-anchor="middle" font-size="10" fill="#888">前</text>
+          </svg>
+        </div>
+      </div>
+      <div class="car-view-wrap">
+        <label>▼ 後面</label>
+        <div class="car-svg-container" id="svg-rear-rental" onclick="addDamageMark(event, 'svg-rear-rental')">
+          <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="30" width="180" height="70" rx="6" fill="#d0d5e0"/>
+            <rect x="20" y="38" width="70" height="25" rx="3" fill="#a0b0d0"/>
+            <rect x="110" y="38" width="70" height="25" rx="3" fill="#a0b0d0"/>
+            <rect x="10" y="85" width="180" height="15" rx="3" fill="#b0b8cc"/>
+            <ellipse cx="40" cy="100" rx="16" ry="16" fill="#333"/><ellipse cx="40" cy="100" rx="9" ry="9" fill="#777"/>
+            <ellipse cx="160" cy="100" rx="16" ry="16" fill="#333"/><ellipse cx="160" cy="100" rx="9" ry="9" fill="#777"/>
+            <rect x="30" y="55" width="30" height="8" rx="2" fill="#ff4444" opacity=".7"/>
+            <rect x="140" y="55" width="30" height="8" rx="2" fill="#ff4444" opacity=".7"/>
+            <text x="100" y="16" text-anchor="middle" font-size="10" fill="#888">後</text>
+          </svg>
+        </div>
+      </div>
+      <div class="car-view-wrap">
+        <label>◁ 左側面</label>
+        <div class="car-svg-container" id="svg-left-rental" onclick="addDamageMark(event, 'svg-left-rental')">
+          <svg viewBox="0 0 240 120" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="40" width="220" height="55" rx="5" fill="#d0d5e0"/>
+            <path d="M40,40 L60,10 L160,10 L190,40 Z" fill="#c0c8d8"/>
+            <rect x="55" y="12" width="90" height="28" rx="3" fill="#a0b0d0"/>
+            <ellipse cx="42" cy="95" rx="18" ry="18" fill="#333"/><ellipse cx="42" cy="95" rx="10" ry="10" fill="#777"/>
+            <ellipse cx="188" cy="95" rx="18" ry="18" fill="#333"/><ellipse cx="188" cy="95" rx="10" ry="10" fill="#777"/>
+            <text x="120" y="108" text-anchor="middle" font-size="10" fill="#888">左</text>
+          </svg>
+        </div>
+      </div>
+      <div class="car-view-wrap">
+        <label>▷ 右側面</label>
+        <div class="car-svg-container" id="svg-right-rental" onclick="addDamageMark(event, 'svg-right-rental')">
+          <svg viewBox="0 0 240 120" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="40" width="220" height="55" rx="5" fill="#d0d5e0"/>
+            <path d="M50,40 L80,10 L180,10 L200,40 Z" fill="#c0c8d8"/>
+            <rect x="75" y="12" width="90" height="28" rx="3" fill="#a0b0d0"/>
+            <ellipse cx="42" cy="95" rx="18" ry="18" fill="#333"/><ellipse cx="42" cy="95" rx="10" ry="10" fill="#777"/>
+            <ellipse cx="188" cy="95" rx="18" ry="18" fill="#333"/><ellipse cx="188" cy="95" rx="10" ry="10" fill="#777"/>
+            <text x="120" y="108" text-anchor="middle" font-size="10" fill="#888">右</text>
+          </svg>
+        </div>
+      </div>
+      <div class="car-view-wrap car-view-top">
+        <label>⬆ 上面（俯瞰）</label>
+        <div class="car-svg-container" id="svg-top-rental" onclick="addDamageMark(event, 'svg-top-rental')">
+          <svg viewBox="0 0 300 140" xmlns="http://www.w3.org/2000/svg">
+            <rect x="60" y="10" width="180" height="120" rx="20" fill="#d0d5e0"/>
+            <rect x="70" y="25" width="160" height="70" rx="8" fill="#a0b0d0"/>
+            <ellipse cx="75" cy="125" rx="18" ry="12" fill="#333"/>
+            <ellipse cx="225" cy="125" rx="18" ry="12" fill="#333"/>
+            <ellipse cx="75" cy="15" rx="18" ry="12" fill="#333"/>
+            <ellipse cx="225" cy="15" rx="18" ry="12" fill="#333"/>
+            <text x="150" y="135" text-anchor="middle" font-size="10" fill="#888">上（前→後）</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:8px;">
+      <button class="btn btn-secondary btn-sm" onclick="clearDamageMarks('rental')">🗑️ マーク全消去</button>
+    </div>
+  </div>
+
+  <!-- 電子サイン（レンタカー） -->
+  <div class="card">
+    <div class="card-title"><span>✍️</span> お客様サイン（貸出確認）</div>
+    <canvas id="sig-canvas-rental" width="600" height="160" style="border:1px solid var(--border);border-radius:8px;touch-action:none;display:block;width:100%;height:160px;background:#fff;cursor:crosshair;"></canvas>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn btn-secondary btn-sm" onclick="clearRentalSignature()">🗑️ クリア</button>
+    </div>
+  </div>
+
+  <!-- 貸出登録ボタン -->
+  <div style="display:flex;gap:10px;justify-content:flex-end;padding-bottom:20px;">
+    <button class="btn btn-secondary" onclick="resetRental()">🔄 リセット</button>
+    <button class="btn btn-accent btn-lg" onclick="submitRental()">🔑 貸出登録</button>
+  </div>
+</div>
+
+<!-- ==================== TAB: 案件一覧 ==================== -->
+<div class="panel" id="panel-list">
+  <div class="card">
+    <div class="card-title"><span>📋</span> 案件一覧</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+      <input type="text" id="list-search" placeholder="お客様名・ナンバーで検索..." style="flex:1;min-width:160px;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;" oninput="filterList()">
+      <select id="list-filter-type" style="border:1px solid var(--border);border-radius:6px;padding:8px;font-size:13px;" onchange="filterList()">
+        <option value="">全種別</option>
+        <option value="レッカー">レッカー</option>
+        <option value="修理入庫">修理入庫</option>
+        <option value="板金塗装">板金塗装</option>
+        <option value="車検">車検</option>
+        <option value="その他">その他</option>
+      </select>
+      <button class="btn btn-secondary btn-sm" onclick="loadCases()">🔄 更新</button>
+    </div>
+    <div id="case-list-body">
+      <div class="loading"><div class="spinner"></div>案件を読み込み中...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TAB: 現場マップ ==================== -->
+<div class="panel" id="panel-mapview">
+  <div class="card" style="padding:10px;">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+      <div class="card-title" style="margin:0;flex:1"><span>🗺️</span> レッカー現場マップ</div>
+      <button class="btn btn-secondary btn-sm" onclick="loadMapMarkers()">🔄 更新</button>
+    </div>
+    <div id="map-full"></div>
+  </div>
+</div>
+
+<!-- Google Maps API -->
+<script>
+const SUPABASE_URL = 'https://uhppgdwbyrijnqpvusxw.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVocHBnZHdieXJpam5xcHZ1c3h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIwMzE5NDQsImV4cCI6MjA1NzYwNzk0NH0.P7oBKqTB5gdQhbMHI9fXfBnmoPFUPGMHHHsWAzlFlaw';
+const MAPS_KEY = 'AIzaSyD7EOjNdQp0YdyQ9TxbYkuAJjxxyRrabnQ';
+
+// ===== SUPABASE FETCH =====
+async function sbFetch(path, options = {}) {
+  const url = SUPABASE_URL + '/rest/v1/' + path;
+  const headers = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_KEY,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation',
+    ...options.headers
+  };
+  const res = await fetch(url, { ...options, headers });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
+  return res.status === 204 ? [] : res.json();
+}
+
+// ===== CLOCK =====
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleDateString('ja-JP',{month:'2-digit',day:'2-digit'}) + ' ' +
+    now.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ===== TOAST =====
+function toast(msg, type = 'success') {
+  const el = document.createElement('div');
+  el.className = 'toast toast-' + type;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ===== TABS =====
+function switchTab(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'list') loadCases();
+  if (name === 'mapview') { loadMapMarkers(); initMapFull(); }
+  if (name === 'rental') loadRentalCars();
+}
+
+// ===== RECEPTION TYPE =====
+function selectType(el, type) {
+  document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('rec-type').value = type;
+  // レッカーのみ現場マップ表示
+  document.getElementById('map-section').style.display = type === 'レッカー' ? 'block' : 'none';
+}
+
+function goToEstimate() {
+  window.open("https://forumauto-rgb.github.io/forumauto-estimate/", "_blank");
+}
+
+// ===== CHECKLIST =====
+function toggleCheck(el) {
+  const cb = el.querySelector('input[type=checkbox]');
+  cb.checked = !cb.checked;
+  el.classList.toggle('checked', cb.checked);
+}
+
+// ===== SET DEFAULT DATETIME =====
+function setDefaultDatetime() {
+  const now = new Date();
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0,16);
+  document.getElementById('rec-datetime').value = local;
+  const today = local.slice(0,10);
+  document.getElementById('rental-date-out').value = today;
+}
+setDefaultDatetime();
+
+// ===== DAMAGE MARKS =====
+const damageMarks = {};
+
+function addDamageMark(e, containerId) {
+  const container = document.getElementById(containerId);
+  const rect = container.getBoundingClientRect();
+  const x = ((e.clientX - rect.left) / rect.width * 100).toFixed(1);
+  const y = ((e.clientY - rect.top) / rect.height * 100).toFixed(1);
+
+  if (!damageMarks[containerId]) damageMarks[containerId] = [];
+  const idx = damageMarks[containerId].length + 1;
+  damageMarks[containerId].push({ x: parseFloat(x), y: parseFloat(y) });
+
+  const mark = document.createElement('div');
+  mark.className = 'damage-mark';
+  mark.style.left = x + '%';
+  mark.style.top = y + '%';
+  mark.textContent = idx;
+  container.appendChild(mark);
+}
+
+function clearDamageMarks(suffix) {
+  const ids = ['svg-front-', 'svg-rear-', 'svg-left-', 'svg-right-', 'svg-top-'];
+  ids.forEach(id => {
+    const full = id + suffix;
+    const container = document.getElementById(full);
+    if (container) {
+      container.querySelectorAll('.damage-mark').forEach(m => m.remove());
+      damageMarks[full] = [];
+    }
+  });
+}
+
+// ===== SIGNATURE =====
+function initSignature(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let drawing = false;
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    if (e.touches) {
+      return {
+        x: (e.touches[0].clientX - rect.left) * scaleX,
+        y: (e.touches[0].clientY - rect.top) * scaleY
+      };
+    }
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
+    };
+  }
+
+  function start(e) { drawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); e.preventDefault(); }
+  function draw(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    const p = getPos(e);
+    ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.strokeStyle = '#1a1c20';
+    ctx.lineTo(p.x, p.y); ctx.stroke();
+  }
+  function end() { drawing = false; }
+
+  canvas.addEventListener('mousedown', start);
+  canvas.addEventListener('mousemove', draw);
+  canvas.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, { passive: false });
+  canvas.addEventListener('touchmove', draw, { passive: false });
+  canvas.addEventListener('touchend', end);
+}
+
+function clearSignature() {
+  const c = document.getElementById('sig-canvas');
+  c.getContext('2d').clearRect(0, 0, c.width, c.height);
+}
+function clearRentalSignature() {
+  const c = document.getElementById('sig-canvas-rental');
+  c.getContext('2d').clearRect(0, 0, c.width, c.height);
+}
+
+initSignature('sig-canvas');
+initSignature('sig-canvas-rental');
+
+// ===== GOOGLE MAPS =====
+let map = null, mapFull = null;
+let currentMarker = null, mapMarkers = [];
+let currentLat = null, currentLng = null;
+
+function loadGoogleMaps(callback) {
+  if (window.google && window.google.maps) { callback(); return; }
+  const s = document.createElement('script');
+  s.src = 'https://maps.googleapis.com/maps/api/js?key=' + MAPS_KEY + '&callback=__mapsReady&language=ja';
+  s.async = true; s.defer = true;
+  window.__mapsReady = callback;
+  document.head.appendChild(s);
+}
+
+function initMapInline() {
+  const el = document.getElementById('map-container');
+  if (map) return;
+  loadGoogleMaps(() => {
+    map = new google.maps.Map(el, {
+      center: { lat: 34.7506, lng: 137.9267 },
+      zoom: 14,
+      mapTypeControl: false,
+      streetViewControl: false
+    });
+    map.addListener('click', e => {
+      setMapLocation(e.latLng.lat(), e.latLng.lng());
+    });
+  });
+}
+
+function initMapFull() {
+  const el = document.getElementById('map-full');
+  if (mapFull) { loadMapMarkers(); return; }
+  loadGoogleMaps(() => {
+    mapFull = new google.maps.Map(el, {
+      center: { lat: 34.7506, lng: 137.9267 },
+      zoom: 12,
+      mapTypeControl: false
+    });
+    loadMapMarkers();
+  });
+}
+
+function setMapLocation(lat, lng) {
+  currentLat = lat; currentLng = lng;
+  document.getElementById('map-coords').textContent = '📌 ' + lat.toFixed(5) + ', ' + lng.toFixed(5);
+  if (!map) return;
+  if (currentMarker) currentMarker.setMap(null);
+  currentMarker = new google.maps.Marker({ position: { lat, lng }, map, animation: google.maps.Animation.DROP });
+  map.panTo({ lat, lng });
+}
+
+function getCurrentLocation() {
+  if (!navigator.geolocation) { toast('位置情報非対応', 'error'); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    const { latitude: lat, longitude: lng } = pos.coords;
+    if (document.getElementById('map-container').offsetParent !== null) {
+      if (!map) initMapInline();
+      setTimeout(() => setMapLocation(lat, lng), 500);
+    } else {
+      setMapLocation(lat, lng);
+    }
+    toast('現在地を取得しました', 'info');
+  }, () => toast('位置情報の取得に失敗しました', 'error'));
+}
+
+let geocodeTimer = null;
+function debounceGeocode() {
+  clearTimeout(geocodeTimer);
+  geocodeTimer = setTimeout(() => {
+    const addr = document.getElementById('rec-location').value.trim();
+    if (!addr) return;
+    if (!map) initMapInline();
+    loadGoogleMaps(() => {
+      const gc = new google.maps.Geocoder();
+      gc.geocode({ address: addr, region: 'JP' }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+          const loc = results[0].geometry.location;
+          setMapLocation(loc.lat(), loc.lng());
+        }
+      });
+    });
+  }, 600);
+}
+
+async function loadMapMarkers() {
+  if (!mapFull) return;
+  mapMarkers.forEach(m => m.setMap(null));
+  mapMarkers = [];
+  try {
+    const cases = await sbFetch('receptions?select=id,customer_name,plate,type,location_address,lat,lng&lat=not.is.null&limit=50');
+    cases.forEach(c => {
+      if (!c.lat || !c.lng) return;
+      const marker = new google.maps.Marker({
+        position: { lat: parseFloat(c.lat), lng: parseFloat(c.lng) },
+        map: mapFull,
+        title: c.customer_name + ' / ' + c.plate,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 10,
+          fillColor: '#c0151a', fillOpacity: 0.9,
+          strokeColor: '#fff', strokeWeight: 2
+        }
+      });
+      const iw = new google.maps.InfoWindow({
+        content: '<div style="font-size:13px;"><b>' + c.customer_name + '</b><br>' + c.plate + '<br><span style="color:#666">' + (c.location_address || '') + '</span></div>'
+      });
+      marker.addListener('click', () => iw.open(mapFull, marker));
+      mapMarkers.push(marker);
+    });
+  } catch (e) {
+    // テーブルがない場合は無視
+  }
+}
+
+function openMapPanel() {
+  switchTab('mapview');
+}
+
+// ===== SUBMIT RECEPTION =====
+async function submitReception() {
+  const type = document.getElementById('rec-type').value;
+  const name = document.getElementById('rec-name').value.trim();
+  const plate = document.getElementById('rec-plate').value.trim();
+  const rentalNeed = document.getElementById('rec-rental-need').value;
+
+  if (!type) { toast('受付種別を選択してください', 'error'); return; }
+  if (!name) { toast('お客様氏名を入力してください', 'error'); return; }
+  if (!plate) { toast('車両ナンバーを入力してください', 'error'); return; }
+
+  // チェックリスト
+  const checks = [];
+  document.querySelectorAll('#checklist .check-item').forEach(el => {
+    const label = el.querySelector('label').textContent;
+    const checked = el.querySelector('input').checked;
+    checks.push({ label, checked });
+  });
+
+  // 傷マーク
+  const damageData = {};
+  ['svg-front-rec','svg-rear-rec','svg-left-rec','svg-right-rec','svg-top-rec'].forEach(id => {
+    damageData[id] = damageMarks[id] || [];
+  });
+
+  // サイン
+  const sigCanvas = document.getElementById('sig-canvas');
+  const sigData = sigCanvas.toDataURL();
+
+  const payload = {
+    type: type,
+    customer_name: name,
+    phone: document.getElementById('rec-phone').value.trim(),
+    plate: plate,
+    car_model: document.getElementById('rec-car').value.trim(),
+    reception_datetime: document.getElementById('rec-datetime').value,
+    staff: document.getElementById('rec-staff').value.trim(),
+    note: document.getElementById('rec-note').value.trim(),
+    rental_needed: rentalNeed,
+    rental_type: document.getElementById('rec-rental-type').value.trim(),
+    location_address: document.getElementById('rec-location').value.trim(),
+    lat: currentLat,
+    lng: currentLng,
+    eta: document.getElementById('rec-eta').value,
+    checklist: JSON.stringify(checks),
+    damage_marks: JSON.stringify(damageData),
+    signature: sigData
+  };
+
+  try {
+    const result = await sbFetch('receptions', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    toast('✅ 案件を登録しました！', 'success');
+    const inserted = Array.isArray(result) ? result[0] : result;
+
+    // レンタカー必要な場合はレンタカータブへ
+    if (rentalNeed === '必要') {
+      setTimeout(() => {
+        if (inserted && inserted.id) {
+          document.getElementById('rental-case-id').value = inserted.id;
+          document.getElementById('rental-customer-name').value = name;
+          document.getElementById('rental-phone').value = document.getElementById('rec-phone').value.trim();
+        }
+        switchTab('rental');
+        toast('🔑 レンタカー貸出タブに移動しました', 'info');
+      }, 800);
+    } else {
+      // 見積ソフトへジャンプして顧客情報を引き継ぐ
+      const phone = document.getElementById('rec-phone').value.trim();
+      const car = document.getElementById('rec-car').value.trim();
+      const params = new URLSearchParams({
+        name: name,
+        phone: phone,
+        plate: plate,
+        car: car,
+        type: type
+      });
+      const estimateUrl = 'https://forumauto-rgb.github.io/forumauto-estimate/?' + params.toString();
+      showEstimateLink(estimateUrl, name);
+    }
+
+    resetReception();
+  } catch (e) {
+    // Supabaseテーブルがない場合もローカルで動作
+    console.error(e);
+    // ローカル保存
+    const id = 'LOC-' + Date.now();
+    const localCase = { id, ...payload, created_at: new Date().toISOString() };
+    const existing = JSON.parse(localStorage.getItem('local_cases') || '[]');
+    existing.unshift(localCase);
+    localStorage.setItem('local_cases', JSON.stringify(existing));
+    toast('✅ 案件を登録しました（ローカル保存）', 'success');
+
+    if (rentalNeed === '必要') {
+      setTimeout(() => {
+        document.getElementById('rental-case-id').value = id;
+        document.getElementById('rental-customer-name').value = name;
+        document.getElementById('rental-phone').value = document.getElementById('rec-phone').value.trim();
+        switchTab('rental');
+        toast('🔑 レンタカー貸出タブに移動しました', 'info');
+      }, 800);
+    }
+    resetReception();
+  }
+}
+
+function showEstimateLink(url, name) {
+  // 既存のバナーがあれば削除
+  const old = document.getElementById('estimate-link-banner');
+  if (old) old.remove();
+
+  const banner = document.createElement('div');
+  banner.id = 'estimate-link-banner';
+  banner.style.cssText = [
+    'position:fixed',
+    'bottom:80px',
+    'left:50%',
+    'transform:translateX(-50%)',
+    'background:#1a56db',
+    'color:#fff',
+    'padding:16px 24px',
+    'border-radius:12px',
+    'box-shadow:0 4px 20px rgba(0,0,0,.3)',
+    'z-index:9999',
+    'text-align:center',
+    'font-family:inherit',
+    'min-width:280px'
+  ].join(';');
+
+  const closeBtn = '<button onclick="this.parentNode.remove()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:10px 16px;border-radius:8px;cursor:pointer;font-size:13px;">閉じる</button>';
+  const linkBtn = '<a href="' + url + '" target="_blank" style="display:inline-block;background:#fff;color:#1a56db;font-weight:700;font-size:14px;padding:10px 24px;border-radius:8px;text-decoration:none;margin-right:8px;">💻 見積ソフトを開く</a>';
+  const title = '<div style="font-size:14px;font-weight:700;margin-bottom:10px;">✅ ' + name + ' 様の受付が完了しました</div>';
+  banner.innerHTML = title + linkBtn + closeBtn;
+
+  document.body.appendChild(banner);
+
+  // 10秒後に自動消去
+  setTimeout(() => { if (banner.parentNode) banner.remove(); }, 10000);
+}
+
+function resetReception() {
+  document.getElementById('rec-type').value = '';
+  document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+  ['rec-name','rec-phone','rec-plate','rec-car','rec-staff','rec-note','rec-location','rec-rental-type'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('rec-rental-need').value = '不要';
+  document.getElementById('map-section').style.display = 'none';
+  document.getElementById('map-coords').textContent = '📌 未設定';
+  currentLat = null; currentLng = null;
+  if (currentMarker) { currentMarker.setMap(null); currentMarker = null; }
+  document.querySelectorAll('#checklist .check-item').forEach(el => {
+    el.querySelector('input').checked = false;
+    el.classList.remove('checked');
+  });
+  clearDamageMarks('rec');
+  clearSignature();
+  setDefaultDatetime();
+}
+
+// ===== RENTAL CARS =====
+let rentalCars = [];
+
+async function loadRentalCars() {
+  const el = document.getElementById('rental-car-list');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div>読み込み中...</div>';
+  try {
+    const cars = await sbFetch('rental_cars?select=*&order=name');
+    rentalCars = cars;
+    renderRentalCars(cars);
+  } catch (e) {
+    // フォールバック: 正式データ（Supabase レンタカーマスタ）
+    rentalCars = [
+      { id: '1',  name: 'ハイゼットトラック', plate: '浜松480わ1968',金額: 5500,  status: 'available' },
+      { id: '2',  name: 'ムーブ',             plate: '浜松580わ7781', 金額: 6050,  status: 'available' },
+      { id: '3',  name: 'ルークス',           plate: '浜松580わ5230', 金額: 6600,  status: 'available' },
+      { id: '4',  name: 'タント',             plate: '浜松580わ5379', 金額: 6600,  status: 'available' },
+      { id: '5',  name: 'ルーミー（黒）',     plate: '浜松501わ3047', 金額: 7700,  status: 'available' },
+      { id: '6',  name: 'ルーミー（赤）',     plate: '浜松501わ3989', 金額: 7700,  status: 'available' },
+      { id: '7',  name: 'ソリオ',             plate: '浜松501わ1188', 金額: 7700,  status: 'available' },
+      { id: '8',  name: 'アクア',             plate: '浜松501わ0062', 金額: 8800,  status: 'available' },
+      { id: '9',  name: 'プリウス',           plate: '浜松300わ5129', 金額: 11000, status: 'available' },
+      { id: '10', name: 'アルファード',       plate: '浜松300わ5267', 金額: 11000, status: 'available' },
+    ];
+    renderRentalCars(rentalCars);
+  }
+}
+
+function renderRentalCars(cars) {
+  const el = document.getElementById('rental-car-list');
+  if (!cars.length) { el.innerHTML = '<p style="color:var(--text2);font-size:13px;">レンタカーマスタにデータがありません</p>'; return; }
+  let html = '<div class="rental-car-grid">';
+  cars.forEach(car => {
+    const avail = car.status === 'available' || !car.status;
+    const cls = avail ? 'rental-car-card' : 'rental-car-card unavailable';
+    html += '<div class="' + cls + '" onclick="selectRentalCar(this,\'' + car.id + '\')" data-id="' + car.id + '">';
+    html += '<div class="car-avail ' + (avail ? 'available' : 'rented') + '"></div>';
+    html += '<div class="car-name">' + car.name + '</div>';
+    html += '<div class="car-plate">' + car.plate + '</div>';
+    if (car.type) html += '<div style="font-size:11px;color:var(--text2);margin-top:2px;">' + car.type + '</div>';
+    const fee = car['\u91d1\u984d'] || car.fee || car.price || null;
+    if (fee) html += '<div style="font-size:12px;color:var(--accent);font-weight:700;margin-top:3px;">\u00a5' + Number(fee).toLocaleString() + '/\u65e5</div>';
+    if (!avail) html += '<div style="font-size:11px;color:var(--orange);margin-top:2px;">\u8cb8\u51fa\u4e2d</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function selectRentalCar(el, id) {
+  const car = rentalCars.find(c => String(c.id) === String(id));
+  if (car && (car.status === 'rented')) { toast('この車両は貸出中です', 'error'); return; }
+  document.querySelectorAll('.rental-car-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('selected-car-id').value = id;
+}
+
+// ===== SEARCH CASE FOR RENTAL =====
+let allCases = [];
+async function searchCaseForRental() {
+  const q = document.getElementById('rental-case-search').value.trim();
+  if (!q) { document.getElementById('case-search-results').innerHTML = ''; return; }
+  // ローカルデータも検索
+  const local = JSON.parse(localStorage.getItem('local_cases') || '[]');
+  let results = local.filter(c =>
+    (c.customer_name && c.customer_name.includes(q)) ||
+    (c.plate && c.plate.includes(q)) ||
+    (c.id && String(c.id).includes(q))
+  );
+  try {
+    const remote = await sbFetch('receptions?select=id,customer_name,plate,type&or=(customer_name.ilike.*' + encodeURIComponent(q) + '*,plate.ilike.*' + encodeURIComponent(q) + '*)&limit=5');
+    results = [...remote, ...results].slice(0, 5);
+  } catch (e) {}
+
+  if (!results.length) { document.getElementById('case-search-results').innerHTML = '<p style="font-size:12px;color:var(--text2);padding:8px 0;">該当案件なし</p>'; return; }
+  let html = '<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">';
+  results.forEach(c => {
+    html += '<div onclick="selectCase(\'' + c.id + '\',\'' + (c.customer_name || '') + '\',\'' + (c.phone || '') + '\')" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:13px;" class="case-result-item">';
+    html += '<b>' + (c.customer_name || '-') + '</b> / ' + (c.plate || '-') + ' <span style="color:var(--text2);">(' + (c.type || '-') + ')</span>';
+    html += ' <span style="font-size:11px;color:var(--text2);">#' + c.id + '</span>';
+    html += '</div>';
+  });
+  html += '</div>';
+  document.getElementById('case-search-results').innerHTML = html;
+}
+
+function selectCase(id, name, phone) {
+  document.getElementById('rental-case-id').value = id;
+  document.getElementById('rental-customer-name').value = name;
+  if (phone) document.getElementById('rental-phone').value = phone;
+  document.getElementById('case-search-results').innerHTML = '';
+  document.getElementById('rental-case-search').value = name;
+  toast('案件 #' + id + ' を紐付けました', 'info');
+}
+
+// ===== SUBMIT RENTAL =====
+async function submitRental() {
+  const carId = document.getElementById('selected-car-id').value;
+  const name = document.getElementById('rental-customer-name').value.trim();
+  const license = document.getElementById('rental-license').value.trim();
+  const dateOut = document.getElementById('rental-date-out').value;
+  const kmOut = document.getElementById('rental-km-out').value;
+
+  if (!carId) { toast('貸出車両を選択してください', 'error'); return; }
+  if (!name) { toast('お客様氏名を入力してください', 'error'); return; }
+  if (!license) { toast('免許証番号を入力してください', 'error'); return; }
+  if (!dateOut) { toast('貸出日を入力してください', 'error'); return; }
+  if (!kmOut) { toast('貸出時走行距離を入力してください', 'error'); return; }
+
+  const sigCanvas = document.getElementById('sig-canvas-rental');
+  const sigData = sigCanvas.toDataURL();
+
+  const damageData = {};
+  ['svg-front-rental','svg-rear-rental','svg-left-rental','svg-right-rental','svg-top-rental'].forEach(id => {
+    damageData[id] = damageMarks[id] || [];
+  });
+
+  const payload = {
+    case_id: document.getElementById('rental-case-id').value || null,
+    car_id: carId,
+    customer_name: name,
+    phone: document.getElementById('rental-phone').value.trim(),
+    license_number: license,
+    license_expiry: document.getElementById('rental-license-exp').value || null,
+    date_out: dateOut,
+    time_out: document.getElementById('rental-time-out').value || null,
+    km_out: parseInt(kmOut),
+    fuel_out: document.getElementById('rental-fuel').value,
+    date_return_expected: document.getElementById('rental-date-return').value || null,
+    note: document.getElementById('rental-note').value.trim(),
+    damage_marks: JSON.stringify(damageData),
+    signature: sigData,
+    status: 'active'
+  };
+
+  try {
+    await sbFetch('rental_records', { method: 'POST', body: JSON.stringify(payload) });
+    // 車両状態を貸出中に
+    try {
+      await sbFetch('rental_cars?id=eq.' + carId, { method: 'PATCH', body: JSON.stringify({ status: 'rented' }) });
+    } catch (e2) {}
+    toast('🔑 貸出登録が完了しました！', 'success');
+    resetRental();
+    loadRentalCars();
+  } catch (e) {
+    const id = 'RLOC-' + Date.now();
+    const local = JSON.parse(localStorage.getItem('local_rentals') || '[]');
+    local.unshift({ id, ...payload, created_at: new Date().toISOString() });
+    localStorage.setItem('local_rentals', JSON.stringify(local));
+    toast('🔑 貸出登録しました（ローカル保存）', 'success');
+    resetRental();
+  }
+}
+
+function resetRental() {
+  ['rental-customer-name','rental-phone','rental-license','rental-km-out','rental-note','rental-case-id','rental-case-search'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('rental-license-exp').value = '';
+  document.getElementById('rental-date-return').value = '';
+  document.getElementById('rental-fuel').value = '満タン';
+  document.getElementById('selected-car-id').value = '';
+  document.querySelectorAll('.rental-car-card').forEach(c => c.classList.remove('selected'));
+  clearDamageMarks('rental');
+  clearRentalSignature();
+  setDefaultDatetime();
+}
+
+// ===== CASE LIST =====
+async function loadCases() {
+  const el = document.getElementById('case-list-body');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div>読み込み中...</div>';
+  let cases = [];
+  try {
+    cases = await sbFetch('receptions?select=*&order=created_at.desc&limit=100');
+  } catch (e) {}
+  // ローカルも合算
+  const local = JSON.parse(localStorage.getItem('local_cases') || '[]');
+  allCases = [...cases, ...local.filter(l => !cases.find(c => String(c.id) === String(l.id)))];
+  renderCaseList(allCases);
+}
+
+function filterList() {
+  const q = document.getElementById('list-search').value.toLowerCase();
+  const type = document.getElementById('list-filter-type').value;
+  const filtered = allCases.filter(c => {
+    const matchQ = !q || (c.customer_name && c.customer_name.toLowerCase().includes(q)) || (c.plate && c.plate.toLowerCase().includes(q));
+    const matchType = !type || c.type === type;
+    return matchQ && matchType;
+  });
+  renderCaseList(filtered);
+}
+
+function renderCaseList(cases) {
+  const el = document.getElementById('case-list-body');
+  if (!cases.length) { el.innerHTML = '<p style="color:var(--text2);padding:20px 0;text-align:center;">案件がありません</p>'; return; }
+
+  const statusMap = { 'レッカー': 'badge-new', '修理入庫': 'badge-inprogress', '板金塗装': 'badge-inprogress', '車検': 'badge-new', 'その他': 'badge-done' };
+  let html = '<div style="overflow-x:auto;"><table class="data-table"><thead><tr>';
+  html += '<th>受付日時</th><th>種別</th><th>お客様</th><th>ナンバー</th><th>車種</th><th>レンタカー</th><th>操作</th>';
+  html += '</tr></thead><tbody>';
+  cases.forEach(c => {
+    const dt = c.reception_datetime || c.created_at || '';
+    const dtStr = dt ? new Date(dt).toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
+    const badgeCls = statusMap[c.type] || 'badge-done';
+    const rentalBadge = c.rental_needed === '必要' ? '<span class="badge badge-rental">要手配</span>' : (c.rental_needed === '未定' ? '<span class="badge" style="background:#f3f4f6;color:#6b7280;">未定</span>' : '');
+    html += '<tr>';
+    html += '<td style="white-space:nowrap;">' + dtStr + '</td>';
+    html += '<td><span class="badge ' + badgeCls + '">' + (c.type || '-') + '</span></td>';
+    html += '<td>' + (c.customer_name || '-') + '</td>';
+    html += '<td style="white-space:nowrap;">' + (c.plate || '-') + '</td>';
+    html += '<td>' + (c.car_model || '-') + '</td>';
+    html += '<td>' + rentalBadge + '</td>';
+    html += '<td><button class="btn btn-secondary btn-sm" onclick="openCaseDetail(' + JSON.stringify(JSON.stringify(c)).slice(1,-1) + ')">詳細</button></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+
+function openCaseDetail(jsonStr) {
+  try {
+    const c = JSON.parse(jsonStr);
+    const dt = c.reception_datetime || c.created_at || '';
+    const dtStr = dt ? new Date(dt).toLocaleString('ja-JP') : '-';
+    alert('【案件詳細】\n\n' +
+      '受付日時: ' + dtStr + '\n' +
+      '種別: ' + (c.type || '-') + '\n' +
+      'お客様: ' + (c.customer_name || '-') + '\n' +
+      '電話: ' + (c.phone || '-') + '\n' +
+      'ナンバー: ' + (c.plate || '-') + '\n' +
+      '車種: ' + (c.car_model || '-') + '\n' +
+      '担当: ' + (c.staff || '-') + '\n' +
+      '備考: ' + (c.note || '-') + '\n' +
+      'レンタカー: ' + (c.rental_needed || '-') + '\n' +
+      '現場住所: ' + (c.location_address || '-')
+    );
+  } catch (e) {}
+}
+
+// ===== INIT =====
+loadRentalCars();
+// マップを受付タブのマップコンテナに紐付け
+document.getElementById('rec-location').addEventListener('focus', () => {
+  if (!map) initMapInline();
+});
+</script>
+</body>
+</html>
