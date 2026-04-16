@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>フォーラムオート 写真撮影</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#1a1a2e;color:white;min-height:100vh;}
+
+  .header{background:linear-gradient(135deg,#1a3a6b,#2196f3);padding:14px 16px;display:flex;align-items:center;gap:10px;}
+  .header-logo{font-size:18px;font-weight:bold;}
+  .header-sub{font-size:11px;opacity:0.8;}
+
+  .session-info{background:#0d1b3e;padding:12px 16px;border-bottom:1px solid #2a3a5e;}
+  .session-info .label{font-size:10px;color:#90a4ae;margin-bottom:2px;}
+  .session-info .value{font-size:14px;font-weight:bold;color:#64b5f6;}
+
+  .category-tabs{display:flex;background:#0d1b3e;border-bottom:2px solid #1565c0;}
+  .cat-tab{flex:1;padding:12px 6px;text-align:center;font-size:11px;font-weight:bold;cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s;}
+  .cat-tab.active{color:#64b5f6;border-bottom-color:#2196f3;background:#1a2a4e;}
+  .cat-tab .count{display:inline-block;background:#e53935;color:white;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:3px;}
+  .cat-tab.active .count{background:#2196f3;}
+
+  .upload-area{padding:16px;}
+
+  .shoot-btn{width:100%;padding:18px;font-size:16px;font-weight:bold;border:none;border-radius:14px;cursor:pointer;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:10px;}
+  .shoot-btn.camera{background:linear-gradient(135deg,#1565c0,#2196f3);color:white;}
+  .shoot-btn.gallery{background:linear-gradient(135deg,#1a237e,#3949ab);color:white;line-height:1.4;}
+  .shoot-btn:active{opacity:0.8;transform:scale(0.98);}
+
+  input[type=file]{display:none;}
+
+  .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;}
+  .photo-item{position:relative;aspect-ratio:4/3;border-radius:8px;overflow:hidden;border:2px solid #1565c0;}
+  .photo-item img{width:100%;height:100%;object-fit:cover;}
+  .photo-item .del-btn{position:absolute;top:3px;right:3px;background:rgba(229,57,53,0.9);color:white;border:none;border-radius:50%;width:22px;height:22px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .photo-count{font-size:11px;color:#90a4ae;margin-bottom:8px;}
+
+  .submit-area{position:fixed;bottom:0;left:0;right:0;background:#0d1b3e;padding:12px 16px;border-top:1px solid #1565c0;}
+  .submit-btn{width:100%;padding:16px;font-size:16px;font-weight:bold;border:none;border-radius:12px;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;cursor:pointer;}
+  .submit-btn:disabled{background:#37474f;color:#78909c;}
+  .submit-btn:active{opacity:0.8;}
+
+  .status{text-align:center;padding:8px;font-size:12px;border-radius:8px;margin-bottom:8px;display:none;}
+  .status.show{display:block;}
+  .status.loading{background:#1565c0;color:white;}
+  .status.success{background:#2e7d32;color:white;}
+  .status.error{background:#c62828;color:white;}
+
+  .empty-msg{text-align:center;padding:30px 16px;color:#546e7a;font-size:13px;}
+  .empty-msg .icon{font-size:48px;margin-bottom:10px;}
+
+  .done-screen{display:none;text-align:center;padding:40px 20px;}
+  .done-screen.show{display:block;}
+  .done-screen .icon{font-size:72px;margin-bottom:16px;}
+  .done-screen h2{font-size:22px;font-weight:bold;color:#64b5f6;margin-bottom:8px;}
+  .done-screen p{font-size:13px;color:#90a4ae;line-height:1.6;}
+
+  .pb{padding-bottom:80px;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-logo">📷 フォーラムオート</div>
+    <div class="header-sub">受付時写真撮影</div>
+  </div>
+</div>
+
+<div class="session-info" id="sessionInfo">
+  <div class="label">お客様</div>
+  <div class="value" id="customerName">読み込み中...</div>
+  <div style="font-size:11px;color:#64b5f6;margin-top:2px;" id="carInfo"></div>
+</div>
+
+<div class="category-tabs">
+  <div class="cat-tab" id="tab-photoIncoming" onclick="switchCat('photoIncoming',this)">
+    入庫時<span class="count" id="cnt-photoIncoming">0</span>
+  </div>
+  <div class="cat-tab" id="tab-photoWork" onclick="switchCat('photoWork',this)">
+    作業中<span class="count" id="cnt-photoWork">0</span>
+  </div>
+  <div class="cat-tab" id="tab-photoDone" onclick="switchCat('photoDone',this)">
+    完成<span class="count" id="cnt-photoDone">0</span>
+  </div>
+</div>
+
+<div class="upload-area pb">
+  <div class="status" id="status"></div>
+
+  <button class="shoot-btn camera" onclick="document.getElementById('cameraInput').click()">
+    📷 カメラで今すぐ撮影
+  </button>
+  <button class="shoot-btn gallery" onclick="document.getElementById('galleryInput').click()">
+    🖼 スマホのアルバムから選択<br><span style="font-size:11px;font-weight:normal;opacity:0.85">保存済み写真も送れます</span>
+  </button>
+
+  <input type="file" id="cameraInput" accept="image/*" capture="environment" multiple onchange="handleFiles(this.files)">
+  <input type="file" id="galleryInput" accept="image/*" multiple onchange="handleFiles(this.files)">
+
+  <div class="photo-count" id="photoCount"></div>
+  <div class="photo-grid" id="photoGrid"></div>
+
+  <div class="empty-msg" id="emptyMsg">
+    <div class="icon">📸</div>
+    <div>上のボタンで写真を撮影してください</div>
+  </div>
+</div>
+
+<div class="done-screen" id="doneScreen">
+  <div class="icon">✅</div>
+  <h2>送信完了！</h2>
+  <p id="doneMsg">写真をPCの見積ソフトに送信しました。</p>
+  <div style="margin-top:24px;display:flex;flex-direction:column;gap:12px;">
+    <button onclick="continueShoot()" style="padding:16px;font-size:15px;font-weight:bold;border:none;border-radius:12px;background:linear-gradient(135deg,#1565c0,#2196f3);color:white;cursor:pointer;">📷 続けて撮影する</button>
+    <button onclick="window.close()" style="padding:12px;font-size:13px;border:none;border-radius:12px;background:#37474f;color:white;cursor:pointer;">✕ 閉じる</button>
+  </div>
+</div>
+
+<div class="submit-area" id="submitArea">
+  <div class="status" id="submitStatus"></div>
+  <button class="submit-btn" id="submitBtn" onclick="submitPhotos()" disabled>
+    PCに送信する（0枚）
+  </button>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://uhppgdwbyrijnqpvusxw.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVocHBnZHdieXJpam5xcHZ1c3h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NDEyMDksImV4cCI6MjA4OTExNzIwOX0.mJ2GXQUsRZAZ-VL6XTVTz3gfG3MTNtfnWxsIPU_DK60';
+
+// URLパラメータからセッション情報を取得
+var params = new URLSearchParams(location.search);
+var sessionId = params.get('session');
+var estimateId = params.get('eid') || '';
+var customerName = params.get('name') || '（未設定）';
+var carInfo = params.get('car') || '';
+var initCat = params.get('cat') || 'photoIncoming';
+
+// 写真データ
+var photos = { photoIncoming:[], photoWork:[], photoDone:[] };
+var currentCat = initCat;
+
+// 初期化
+document.getElementById('customerName').textContent = decodeURIComponent(customerName);
+document.getElementById('carInfo').textContent = decodeURIComponent(carInfo);
+
+function switchCat(cat, el) {
+  currentCat = cat;
+  document.querySelectorAll('.cat-tab').forEach(function(t){ t.classList.remove('active'); });
+  el.classList.add('active');
+  renderGrid();
+}
+
+function compressImage(file) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onerror = function() { reject(new Error('読み込み失敗')); };
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onerror = function() { reject(new Error('画像変換失敗')); };
+      img.onload = function() {
+        try {
+          var canvas = document.createElement('canvas');
+          var maxW = 1280, maxH = 960;
+          var w = img.width, h = img.height;
+          if(w > maxW || h > maxH) {
+            var ratio = Math.min(maxW/w, maxH/h);
+            w = Math.round(w * ratio);
+            h = Math.round(h * ratio);
+          }
+          canvas.width = w;
+          canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.75));
+        } catch(err) {
+          reject(err);
+        }
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleFiles(files) {
+  if(!files || !files.length) return;
+  showStatus('loading', '写真を処理中... (0/' + files.length + ')');
+  var fileArray = Array.from(files);
+  var succeeded = 0;
+  for(var i = 0; i < fileArray.length; i++) {
+    try {
+      showStatus('loading', '写真を処理中... (' + (i+1) + '/' + fileArray.length + ')');
+      var compressed = await compressImage(fileArray[i]);
+      photos[currentCat].push(compressed);
+      succeeded++;
+    } catch(e) {
+      console.error('写真処理エラー:', e);
+    }
+  }
+  // inputリセット
+  document.getElementById('cameraInput').value = '';
+  document.getElementById('galleryInput').value = '';
+  if(succeeded > 0) {
+    showStatus('success', succeeded + '枚 追加しました');
+    setTimeout(function(){ hideStatus(); }, 1500);
+    renderGrid();
+    updateCounts();
+  } else {
+    showStatus('error', '写真の処理に失敗しました');
+  }
+}
+
+function renderGrid() {
+  var grid = document.getElementById('photoGrid');
+  var empty = document.getElementById('emptyMsg');
+  var list = photos[currentCat];
+  if(!list.length) {
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+    grid.innerHTML = list.map(function(src, i) {
+      return '<div class="photo-item">'
+        + '<img src="' + src + '">'
+        + '<button class="del-btn" onclick="deletePhoto(' + i + ')">×</button>'
+        + '</div>';
+    }).join('');
+  }
+  updateSubmitBtn();
+}
+
+function deletePhoto(idx) {
+  photos[currentCat].splice(idx, 1);
+  renderGrid();
+  updateCounts();
+}
+
+function updateCounts() {
+  ['photoIncoming','photoWork','photoDone'].forEach(function(cat) {
+    var el = document.getElementById('cnt-' + cat);
+    if(el) el.textContent = photos[cat].length;
+  });
+  updateSubmitBtn();
+}
+
+function updateSubmitBtn() {
+  var total = photos.photoIncoming.length + photos.photoWork.length + photos.photoDone.length;
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = (total === 0);
+  btn.textContent = total > 0 ? 'PCに送信する（' + total + '枚）' : 'PCに送信する（0枚）';
+}
+
+function showStatus(type, msg) {
+  var el = document.getElementById('status');
+  el.className = 'status show ' + type;
+  el.textContent = msg;
+}
+function hideStatus() {
+  document.getElementById('status').className = 'status';
+}
+
+async function submitPhotos() {
+  var total = photos.photoIncoming.length + photos.photoWork.length + photos.photoDone.length;
+  if(!total) return;
+
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '送信中...';
+
+  var ss = document.getElementById('submitStatus');
+  ss.className = 'status show loading';
+  ss.textContent = '📤 接続確認中...';
+
+  try {
+    // まずSupabaseへの接続を確認
+    var testResp = await fetch(SUPABASE_URL + '/rest/v1/photo_sessions?limit=1', {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    });
+    if(!testResp.ok) {
+      var testErr = await testResp.text();
+      throw new Error('接続エラー(' + testResp.status + '): ' + testErr);
+    }
+
+    ss.textContent = '📤 Supabaseに送信中...';
+
+    // 既存のセッションデータを削除
+    // 古いデータは残して新規追加（PC側がbase session_idでポーリング）
+    // DELETEはしない
+
+    // 送信ごとにユニークなsession_idを生成（ベース+タイムスタンプ）
+    var sendSessionId = (sessionId || 'manual') + '_' + Date.now();
+    var rows = [];
+    var cats = ['photoIncoming','photoWork','photoDone'];
+    cats.forEach(function(cat) {
+      photos[cat].forEach(function(dataUrl, i) {
+        rows.push({
+          session_id: sendSessionId,
+          estimate_id: estimateId,
+          category: cat,
+          data_url: dataUrl,
+          sort_order: i,
+          uploaded_at: new Date().toISOString()
+        });
+      });
+    });
+
+    // 写真は1枚ずつ送信（大容量対策）
+    ss.textContent = '📤 送信中 (0/' + rows.length + ')...';
+    for(var ri = 0; ri < rows.length; ri++){
+      ss.textContent = '📤 送信中 (' + (ri+1) + '/' + rows.length + ')...';
+      var resp = await fetch(SUPABASE_URL + '/rest/v1/photo_sessions', {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify(rows[ri])
+      });
+      if(!resp.ok) {
+        var errText = await resp.text();
+        throw new Error('送信失敗(' + (ri+1) + '枚目) HTTP' + resp.status + ': ' + errText);
+      }
+    }
+
+    ss.className = 'status show success';
+    ss.textContent = '✅ ' + total + '枚 送信完了！';
+
+    // 完了画面を表示
+    setTimeout(function() {
+      document.getElementById('doneMsg').textContent = total + '枚 PCに送信しました！';
+      document.getElementById('doneScreen').className = 'done-screen show';
+      document.getElementById('doneScreen').style.cssText = 'display:block;position:fixed;top:0;left:0;right:0;bottom:0;background:#1a1a2e;z-index:999;padding:40px 20px;';
+    }, 800);
+
+  } catch(e) {
+    ss.className = 'status show error';
+    ss.textContent = '⚠ 送信失敗: ' + e.message;
+    btn.disabled = false;
+    btn.textContent = 'PCに送信する（' + total + '枚）';
+  }
+}
+
+// 続けて撮影（完了画面から戻る）
+function continueShoot() {
+  // 完了画面を隠す
+  var done = document.getElementById('doneScreen');
+  done.className = 'done-screen';
+  done.style.cssText = '';
+  // 写真をリセット（新しいセッションで追加撮影可能）
+  photos = { photoIncoming:[], photoWork:[], photoDone:[] };
+  // 送信ステータスをリセット
+  var ss = document.getElementById('submitStatus');
+  ss.className = 'status';
+  // 最初のタブに戻る
+  currentCat = 'photoIncoming';
+  document.querySelectorAll('.cat-tab').forEach(function(t, i) {
+    t.classList.toggle('active', i === 0);
+  });
+  renderGrid();
+  updateCounts();
+}
+
+// 初期タブをcatパラメータで選択
+var initTabEl = document.getElementById('tab-' + initCat);
+if(initTabEl) {
+  document.querySelectorAll('.cat-tab').forEach(function(t){ t.classList.remove('active'); });
+  initTabEl.classList.add('active');
+}
+
+// 初期表示
+renderGrid();
+updateCounts();
+</script>
+</body>
+</html>
