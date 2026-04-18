@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>フォーラムオート 作業状況 TV</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;height:100%;overflow:hidden;background:#0a0f1e;color:white;font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;}
+
+.header{
+  background:linear-gradient(135deg,#0d1b3e,#1a3a6b);
+  border-bottom:2px solid #2196f3;
+  padding:10px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  height:66px;
+  flex-shrink:0;
+}
+.header-left{display:flex;align-items:center;gap:12px;}
+.logo{font-size:20px;font-weight:bold;color:#64b5f6;letter-spacing:1px;}
+.tagline{font-size:12px;color:#90a4ae;}
+.header-right{display:flex;align-items:center;gap:16px;}
+.home-btn{
+  display:flex;align-items:center;gap:5px;
+  padding:6px 14px;
+  background:rgba(255,255,255,0.15);
+  border-radius:8px;color:white;
+  text-decoration:none;font-size:13px;font-weight:bold;
+  border:1px solid rgba(255,255,255,0.2);
+}
+.home-btn:hover{background:rgba(255,255,255,0.25);}
+.clock-box{text-align:right;}
+.clock{font-size:30px;font-weight:bold;color:white;letter-spacing:2px;font-variant-numeric:tabular-nums;}
+.date-str{font-size:12px;color:#90a4ae;margin-top:1px;}
+
+.summary-bar{
+  display:flex;gap:0;
+  background:#0d1b3e;
+  border-bottom:1px solid #1a2a5e;
+  height:62px;
+  flex-shrink:0;
+}
+.sum-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid #1a2a5e;padding:4px;}
+.sum-item:last-child{border-right:none;}
+.sum-label{font-size:10px;color:#78909c;margin-bottom:2px;}
+.sum-value{font-size:24px;font-weight:900;line-height:1;}
+.sum-unit{font-size:10px;color:#78909c;}
+.sum-active{color:#64b5f6;}
+.sum-warn{color:#ffb74d;}
+.sum-ok{color:#81c784;}
+
+.kanban-wrap{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  gap:8px;
+  padding:8px 12px;
+  height:calc(100vh - 66px - 62px - 46px);
+  overflow:hidden;
+}
+.column{
+  background:#0d1b3e;
+  border-radius:10px;
+  border:1px solid #1a2a5e;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  min-height:0;
+}
+.col-header{
+  padding:8px 10px;
+  font-size:13px;font-weight:bold;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+}
+.col-count-badge{font-size:12px;font-weight:bold;background:rgba(255,255,255,0.15);padding:1px 8px;border-radius:10px;}
+.col-body{overflow-y:auto;flex:1;padding:5px;}
+.col-body::-webkit-scrollbar{width:3px;}
+.col-body::-webkit-scrollbar-thumb{background:#2a3a5e;border-radius:2px;}
+
+.h-受付{background:linear-gradient(135deg,#3949ab,#5c6bc0);}
+.h-見積中{background:linear-gradient(135deg,#e65100,#f57c00);}
+.h-作業待ち{background:linear-gradient(135deg,#01579b,#0288d1);}
+.h-板金中{background:linear-gradient(135deg,#6a1b9a,#8e24aa);}
+.h-塗装中{background:linear-gradient(135deg,#b71c1c,#d32f2f);}
+.h-完成{background:linear-gradient(135deg,#1b5e20,#2e7d32);}
+.h-納車済{background:linear-gradient(135deg,#37474f,#546e7a);}
+
+.case-card{
+  background:#111d3a;
+  border:1px solid #1e2d5a;
+  border-left:4px solid #2196f3;
+  border-radius:6px;
+  padding:8px 10px;
+  margin-bottom:6px;
+}
+.case-card.ins{border-left-color:#ef5350;}
+.case-card.own{border-left-color:#ffa726;}
+.case-card.done{border-left-color:#66bb6a;}
+.card-name{font-size:14px;font-weight:bold;color:#e3f2fd;margin-bottom:2px;}
+.card-car{font-size:11px;color:#90a4ae;margin-bottom:4px;}
+.card-badges{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:3px;}
+.cbadge{font-size:10px;padding:1px 6px;border-radius:6px;font-weight:bold;}
+.cbadge-ins{background:#1a237e;color:#90caf9;}
+.cbadge-own{background:#4e342e;color:#ffcc80;}
+.cbadge-staff{background:#1a237e;color:#ce93d8;}
+.cbadge-total{background:#1b5e20;color:#a5d6a7;}
+.card-date{font-size:10px;color:#546e7a;}
+
+.footer{
+  height:46px;background:#0d1b3e;border-top:1px solid #1a2a5e;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;font-size:12px;color:#546e7a;
+  flex-shrink:0;
+}
+.footer-marquee{overflow:hidden;flex:1;margin:0 16px;}
+.marquee-inner{white-space:nowrap;display:inline-block;animation:marquee 40s linear infinite;}
+@keyframes marquee{0%{transform:translateX(100vw);}100%{transform:translateX(-200%);}}`
+
+.update-dot{width:7px;height:7px;border-radius:50%;background:#2e7d32;display:inline-block;margin-right:5px;}
+.update-dot.blink{animation:blink 0.5s;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+</style>
+</head>
+<body style="display:flex;flex-direction:column;height:100vh;">
+
+<!-- ヘッダー -->
+<div class="header">
+  <div class="header-left">
+    <div>
+      <div class="logo">🏭 フォーラムオート 作業状況</div>
+      <div class="tagline">静岡県袋井市下山梨545　TEL: 0538-49-0632</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <a href="index_top.html" class="home-btn">🏠 ホームに戻る</a>
+    <div class="clock-box">
+      <div class="clock" id="clock">00:00:00</div>
+      <div class="date-str" id="dateStr"></div>
+    </div>
+  </div>
+</div>
+
+<!-- サマリーバー -->
+<div class="summary-bar">
+  <div class="sum-item"><div class="sum-label">進行中</div><div class="sum-value sum-active" id="s-active">-</div><div class="sum-unit">案件</div></div>
+  <div class="sum-item"><div class="sum-label">本日受付</div><div class="sum-value sum-warn" id="s-today">-</div><div class="sum-unit">台</div></div>
+  <div class="sum-item"><div class="sum-label">板金中</div><div class="sum-value" style="color:#ce93d8" id="s-bankin">-</div><div class="sum-unit">台</div></div>
+  <div class="sum-item"><div class="sum-label">塗装中</div><div class="sum-value" style="color:#ef9a9a" id="s-tosou">-</div><div class="sum-unit">台</div></div>
+  <div class="sum-item"><div class="sum-label">完成・納車待ち</div><div class="sum-value sum-ok" id="s-ready">-</div><div class="sum-unit">台</div></div>
+  <div class="sum-item"><div class="sum-label">代車貸出中</div><div class="sum-value sum-warn" id="s-rental">-</div><div class="sum-unit">台</div></div>
+  <div class="sum-item"><div class="sum-label">代車空き</div><div class="sum-value sum-ok" id="s-free">-</div><div class="sum-unit">台</div></div>
+</div>
+
+<!-- カンバン -->
+<div class="kanban-wrap" id="kanban">
+  <div style="color:#546e7a;padding:20px;grid-column:1/-1;text-align:center;">読み込み中...</div>
+</div>
+
+<!-- フッター -->
+<div class="footer">
+  <span><span class="update-dot" id="dot"></span><span id="lastUpdate">起動中...</span></span>
+  <div class="footer-marquee"><span class="marquee-inner" id="marquee">フォーラムオート　板金・塗装・修理・レッカー　TEL: 0538-49-0632　30秒自動更新</span></div>
+  <span>30秒自動更新</span>
+</div>
+
+<script>
+var SB_URL='https://uhppgdwbyrijnqpvusxw.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVocHBnZHdieXJpam5xcHZ1c3h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NDEyMDksImV4cCI6MjA4OTExNzIwOX0.mJ2GXQUsRZAZ-VL6XTVTz3gfG3MTNtfnWxsIPU_DK60';
+var STATUSES=['受付','見積中','作業待ち','板金中','塗装中','完成','納車済'];
+
+function updateClock(){
+  var n=new Date();
+  document.getElementById('clock').textContent=
+    String(n.getHours()).padStart(2,'0')+':'+
+    String(n.getMinutes()).padStart(2,'0')+':'+
+    String(n.getSeconds()).padStart(2,'0');
+  var days=['日','月','火','水','木','金','土'];
+  document.getElementById('dateStr').textContent=
+    n.getFullYear()+'年'+(n.getMonth()+1)+'月'+n.getDate()+'日（'+days[n.getDay()]+'）';
+}
+setInterval(updateClock,1000);
+updateClock();
+
+async function loadAll(){
+  var dot=document.getElementById('dot');
+  dot.classList.add('blink');
+  try{
+    var r=await fetch(SB_URL+'/rest/v1/estimates?status=neq.deleted&order=estimate_date.desc&limit=100&select=id,estimate_no,customer_name,car_name,plate,repair_type,repair_status,staff_name,delivery_date,estimate_date,grand_total',{
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
+    });
+    var estimates=r.ok?await r.json():[];
+    var rentals=[];
+    try{
+      var r2=await fetch(SB_URL+'/rest/v1/rental_cars?select=car_name,plate,status&order=car_name.asc',{
+        headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
+      });
+      if(r2.ok) rentals=await r2.json();
+    }catch(e){}
+    renderAll(estimates,rentals);
+    document.getElementById('lastUpdate').textContent='最終更新: '+new Date().toLocaleTimeString('ja-JP');
+  }catch(e){
+    document.getElementById('lastUpdate').textContent='エラー: '+e.message;
+  }
+  setTimeout(function(){ dot.classList.remove('blink'); },600);
+}
+
+function renderAll(estimates,rentals){
+  var today=new Date().toISOString().split('T')[0];
+  var active=estimates.filter(function(e){return e.repair_status!=='納車済';}).length;
+  var todayC=estimates.filter(function(e){return e.estimate_date===today;}).length;
+  var bankin=estimates.filter(function(e){return e.repair_status==='板金中';}).length;
+  var tosou=estimates.filter(function(e){return e.repair_status==='塗装中';}).length;
+  var ready=estimates.filter(function(e){return e.repair_status==='完成';}).length;
+  var rBusy=rentals.filter(function(r){return r.status==='貸出中';}).length;
+  var rFree=rentals.filter(function(r){return r.status==='空き';}).length;
+
+  document.getElementById('s-active').textContent=active;
+  document.getElementById('s-today').textContent=todayC;
+  document.getElementById('s-bankin').textContent=bankin;
+  document.getElementById('s-tosou').textContent=tosou;
+  document.getElementById('s-ready').textContent=ready;
+  document.getElementById('s-rental').textContent=rBusy;
+  document.getElementById('s-free').textContent=rFree;
+
+  var kanban=document.getElementById('kanban');
+  kanban.innerHTML=STATUSES.map(function(status){
+    var cards=estimates.filter(function(e){return (e.repair_status||'受付')===status;});
+    return '<div class="column">'
+      +'<div class="col-header h-'+status+'">'
+      +'<span>'+status+'</span>'
+      +'<span class="col-count-badge">'+cards.length+'</span>'
+      +'</div>'
+      +'<div class="col-body">'
+      +(cards.length===0
+        ?'<div style="text-align:center;color:#2a3a5e;padding:16px;font-size:12px;">─</div>'
+        :cards.map(function(e){return renderCard(e);}).join(''))
+      +'</div></div>';
+  }).join('');
+
+  var activeNames=estimates.filter(function(e){return e.repair_status!=='納車済';}).map(function(e){
+    return (e.customer_name||'')+'様（'+(e.car_name||'')+'）'+(e.repair_status||'');
+  }).join('　／　');
+  if(activeNames){
+    document.getElementById('marquee').textContent='【進行中案件】 '+activeNames;
+  }
+}
+
+function renderCard(e){
+  var repClass=e.repair_status==='完成'?'done':(e.repair_type==='own'?'own':'ins');
+  var total=e.grand_total?'¥'+Math.round(e.grand_total).toLocaleString():'';
+  return '<div class="case-card '+repClass+'">'
+    +'<div class="card-name">'+(e.customer_name||'未設定')+'　様</div>'
+    +'<div class="card-car">'+(e.car_name||'')+'　'+(e.plate||'')+'</div>'
+    +'<div class="card-badges">'
+    +(e.repair_type==='own'?'<span class="cbadge cbadge-own">自費</span>':'<span class="cbadge cbadge-ins">保険</span>')
+    +(e.staff_name?'<span class="cbadge cbadge-staff">'+e.staff_name+'</span>':'')
+    +(total?'<span class="cbadge cbadge-total">'+total+'</span>':'')
+    +'</div>'
+    +(e.delivery_date?'<div class="card-date">納車予定: '+e.delivery_date+'</div>':'')
+    +'</div>';
+}
+
+setInterval(loadAll,30000);
+loadAll();
+</script>
+</body>
+</html>
