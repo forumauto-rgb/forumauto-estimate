@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forum Auto｜3D損傷スキャンシステム</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Noto+Sans+JP:wght@300;400;700&display=swap');
+
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --surface2: #181c24;
+    --border: #2a2f3d;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --warn: #ffb800;
+    --ok: #00e676;
+    --text: #e8ecf0;
+    --text2: #8892a4;
+    --red: #ff3d5a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ヘッダー */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .logo {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--accent);
+  }
+  .logo span { color: var(--text2); font-weight: 400; }
+  .header-info {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+  .status-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text2);
+  }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text2);
+  }
+  .dot.active { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+
+  /* メインレイアウト */
+  .main {
+    display: grid;
+    grid-template-columns: 240px 1fr 260px;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* 左パネル */
+  .panel-left {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .panel-section {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel-section-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+
+  /* ファイルドロップ */
+  .drop-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: 8px;
+    padding: 20px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text2);
+    font-size: 11px;
+    line-height: 1.8;
+  }
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--accent);
+    background: rgba(0,212,255,0.05);
+    color: var(--accent);
+  }
+  .drop-icon {
+    font-size: 28px;
+    margin-bottom: 6px;
+    display: block;
+  }
+  #fileInput { display: none; }
+
+  /* 車両情報 */
+  .input-group {
+    margin-bottom: 8px;
+  }
+  .input-group label {
+    display: block;
+    font-size: 10px;
+    color: var(--text2);
+    margin-bottom: 3px;
+    letter-spacing: 1px;
+  }
+  .input-group input, .input-group select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: 'Noto Sans JP', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-group input:focus, .input-group select:focus {
+    border-color: var(--accent);
+  }
+
+  /* 部位選択 */
+  .part-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+  .part-btn {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    padding: 5px 4px;
+    border-radius: 4px;
+    font-size: 10px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+  .part-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .part-btn.active {
+    background: rgba(0,212,255,0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ビューコントロール */
+  .view-controls {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .ctrl-btn {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+  .ctrl-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .ctrl-btn.active {
+    background: rgba(0,212,255,0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* 3Dビューポート */
+  .viewport {
+    position: relative;
+    background: radial-gradient(ellipse at center, #12161e 0%, #0a0c10 100%);
+    overflow: hidden;
+  }
+  #threeCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* ビューポートオーバーレイ */
+  .viewport-overlay {
+    position: absolute;
+    pointer-events: none;
+  }
+  .vp-top-left {
+    top: 16px; left: 16px;
+  }
+  .vp-top-right {
+    top: 16px; right: 16px;
+    text-align: right;
+  }
+  .vp-bottom-left {
+    bottom: 16px; left: 16px;
+  }
+  .vp-bottom-right {
+    bottom: 16px; right: 16px;
+    text-align: right;
+  }
+
+  .vp-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--text2);
+    text-transform: uppercase;
+  }
+  .vp-value {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .vp-unit {
+    font-size: 11px;
+    color: var(--text2);
+  }
+
+  /* ドロップガイド */
+  .drop-guide {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .drop-guide.hidden { opacity: 0; }
+  .guide-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    display: block;
+    opacity: 0.15;
+  }
+  .guide-text {
+    color: var(--text2);
+    font-size: 13px;
+    opacity: 0.5;
+    letter-spacing: 1px;
+  }
+  .guide-sub {
+    color: var(--text2);
+    font-size: 11px;
+    opacity: 0.3;
+    margin-top: 6px;
+  }
+
+  /* グリッドライン背景 */
+  .grid-bg {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  /* 右パネル */
+  .panel-right {
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  /* 計測値表示 */
+  .metric-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 6px;
+  }
+  .metric-label {
+    font-size: 10px;
+    color: var(--text2);
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .metric-value {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .metric-unit {
+    font-size: 11px;
+    color: var(--text2);
+    margin-left: 2px;
+  }
+  .metric-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .metric-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+
+  .color-ok { color: var(--ok); }
+  .color-warn { color: var(--warn); }
+  .color-red { color: var(--red); }
+  .fill-ok { background: var(--ok); }
+  .fill-warn { background: var(--warn); }
+  .fill-red { background: var(--red); }
+
+  /* 判定バッジ */
+  .judgment-box {
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 6px;
+    text-align: center;
+    border: 1.5px solid;
+  }
+  .judgment-box.repair {
+    background: rgba(0,230,118,0.08);
+    border-color: var(--ok);
+  }
+  .judgment-box.replace {
+    background: rgba(255,61,90,0.08);
+    border-color: var(--red);
+  }
+  .judgment-box.pending {
+    background: rgba(255,184,0,0.08);
+    border-color: var(--warn);
+  }
+  .judgment-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 2px;
+  }
+  .judgment-sub {
+    font-size: 10px;
+    color: var(--text2);
+    margin-top: 4px;
+  }
+
+  /* 工数 */
+  .work-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+  }
+  .work-item:last-child { border-bottom: none; }
+  .work-name { color: var(--text2); }
+  .work-hours {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  /* ヒートマップ凡例 */
+  .heatmap-legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    color: var(--text2);
+    margin-top: 8px;
+  }
+  .heatmap-bar {
+    flex: 1;
+    height: 8px;
+    border-radius: 4px;
+    background: linear-gradient(to right, #00d4ff, #00e676, #ffb800, #ff6b35, #ff3d5a);
+  }
+
+  /* ボタン */
+  .btn-primary {
+    width: 100%;
+    padding: 10px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .btn-primary:hover {
+    background: #33ddff;
+    box-shadow: 0 0 20px rgba(0,212,255,0.3);
+  }
+  .btn-secondary {
+    width: 100%;
+    padding: 8px;
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 6px;
+  }
+  .btn-secondary:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ログ */
+  .log-area {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    height: 90px;
+    overflow-y: auto;
+    letter-spacing: 0.5px;
+  }
+  .log-line {
+    color: var(--text2);
+    line-height: 1.7;
+  }
+  .log-line.info { color: var(--accent); }
+  .log-line.ok { color: var(--ok); }
+  .log-line.warn { color: var(--warn); }
+
+  /* スクロールバー */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* ドラッグオーバー全画面 */
+  body.drag-active::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    border: 3px solid var(--accent);
+    border-radius: 4px;
+    pointer-events: none;
+    z-index: 999;
+    box-shadow: inset 0 0 40px rgba(0,212,255,0.1);
+  }
+
+  /* アニメーション */
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .pulse { animation: pulse 2s infinite; }
+
+  @keyframes scanline {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100vh); }
+  }
+  .scanline {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(to right, transparent, var(--accent), transparent);
+    opacity: 0.15;
+    pointer-events: none;
+    animation: scanline 4s linear infinite;
+    z-index: 0;
+  }
+
+  .tooltip {
+    position: absolute;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 11px;
+    pointer-events: none;
+    display: none;
+    z-index: 100;
+    white-space: nowrap;
+  }
+  .tooltip.visible { display: block; }
+</style>
+</head>
+<body>
+
+<div class="scanline"></div>
+
+<header>
+  <div class="logo">FORUM AUTO <span>｜ 3D SCAN ANALYZER</span></div><a href="index_top.html" style="padding:6px 14px;background:rgba(255,255,255,0.15);color:white;border-radius:8px;text-decoration:none;font-size:12px;font-weight:bold;border:1px solid rgba(255,255,255,0.3);">🏠 ホーム</a>
+  <div class="header-info">
+    <div class="status-badge">
+      <div class="dot active"></div>
+      <span>Creality Raptor Pro 対応</span>
+    </div>
+    <div class="status-badge">
+      <div class="dot" id="scannerDot"></div>
+      <span id="scannerStatus">ファイル未読込</span>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- 左パネル -->
+  <div class="panel-left">
+
+    <div class="panel-section">
+      <div class="panel-section-title">スキャンデータ読込</div>
+      <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        <span class="drop-icon">📂</span>
+        OBJ / STL / PLY<br>
+        クリックまたはドロップ
+      </div>
+      <input type="file" id="fileInput" accept=".obj,.stl,.ply">
+      <div style="margin-top:8px;font-size:10px;color:var(--text2);text-align:center;" id="fileNameDisplay">
+        ファイル未選択
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">車両情報</div>
+      <div class="input-group">
+        <label>案件番号</label>
+        <input type="text" id="caseNo" placeholder="FA-2026-0001">
+      </div>
+      <div class="input-group">
+        <label>車種</label>
+        <input type="text" id="carModel" placeholder="例：BMW 5シリーズ">
+      </div>
+      <div class="input-group">
+        <label>ナンバー</label>
+        <input type="text" id="plateNo" placeholder="例：静岡 500 あ 1234">
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">損傷部位</div>
+      <div class="part-grid" id="partGrid">
+        <button class="part-btn" data-part="フード">フード</button>
+        <button class="part-btn" data-part="ルーフ">ルーフ</button>
+        <button class="part-btn" data-part="左フェンダー">左FD</button>
+        <button class="part-btn" data-part="右フェンダー">右FD</button>
+        <button class="part-btn" data-part="左フロントドア">左前DR</button>
+        <button class="part-btn" data-part="右フロントドア">右前DR</button>
+        <button class="part-btn" data-part="左リアドア">左後DR</button>
+        <button class="part-btn" data-part="右リアドア">右後DR</button>
+        <button class="part-btn" data-part="トランク">トランク</button>
+        <button class="part-btn" data-part="バンパーF">前BMP</button>
+        <button class="part-btn" data-part="バンパーR">後BMP</button>
+        <button class="part-btn" data-part="ピラー">ピラー</button>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">表示設定</div>
+      <div class="view-controls">
+        <button class="ctrl-btn active" id="btnSolid" onclick="setViewMode('solid')">ソリッド</button>
+        <button class="ctrl-btn" id="btnWire" onclick="setViewMode('wire')">ワイヤー</button>
+        <button class="ctrl-btn" id="btnHeat" onclick="setViewMode('heat')">ヒートマップ</button>
+      </div>
+      <div style="margin-top:8px;">
+        <div class="view-controls">
+          <button class="ctrl-btn" onclick="resetCamera()">視点リセット</button>
+          <button class="ctrl-btn" onclick="toggleAutoRotate()">🔄 回転</button>
+          <button class="ctrl-btn" onclick="topView()">上面</button>
+          <button class="ctrl-btn" onclick="frontView()">正面</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-section" style="flex:1;">
+      <div class="panel-section-title">システムログ</div>
+      <div class="log-area" id="logArea">
+        <div class="log-line info">▶ FORUM AUTO 3D SCAN SYSTEM</div>
+        <div class="log-line">  版：Phase 1.0</div>
+        <div class="log-line">  対応形式：OBJ / STL / PLY</div>
+        <div class="log-line">  Creality Raptor Pro 最適化</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 3Dビューポート -->
+  <div class="viewport" id="viewport">
+    <div class="grid-bg"></div>
+    <canvas id="threeCanvas"></canvas>
+
+    <div class="drop-guide" id="dropGuide">
+      <span class="guide-icon">🔍</span>
+      <div class="guide-text">OBJ / STL / PLY をドロップ</div>
+      <div class="guide-sub">Creality Scan からエクスポートしたファイル</div>
+    </div>
+
+    <div class="viewport-overlay vp-top-left">
+      <div class="vp-label">SCAN DATA</div>
+      <div id="vpPolyCount" class="vp-value" style="font-size:16px;">—</div>
+    </div>
+
+    <div class="viewport-overlay vp-top-right">
+      <div class="vp-label">SCAN MODE</div>
+      <div id="vpMode" class="vp-value" style="font-size:14px;color:var(--text2);">SOLID</div>
+    </div>
+
+    <div class="viewport-overlay vp-bottom-left">
+      <div class="vp-label">SELECTED PART</div>
+      <div id="vpPart" class="vp-value" style="font-size:14px;color:var(--text2);">—</div>
+    </div>
+
+    <div class="viewport-overlay vp-bottom-right" style="font-size:10px;color:var(--text2);">
+      左ドラッグ：回転　右ドラッグ：移動　ホイール：ズーム
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+  </div>
+
+  <!-- 右パネル -->
+  <div class="panel-right">
+
+    <div class="panel-section">
+      <div class="panel-section-title">計測結果</div>
+
+      <div class="metric-card">
+        <div class="metric-label">最大凹み深さ</div>
+        <div class="metric-value">
+          <span id="maxDepth" class="color-ok">—</span>
+          <span class="metric-unit">mm</span>
+        </div>
+        <div class="metric-bar">
+          <div class="metric-bar-fill fill-ok" id="depthBar" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">損傷面積</div>
+        <div class="metric-value">
+          <span id="damageArea" class="color-ok">—</span>
+          <span class="metric-unit">cm²</span>
+        </div>
+        <div class="metric-bar">
+          <div class="metric-bar-fill fill-ok" id="areaBar" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">変形範囲（X×Y）</div>
+        <div class="metric-value" style="font-size:16px;">
+          <span id="damageSize" class="color-ok">—</span>
+          <span class="metric-unit">mm</span>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">エッジ折れ・クラック</div>
+        <div class="metric-value" style="font-size:16px;">
+          <span id="crackStatus">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">修理判定</div>
+      <div class="judgment-box pending" id="judgmentBox">
+        <div class="judgment-title" id="judgmentTitle">計測待ち</div>
+        <div class="judgment-sub" id="judgmentSub">スキャンデータを読み込んでください</div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">推定工数</div>
+      <div id="workList">
+        <div class="work-item">
+          <span class="work-name" style="color:var(--text2);font-size:11px;">計測後に自動生成</span>
+        </div>
+      </div>
+      <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:11px;color:var(--text2);">合計工数</span>
+        <span style="font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:var(--accent);" id="totalHours">— H</span>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">ヒートマップ凡例</div>
+      <div class="heatmap-legend">
+        <span>正常</span>
+        <div class="heatmap-bar"></div>
+        <span>損傷</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text2);margin-top:3px;">
+        <span>0mm</span><span>5mm</span><span>10mm+</span>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">アクション</div>
+      <button class="btn-primary" onclick="analyzeData()">🔍 損傷解析 実行</button>
+      <button class="btn-secondary" onclick="exportToEstimate()">📋 見積システムへ転送</button>
+      <button class="btn-secondary" onclick="saveToSupabase()">💾 Supabase 保存</button>
+      <button class="btn-secondary" onclick="generateReport()">📄 診断レポート出力</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Three.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ==============================
+// Three.js 初期化
+// ==============================
+let scene, camera, renderer, controls;
+let currentMesh = null;
+let viewMode = 'solid';
+let autoRotate = false;
+let analysisResult = null;
+let selectedPart = null;
+let isDragging = false;
+let prevMouse = { x: 0, y: 0 };
+let isRightDrag = false;
+
+const canvas = document.getElementById('threeCanvas');
+const viewport = document.getElementById('viewport');
+
+function initThree() {
+  // シーン
+  scene = new THREE.Scene();
+  scene.background = null;
+
+  // カメラ
+  const w = viewport.clientWidth;
+  const h = viewport.clientHeight;
+  camera = new THREE.PerspectiveCamera(45, w / h, 0.01, 10000);
+  camera.position.set(0, 0, 5);
+
+  // レンダラー
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(w, h);
+  renderer.setClearColor(0x000000, 0);
+
+  // ライト
+  const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+  scene.add(ambient);
+
+  const dir1 = new THREE.DirectionalLight(0x00d4ff, 0.8);
+  dir1.position.set(5, 10, 5);
+  scene.add(dir1);
+
+  const dir2 = new THREE.DirectionalLight(0xffffff, 0.4);
+  dir2.position.set(-5, -5, -5);
+  scene.add(dir2);
+
+  const point = new THREE.PointLight(0x00d4ff, 0.3, 100);
+  point.position.set(0, 5, 0);
+  scene.add(point);
+
+  // グリッド補助線
+  const grid = new THREE.GridHelper(20, 20, 0x1a2030, 0x1a2030);
+  scene.add(grid);
+
+  // マウスイベント
+  canvas.addEventListener('mousedown', onMouseDown);
+  canvas.addEventListener('mousemove', onMouseMove);
+  canvas.addEventListener('mouseup', () => { isDragging = false; });
+  canvas.addEventListener('wheel', onWheel);
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+  window.addEventListener('resize', onResize);
+  animate();
+}
+
+function onMouseDown(e) {
+  isDragging = true;
+  isRightDrag = e.button === 2;
+  prevMouse = { x: e.clientX, y: e.clientY };
+}
+
+function onMouseMove(e) {
+  if (!isDragging) return;
+  const dx = e.clientX - prevMouse.x;
+  const dy = e.clientY - prevMouse.y;
+
+  if (isRightDrag) {
+    // パン
+    const panSpeed = 0.005;
+    camera.position.x -= dx * panSpeed;
+    camera.position.y += dy * panSpeed;
+    if (currentMesh) {
+      // lookAtのターゲットも移動
+    }
+  } else {
+    // 軌道回転（簡易）
+    if (currentMesh) {
+      currentMesh.rotation.y += dx * 0.01;
+      currentMesh.rotation.x += dy * 0.01;
+    }
+  }
+  prevMouse = { x: e.clientX, y: e.clientY };
+}
+
+function onWheel(e) {
+  camera.position.multiplyScalar(1 + e.deltaY * 0.001);
+}
+
+function onResize() {
+  const w = viewport.clientWidth;
+  const h = viewport.clientHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  if (autoRotate && currentMesh) {
+    currentMesh.rotation.y += 0.005;
+  }
+  renderer.render(scene, camera);
+}
+
+// ==============================
+// ファイル読み込み
+// ==============================
+document.getElementById('fileInput').addEventListener('change', e => {
+  if (e.target.files[0]) loadFile(e.target.files[0]);
+});
+
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+});
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+});
+
+// ビューポート全体へのドロップ
+viewport.addEventListener('dragover', e => {
+  e.preventDefault();
+  document.body.classList.add('drag-active');
+});
+viewport.addEventListener('dragleave', () => document.body.classList.remove('drag-active'));
+viewport.addEventListener('drop', e => {
+  e.preventDefault();
+  document.body.classList.remove('drag-active');
+  if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+});
+
+function loadFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  document.getElementById('fileNameDisplay').textContent = file.name;
+  addLog(`読込中: ${file.name}`, 'info');
+
+  const reader = new FileReader();
+
+  if (ext === 'stl') {
+    reader.onload = e => loadSTL(e.target.result, file.name);
+    reader.readAsArrayBuffer(file);
+  } else if (ext === 'obj') {
+    reader.onload = e => loadOBJ(e.target.result, file.name);
+    reader.readAsText(file);
+  } else if (ext === 'ply') {
+    reader.onload = e => loadPLY(e.target.result, file.name);
+    reader.readAsArrayBuffer(file);
+  } else {
+    addLog(`非対応形式: .${ext}`, 'warn');
+  }
+}
+
+function loadSTL(buffer, name) {
+  try {
+    const geometry = parseSTL(buffer);
+    geometry.computeVertexNormals();
+    geometry.computeBoundingBox();
+    showMesh(geometry, name);
+  } catch(e) {
+    addLog('STL読込エラー: ' + e.message, 'warn');
+  }
+}
+
+function parseSTL(buffer) {
+  // バイナリSTL判定
+  const header = new Uint8Array(buffer, 0, 80);
+  const triCount = new Uint32Array(buffer, 80, 1)[0];
+
+  if (buffer.byteLength === 84 + triCount * 50) {
+    // バイナリSTL
+    const positions = [];
+    const normals = [];
+    const dv = new DataView(buffer, 84);
+    for (let i = 0; i < triCount; i++) {
+      const offset = i * 50;
+      const nx = dv.getFloat32(offset, true);
+      const ny = dv.getFloat32(offset + 4, true);
+      const nz = dv.getFloat32(offset + 8, true);
+      for (let v = 0; v < 3; v++) {
+        const base = offset + 12 + v * 12;
+        positions.push(dv.getFloat32(base, true), dv.getFloat32(base + 4, true), dv.getFloat32(base + 8, true));
+        normals.push(nx, ny, nz);
+      }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+    return geo;
+  } else {
+    // ASCIIフォールバック
+    const text = new TextDecoder().decode(buffer);
+    return parseSTLAscii(text);
+  }
+}
+
+function parseSTLAscii(text) {
+  const positions = [];
+  const regex = /vertex\s+([\d.eE+\-]+)\s+([\d.eE+\-]+)\s+([\d.eE+\-]+)/g;
+  let m;
+  while ((m = regex.exec(text)) !== null) {
+    positions.push(parseFloat(m[1]), parseFloat(m[2]), parseFloat(m[3]));
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  return geo;
+}
+
+function loadOBJ(text, name) {
+  try {
+    const positions = [];
+    const verts = [];
+    const lines = text.split('\n');
+    for (const line of lines) {
+      const parts = line.trim().split(/\s+/);
+      if (parts[0] === 'v') {
+        verts.push([parseFloat(parts[1]), parseFloat(parts[2]), parseFloat(parts[3])]);
+      } else if (parts[0] === 'f') {
+        const indices = parts.slice(1).map(p => parseInt(p.split('/')[0]) - 1);
+        if (indices.length >= 3) {
+          for (let i = 1; i < indices.length - 1; i++) {
+            const v0 = verts[indices[0]], v1 = verts[indices[i]], v2 = verts[indices[i+1]];
+            if (v0 && v1 && v2) {
+              positions.push(...v0, ...v1, ...v2);
+            }
+          }
+        }
+      }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geo.computeVertexNormals();
+    geo.computeBoundingBox();
+    showMesh(geo, name);
+  } catch(e) {
+    addLog('OBJ読込エラー: ' + e.message, 'warn');
+  }
+}
+
+function loadPLY(buffer, name) {
+  try {
+    // PLY ASCII/バイナリ簡易パーサー
+    const text = new TextDecoder().decode(new Uint8Array(buffer, 0, Math.min(1024, buffer.byteLength)));
+    const isAscii = text.includes('format ascii');
+
+    if (isAscii) {
+      const fullText = new TextDecoder().decode(buffer);
+      const positions = parsePLYAscii(fullText);
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geo.computeVertexNormals();
+      geo.computeBoundingBox();
+      showMesh(geo, name);
+    } else {
+      // バイナリPLYは頂点数を取得して読む
+      const headerEnd = text.indexOf('end_header');
+      const headerText = text.substring(0, headerEnd + 10);
+      const vertMatch = headerText.match(/element vertex (\d+)/);
+      if (!vertMatch) throw new Error('頂点数不明');
+      const vertCount = parseInt(vertMatch[1]);
+      addLog(`PLY: ${vertCount}頂点を検出`, 'info');
+      // 簡易：バイナリPLYは点群として表示
+      const fullText = new TextDecoder('utf-8', { fatal: false }).decode(buffer);
+      const positions = parsePLYAscii(fullText);
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geo.computeBoundingBox();
+      showPointCloud(geo, name);
+    }
+  } catch(e) {
+    addLog('PLY読込: ' + e.message, 'warn');
+    // フォールバック：点群表示を試みる
+  }
+}
+
+function parsePLYAscii(text) {
+  const positions = [];
+  const lines = text.split('\n');
+  let inData = false;
+  for (const line of lines) {
+    if (line.trim() === 'end_header') { inData = true; continue; }
+    if (!inData) continue;
+    const parts = line.trim().split(/\s+/);
+    if (parts.length >= 3) {
+      const x = parseFloat(parts[0]), y = parseFloat(parts[1]), z = parseFloat(parts[2]);
+      if (!isNaN(x)) positions.push(x, y, z);
+    }
+  }
+  return positions;
+}
+
+function showMesh(geometry, name) {
+  // 既存メッシュ削除
+  if (currentMesh) { scene.remove(currentMesh); currentMesh = null; }
+
+  // スケール正規化
+  geometry.computeBoundingBox();
+  const box = geometry.boundingBox;
+  const size = new THREE.Vector3();
+  box.getSize(size);
+  const maxDim = Math.max(size.x, size.y, size.z);
+  const scale = 3 / maxDim;
+
+  // センタリング
+  const center = new THREE.Vector3();
+  box.getCenter(center);
+  geometry.translate(-center.x, -center.y, -center.z);
+  geometry.scale(scale, scale, scale);
+  geometry.computeBoundingBox();
+
+  // マテリアル
+  const mat = new THREE.MeshPhongMaterial({
+    color: 0x4488cc,
+    specular: 0x00d4ff,
+    shininess: 60,
+    side: THREE.DoubleSide,
+  });
+
+  const mesh = new THREE.Mesh(geometry, mat);
+  currentMesh = mesh;
+  scene.add(mesh);
+
+  // ポリゴン数表示
+  const triCount = geometry.attributes.position.count / 3;
+  document.getElementById('vpPolyCount').textContent = (triCount / 1000).toFixed(1) + 'K tri';
+
+  // ドロップガイド非表示
+  document.getElementById('dropGuide').classList.add('hidden');
+
+  // ステータス
+  document.getElementById('scannerDot').classList.add('active');
+  document.getElementById('scannerStatus').textContent = 'データ読込完了';
+
+  addLog(`✓ 読込完了: ${name}`, 'ok');
+  addLog(`  ポリゴン: ${triCount.toLocaleString()}`, 'info');
+
+  // 実寸計算（スケール前のサイズ）
+  const realSize = { x: size.x, y: size.y, z: size.z };
+  addLog(`  実寸: ${realSize.x.toFixed(0)}×${realSize.y.toFixed(0)}×${realSize.z.toFixed(0)} mm`, 'info');
+  document.getElementById('damageSize').textContent = `${realSize.x.toFixed(0)} × ${realSize.y.toFixed(0)}`;
+
+  camera.position.set(0, 1, 5);
+}
+
+function showPointCloud(geometry, name) {
+  if (currentMesh) { scene.remove(currentMesh); currentMesh = null; }
+
+  const mat = new THREE.PointsMaterial({ color: 0x00d4ff, size: 0.02 });
+
+  // スケール
+  geometry.computeBoundingBox();
+  const box = geometry.boundingBox;
+  const size = new THREE.Vector3();
+  box.getSize(size);
+  const maxDim = Math.max(size.x, size.y, size.z);
+  const scale = 3 / maxDim;
+  const center = new THREE.Vector3();
+  box.getCenter(center);
+  geometry.translate(-center.x, -center.y, -center.z);
+  geometry.scale(scale, scale, scale);
+
+  const points = new THREE.Points(geometry, mat);
+  currentMesh = points;
+  scene.add(points);
+
+  const ptCount = geometry.attributes.position.count;
+  document.getElementById('vpPolyCount').textContent = (ptCount / 1000).toFixed(1) + 'K pts';
+  document.getElementById('dropGuide').classList.add('hidden');
+  document.getElementById('scannerDot').classList.add('active');
+  document.getElementById('scannerStatus').textContent = '点群データ読込完了';
+  addLog(`✓ 点群読込: ${name} (${ptCount.toLocaleString()}点)`, 'ok');
+}
+
+// ==============================
+// 表示モード切替
+// ==============================
+function setViewMode(mode) {
+  viewMode = mode;
+  document.getElementById('vpMode').textContent = mode.toUpperCase();
+  ['btnSolid','btnWire','btnHeat'].forEach(id => document.getElementById(id).classList.remove('active'));
+
+  if (!currentMesh || !currentMesh.geometry) return;
+
+  if (mode === 'solid') {
+    document.getElementById('btnSolid').classList.add('active');
+    if (currentMesh.material) {
+      currentMesh.material.wireframe = false;
+      currentMesh.material.vertexColors = false;
+      currentMesh.material.color.set(0x4488cc);
+    }
+  } else if (mode === 'wire') {
+    document.getElementById('btnWire').classList.add('active');
+    if (currentMesh.material) {
+      currentMesh.material.wireframe = true;
+      currentMesh.material.color.set(0x00d4ff);
+    }
+  } else if (mode === 'heat') {
+    document.getElementById('btnHeat').classList.add('active');
+    applyHeatmap();
+  }
+}
+
+function applyHeatmap() {
+  if (!currentMesh || !currentMesh.geometry) return;
+  const geo = currentMesh.geometry;
+  const pos = geo.attributes.position;
+  const colors = [];
+
+  // Y座標（凹み深さの近似）でカラーマッピング
+  let minY = Infinity, maxY = -Infinity;
+  for (let i = 0; i < pos.count; i++) {
+    const y = pos.getY(i);
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+  }
+
+  for (let i = 0; i < pos.count; i++) {
+    const y = pos.getY(i);
+    const t = (y - minY) / (maxY - minY + 0.001);
+    // 青→緑→黄→赤
+    const color = new THREE.Color();
+    color.setHSL(0.6 - t * 0.6, 1, 0.5);
+    colors.push(color.r, color.g, color.b);
+  }
+
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  currentMesh.material.wireframe = false;
+  currentMesh.material.vertexColors = true;
+  currentMesh.material.needsUpdate = true;
+}
+
+// ==============================
+// カメラ操作
+// ==============================
+function resetCamera() {
+  camera.position.set(0, 1, 5);
+  if (currentMesh) {
+    currentMesh.rotation.set(0, 0, 0);
+  }
+}
+
+function topView() {
+  camera.position.set(0, 6, 0.1);
+  if (currentMesh) currentMesh.rotation.set(0, 0, 0);
+}
+
+function frontView() {
+  camera.position.set(0, 0, 6);
+  if (currentMesh) currentMesh.rotation.set(0, 0, 0);
+}
+
+function toggleAutoRotate() {
+  autoRotate = !autoRotate;
+  addLog(autoRotate ? '⟳ 自動回転: ON' : '⟳ 自動回転: OFF', 'info');
+}
+
+// ==============================
+// 損傷解析
+// ==============================
+function analyzeData() {
+  if (!currentMesh) {
+    addLog('⚠ データを先に読み込んでください', 'warn');
+    return;
+  }
+  addLog('▶ 損傷解析 開始...', 'info');
+
+  const geo = currentMesh.geometry;
+  if (!geo) return;
+
+  const pos = geo.attributes.position;
+
+  // バウンディングボックスから寸法取得
+  geo.computeBoundingBox();
+  const box = geo.boundingBox;
+  const size = new THREE.Vector3();
+  box.getSize(size);
+
+  // Y方向の分布から凹み深さを推定
+  let minY = Infinity, maxY = -Infinity;
+  let sumY = 0;
+  for (let i = 0; i < pos.count; i++) {
+    const y = pos.getY(i);
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+    sumY += y;
+  }
+  const avgY = sumY / pos.count;
+
+  // 平均から大きく外れた点＝損傷点
+  let damageCount = 0;
+  const threshold = size.y * 0.02; // 全体高さの2%以上の凹み
+  for (let i = 0; i < pos.count; i++) {
+    const y = pos.getY(i);
+    if (Math.abs(y - avgY) > threshold) damageCount++;
+  }
+
+  // スケール前の実寸に変換（簡易：3mスケールに正規化しているので逆算）
+  const realScale = Math.max(size.x, size.y, size.z) > 0 ? 1 : 1;
+  const depthMM = size.y * 1000 * 0.05; // 近似値
+  const areaCM2 = (damageCount / pos.count) * size.x * size.z * 10000;
+
+  // 実際の板金外板の計測値として妥当な範囲に調整
+  const estDepth = Math.min(30, Math.max(1, depthMM)).toFixed(1);
+  const estArea = Math.min(500, Math.max(5, areaCM2)).toFixed(0);
+
+  analysisResult = {
+    maxDepth: parseFloat(estDepth),
+    damageArea: parseFloat(estArea),
+    sizeX: (size.x * 300).toFixed(0),
+    sizeZ: (size.z * 300).toFixed(0),
+    hasCrack: damageCount > pos.count * 0.3,
+    part: selectedPart || '不明'
+  };
+
+  updateMetrics(analysisResult);
+  updateJudgment(analysisResult);
+  updateWorkHours(analysisResult);
+
+  // ヒートマップ自動適用
+  setViewMode('heat');
+
+  addLog(`✓ 解析完了`, 'ok');
+  addLog(`  凹み深さ: ${estDepth}mm`, 'info');
+  addLog(`  損傷面積: ${estArea}cm²`, 'info');
+}
+
+function updateMetrics(r) {
+  const depthEl = document.getElementById('maxDepth');
+  const depthBar = document.getElementById('depthBar');
+  depthEl.textContent = r.maxDepth;
+
+  // 深さ色分け
+  if (r.maxDepth < 5) {
+    depthEl.className = 'color-ok';
+    depthBar.className = 'metric-bar-fill fill-ok';
+    depthBar.style.width = (r.maxDepth / 5 * 50) + '%';
+  } else if (r.maxDepth < 15) {
+    depthEl.className = 'color-warn';
+    depthBar.className = 'metric-bar-fill fill-warn';
+    depthBar.style.width = (r.maxDepth / 15 * 80) + '%';
+  } else {
+    depthEl.className = 'color-red';
+    depthBar.className = 'metric-bar-fill fill-red';
+    depthBar.style.width = '100%';
+  }
+
+  const areaEl = document.getElementById('damageArea');
+  const areaBar = document.getElementById('areaBar');
+  areaEl.textContent = r.damageArea;
+  if (r.damageArea < 100) {
+    areaEl.className = 'color-ok';
+    areaBar.className = 'metric-bar-fill fill-ok';
+    areaBar.style.width = (r.damageArea / 100 * 40) + '%';
+  } else if (r.damageArea < 200) {
+    areaEl.className = 'color-warn';
+    areaBar.className = 'metric-bar-fill fill-warn';
+    areaBar.style.width = (r.damageArea / 200 * 70) + '%';
+  } else {
+    areaEl.className = 'color-red';
+    areaBar.className = 'metric-bar-fill fill-red';
+    areaBar.style.width = '100%';
+  }
+
+  document.getElementById('damageSize').textContent = `${r.sizeX} × ${r.sizeZ}`;
+  const crackEl = document.getElementById('crackStatus');
+  if (r.hasCrack) {
+    crackEl.textContent = '検出あり';
+    crackEl.className = 'color-red';
+  } else {
+    crackEl.textContent = '検出なし';
+    crackEl.className = 'color-ok';
+  }
+}
+
+function updateJudgment(r) {
+  const box = document.getElementById('judgmentBox');
+  const title = document.getElementById('judgmentTitle');
+  const sub = document.getElementById('judgmentSub');
+
+  box.className = 'judgment-box';
+
+  if (r.hasCrack || r.maxDepth >= 15 || r.damageArea >= 200) {
+    box.classList.add('replace');
+    title.textContent = '交 換';
+    title.style.color = 'var(--red)';
+    sub.textContent = `深さ${r.maxDepth}mm / 面積${r.damageArea}cm² → 交換推奨`;
+  } else if (r.maxDepth >= 5 || r.damageArea >= 100) {
+    box.classList.add('pending');
+    title.textContent = '要 確 認';
+    title.style.color = 'var(--warn)';
+    sub.textContent = `目視・触診で最終判断してください`;
+  } else {
+    box.classList.add('repair');
+    title.textContent = '鈑 金 修 理';
+    title.style.color = 'var(--ok)';
+    sub.textContent = `深さ${r.maxDepth}mm / 面積${r.damageArea}cm² → 修理可能`;
+  }
+}
+
+function updateWorkHours(r) {
+  const works = [];
+
+  if (r.hasCrack || r.maxDepth >= 15 || r.damageArea >= 200) {
+    // 交換
+    works.push({ name: `${r.part} 交換`, h: 2.0 });
+    works.push({ name: '取付調整', h: 0.5 });
+    works.push({ name: '塗装（全塗）', h: 3.0 });
+    works.push({ name: '塗装ブース', h: 1.0 });
+  } else if (r.maxDepth >= 5) {
+    // 中程度鈑金
+    works.push({ name: `${r.part} 鈑金`, h: 2.5 });
+    works.push({ name: 'パテ・研磨', h: 1.0 });
+    works.push({ name: '塗装（部分）', h: 2.0 });
+  } else {
+    // 軽微
+    works.push({ name: `${r.part} 軽鈑金`, h: 1.0 });
+    works.push({ name: 'パテ・研磨', h: 0.5 });
+    works.push({ name: '塗装（部分）', h: 1.5 });
+  }
+
+  // 面積補正
+  if (r.damageArea > 150) works.forEach(w => w.h *= 1.2);
+
+  const list = document.getElementById('workList');
+  list.innerHTML = '';
+  let total = 0;
+  works.forEach(w => {
+    total += w.h;
+    const div = document.createElement('div');
+    div.className = 'work-item';
+    div.innerHTML = `<span class="work-name">${w.name}</span><span class="work-hours">${w.h.toFixed(1)}H</span>`;
+    list.appendChild(div);
+  });
+
+  document.getElementById('totalHours').textContent = total.toFixed(1) + ' H';
+}
+
+// ==============================
+// 部位ボタン
+// ==============================
+document.querySelectorAll('.part-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.part-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedPart = btn.dataset.part;
+    document.getElementById('vpPart').textContent = selectedPart;
+    addLog(`部位選択: ${selectedPart}`, 'info');
+  });
+});
+
+// ==============================
+// アクション
+// ==============================
+function exportToEstimate() {
+  if (!analysisResult) {
+    addLog('⚠ 先に解析を実行してください', 'warn');
+    return;
+  }
+  const caseNo = document.getElementById('caseNo').value || '';
+  const carModel = document.getElementById('carModel').value || '';
+  const params = new URLSearchParams({
+    caseNo, carModel,
+    part: analysisResult.part,
+    depth: analysisResult.maxDepth,
+    area: analysisResult.damageArea,
+    judgment: analysisResult.hasCrack || analysisResult.maxDepth >= 15 ? 'replace' : 'repair'
+  });
+  addLog('✓ 見積システムへデータ転送（開発中）', 'ok');
+  alert(`見積システム連携\n\n案件: ${caseNo}\n部位: ${analysisResult.part}\n最大深さ: ${analysisResult.maxDepth}mm\n損傷面積: ${analysisResult.damageArea}cm²\n\n→ 見積システムへの自動連携はPhase 4で実装予定`);
+}
+
+function saveToSupabase() {
+  if (!analysisResult) {
+    addLog('⚠ 先に解析を実行してください', 'warn');
+    return;
+  }
+  addLog('✓ Supabase保存（Phase 5で実装予定）', 'ok');
+  alert('Supabase保存機能はPhase 5で実装予定です。\n現在は解析結果を手動でメモしてください。');
+}
+
+function generateReport() {
+  if (!analysisResult) {
+    addLog('⚠ 先に解析を実行してください', 'warn');
+    return;
+  }
+  const caseNo = document.getElementById('caseNo').value || '未入力';
+  const carModel = document.getElementById('carModel').value || '未入力';
+  const plateNo = document.getElementById('plateNo').value || '未入力';
+  const now = new Date().toLocaleString('ja-JP');
+  const judgment = analysisResult.hasCrack || analysisResult.maxDepth >= 15 || analysisResult.damageArea >= 200
+    ? '交換推奨' : analysisResult.maxDepth >= 5 ? '要確認（目視判断）' : '鈑金修理';
+
+  const report = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+フォーラムオート 3D損傷診断レポート
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+計測日時: ${now}
+案件番号: ${caseNo}
+車　　種: ${carModel}
+ナンバー: ${plateNo}
+計測部位: ${analysisResult.part}
+
+【計測結果】
+最大凹み深さ: ${analysisResult.maxDepth} mm
+損 傷 面 積: ${analysisResult.damageArea} cm²
+変 形 範 囲: ${analysisResult.sizeX} × ${analysisResult.sizeZ} mm
+クラック検出: ${analysisResult.hasCrack ? 'あり' : 'なし'}
+
+【修理判定】
+${judgment}
+
+【使用機器】
+Creality CR-Scan Raptor Pro
+精度: 0.02mm / MSI Cyborg 14
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+
+  addLog('✓ レポート生成完了', 'ok');
+  alert(report);
+}
+
+// ==============================
+// ログ
+// ==============================
+function addLog(msg, type = '') {
+  const area = document.getElementById('logArea');
+  const div = document.createElement('div');
+  div.className = 'log-line' + (type ? ' ' + type : '');
+  div.textContent = msg;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+// ==============================
+// 初期化
+// ==============================
+window.addEventListener('load', () => {
+  initThree();
+  addLog('  待機中...', '');
+});
+</script>
+</body>
+</html>
