@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>標準工数マスタ管理 - フォーラムオート</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Hiragino Sans','Meiryo',sans-serif;background:#f0f2f5;color:#333;font-size:14px}
+header{background:#1a3a5c;color:#fff;padding:14px 20px;display:flex;align-items:center;gap:16px}
+header h1{font-size:18px;font-weight:700;letter-spacing:1px}
+header .badge{background:#e67e22;color:#fff;padding:3px 10px;border-radius:12px;font-size:12px}
+.toolbar{background:#fff;border-bottom:1px solid #ddd;padding:10px 16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.toolbar input[type=text]{border:1px solid #ccc;border-radius:6px;padding:6px 10px;font-size:13px;width:220px}
+.toolbar select{border:1px solid #ccc;border-radius:6px;padding:6px 8px;font-size:13px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:opacity .15s}
+.btn:hover{opacity:.85}
+.btn-blue{background:#1a3a5c;color:#fff}
+.btn-green{background:#27ae60;color:#fff}
+.btn-orange{background:#e67e22;color:#fff}
+.btn-red{background:#e74c3c;color:#fff}
+.btn-gray{background:#95a5a6;color:#fff}
+.stats{margin-left:auto;font-size:12px;color:#666;background:#f8f9fa;padding:5px 12px;border-radius:12px}
+.main{display:flex;height:calc(100vh - 110px)}
+.sidebar{width:220px;background:#fff;border-right:1px solid #ddd;overflow-y:auto;flex-shrink:0}
+.sidebar-title{padding:10px 12px;font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #eee;background:#fafafa}
+.part-item{padding:8px 12px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:12px;display:flex;align-items:center;justify-content:space-between;transition:background .1s}
+.part-item:hover{background:#eaf2fb}
+.part-item.active{background:#1a3a5c;color:#fff}
+.part-item.active .part-count{background:rgba(255,255,255,.3);color:#fff}
+.part-count{background:#ecf0f1;color:#7f8c8d;border-radius:10px;padding:1px 7px;font-size:11px}
+.content{flex:1;overflow:auto;padding:16px}
+.table-wrap{background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.08);overflow:hidden}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{background:#1a3a5c;color:#fff;padding:9px 10px;text-align:left;font-size:12px;font-weight:600;position:sticky;top:0;z-index:1}
+.tbl td{padding:7px 10px;border-bottom:1px solid #f0f0f0;font-size:13px;vertical-align:middle}
+.tbl tr:hover td{background:#f8fbff}
+.tbl input[type=text],.tbl input[type=number],.tbl select{border:1px solid #ddd;border-radius:4px;padding:4px 6px;font-size:12px;width:100%}
+.tbl input[type=number]{width:72px}
+.tbl input:focus,.tbl select:focus{outline:none;border-color:#1a3a5c}
+.tag-chip{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.tag-paint{background:#d5f5e3;color:#1e8449}
+.tag-remove{background:#fdebd0;color:#a04000}
+.tag-attach{background:#d6eaf8;color:#1a5276}
+.tag-replace{background:#e8daef;color:#6c3483}
+.tag-body{background:#fef9e7;color:#7d6608}
+.tag-other{background:#eaecee;color:#5d6d7e}
+.tag-confirm{background:#d1f2eb;color:#0e6655}
+.tag-booth{background:#fce4ec;color:#880e4f}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:10px;padding:24px;min-width:420px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+.modal h3{font-size:16px;margin-bottom:16px;color:#1a3a5c;padding-bottom:10px;border-bottom:1px solid #eee}
+.form-row{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.form-row label{font-size:12px;font-weight:600;color:#555}
+.form-row input,.form-row select,.form-row textarea{border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:13px}
+.form-row input:focus,.form-row select:focus{outline:none;border-color:#1a3a5c}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid #eee}
+.notify{position:fixed;bottom:20px;right:20px;background:#27ae60;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.2);opacity:0;transition:opacity .3s;z-index:200;pointer-events:none}
+.notify.show{opacity:1}
+.notify.err{background:#e74c3c}
+.empty-state{text-align:center;padding:60px 20px;color:#aaa}
+.empty-state svg{width:48px;height:48px;margin-bottom:12px;opacity:.4}
+#syncStatus{font-size:11px;color:#888;margin-left:8px}
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <h1>⚙ 標準工数マスタ管理</h1>
+    <a href="index_top.html" style="display:flex;align-items:center;gap:5px;padding:7px 16px;background:#1a2744;color:white;border-radius:8px;text-decoration:none;font-size:13px;font-weight:700;">🏠 ホームに戻る</a>
+  </div>
+  <span class="badge">フォーラムオート</span>
+  <span id="syncStatus">読込中...</span>
+</header>
+
+<div class="toolbar">
+  <input type="text" id="searchBox" placeholder="🔍 部位名・作業名で検索..." oninput="renderTable()">
+  <select id="tagFilter" onchange="renderTable()">
+    <option value="">全タグ</option>
+    <option value="paint">塗装</option>
+    <option value="remove">脱着</option>
+    <option value="attach">取付/交換</option>
+    <option value="body">板金</option>
+    <option value="replace">整備</option>
+    <option value="other">その他</option>
+    <option value="confirm">確認</option>
+    <option value="booth">ブース</option>
+  </select>
+  <button class="btn btn-green" onclick="openAddModal()">＋ 新規追加</button>
+  <button class="btn btn-blue" onclick="saveAll()">💾 Supabase保存</button>
+  <button class="btn btn-orange" onclick="importFromIndex()">📥 見積ソフトから読込</button>
+  <span class="stats" id="statsBar">0件</span>
+</div>
+
+<div class="main">
+  <div class="sidebar">
+    <div class="sidebar-title">部位グループ</div>
+    <div id="sidebarList"></div>
+  </div>
+  <div class="content">
+    <div class="table-wrap">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th style="width:180px">部位名</th>
+            <th style="width:180px">作業名</th>
+            <th style="width:90px">工程</th>
+            <th style="width:70px">タグ</th>
+            <th style="width:70px">工数(h)</th>
+            <th style="width:80px">操作</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div id="emptyState" class="empty-state" style="display:none">
+        <div style="font-size:40px">📋</div>
+        <div style="margin-top:8px">データがありません</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 追加/編集モーダル -->
+<div class="modal-bg" id="editModal">
+  <div class="modal">
+    <h3 id="modalTitle">新規追加</h3>
+    <div class="form-row">
+      <label>部位名</label>
+      <input type="text" id="fPartName" placeholder="例: フロントバンパー">
+    </div>
+    <div class="form-row">
+      <label>作業名</label>
+      <input type="text" id="fName" placeholder="例: フロントバンパー 本体">
+    </div>
+    <div class="form-row">
+      <label>工程</label>
+      <input type="text" id="fProcess" placeholder="例: 交換、取外し、修理...">
+    </div>
+    <div class="form-row">
+      <label>タグ</label>
+      <select id="fTag">
+        <option value="paint">塗装 (paint)</option>
+        <option value="remove">脱着 (remove)</option>
+        <option value="attach">取付/交換 (attach)</option>
+        <option value="body">板金 (body)</option>
+        <option value="replace">整備 (replace)</option>
+        <option value="other">その他 (other)</option>
+        <option value="confirm">確認 (confirm)</option>
+        <option value="booth">ブース (booth)</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>標準工数 (h)</label>
+      <input type="number" id="fHours" step="0.1" min="0" placeholder="0.0">
+    </div>
+    <div class="form-row">
+      <label>備考</label>
+      <input type="text" id="fMemo" placeholder="任意">
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-gray" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-green" onclick="saveRow()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="notify" id="notify"></div>
+
+<script>
+const SUPABASE_URL = 'https://uhppgdwbyrijnqpvusxw.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVocHBnZHdieXJpam5xcHZ1c3h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NDEyMDksImV4cCI6MjA4OTExNzIwOX0.mJ2GXQUsRZAZ-VL6XTVTz3gfG3MTNtfnWxsIPU_DK60';
+
+let allData = []; // {id, part_name, name, process, tag, hours, memo, _dirty, _new, _del}
+let editIdx = null;
+let selectedPart = '';
+
+const TAG_LABELS = {paint:'塗装',remove:'脱着',attach:'取付',body:'板金',replace:'整備',other:'その他',confirm:'確認',booth:'ブース'};
+
+// Supabase fetch
+async function sbFetch(path, opts={}) {
+  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+    headers: {'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation', ...opts.headers},
+    ...opts
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.status === 204 ? null : res.json();
+}
+
+async function loadData() {
+  document.getElementById('syncStatus').textContent = '読込中...';
+  try {
+    const rows = await sbFetch('standard_hours?order=part_name.asc,id.asc');
+    allData = rows.map(r => ({...r, _dirty:false, _new:false, _del:false}));
+    document.getElementById('syncStatus').textContent = '✅ ' + allData.length + '件読込済';
+    renderSidebar();
+    renderTable();
+  } catch(e) {
+    document.getElementById('syncStatus').textContent = '⚠ 未接続（ローカルモード）';
+    showNotify('Supabase接続エラー。ローカルで作業できます。', true);
+  }
+}
+
+function renderSidebar() {
+  const parts = [...new Set(allData.filter(r=>!r._del).map(r=>r.part_name))].sort();
+  const list = document.getElementById('sidebarList');
+  let h = '<div class="part-item' + (selectedPart===''?' active':'') + '" onclick="selectPart(\'\')"><span>すべて</span><span class="part-count">' + allData.filter(r=>!r._del).length + '</span></div>';
+  parts.forEach(p => {
+    const cnt = allData.filter(r=>!r._del && r.part_name===p).length;
+    h += '<div class="part-item' + (selectedPart===p?' active':'') + '" onclick="selectPart(\'' + p.replace(/'/g,"\\'") + '\')"><span>' + p + '</span><span class="part-count">' + cnt + '</span></div>';
+  });
+  list.innerHTML = h;
+}
+
+function selectPart(p) {
+  selectedPart = p;
+  renderSidebar();
+  renderTable();
+}
+
+function renderTable() {
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  const tag = document.getElementById('tagFilter').value;
+  let rows = allData.filter(r => !r._del);
+  if (selectedPart) rows = rows.filter(r => r.part_name === selectedPart);
+  if (tag) rows = rows.filter(r => r.tag === tag);
+  if (q) rows = rows.filter(r => (r.part_name||'').toLowerCase().includes(q) || (r.name||'').toLowerCase().includes(q) || (r.process||'').toLowerCase().includes(q));
+  
+  document.getElementById('statsBar').textContent = rows.length + '件表示';
+  document.getElementById('emptyState').style.display = rows.length ? 'none' : 'block';
+
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = rows.map((r, i) => {
+    const realIdx = allData.indexOf(r);
+    const tagClass = 'tag-' + (r.tag||'other');
+    return '<tr>' +
+      '<td>' + esc(r.part_name) + '</td>' +
+      '<td>' + esc(r.name) + '</td>' +
+      '<td>' + esc(r.process) + '</td>' +
+      '<td><span class="tag-chip ' + tagClass + '">' + (TAG_LABELS[r.tag]||r.tag) + '</span></td>' +
+      '<td style="text-align:right;font-weight:600">' + (r.hours||0) + '</td>' +
+      '<td>' +
+        '<button class="btn btn-orange" style="padding:4px 8px;font-size:11px" onclick="openEdit(' + realIdx + ')">編集</button> ' +
+        '<button class="btn btn-red" style="padding:4px 8px;font-size:11px" onclick="delRow(' + realIdx + ')">削除</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function openAddModal() {
+  editIdx = null;
+  document.getElementById('modalTitle').textContent = '新規追加';
+  document.getElementById('fPartName').value = selectedPart || '';
+  document.getElementById('fName').value = '';
+  document.getElementById('fProcess').value = '';
+  document.getElementById('fTag').value = 'remove';
+  document.getElementById('fHours').value = '';
+  document.getElementById('fMemo').value = '';
+  document.getElementById('editModal').classList.add('open');
+}
+
+function openEdit(idx) {
+  editIdx = idx;
+  const r = allData[idx];
+  document.getElementById('modalTitle').textContent = '編集';
+  document.getElementById('fPartName').value = r.part_name||'';
+  document.getElementById('fName').value = r.name||'';
+  document.getElementById('fProcess').value = r.process||'';
+  document.getElementById('fTag').value = r.tag||'other';
+  document.getElementById('fHours').value = r.hours||'';
+  document.getElementById('fMemo').value = r.memo||'';
+  document.getElementById('editModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('editModal').classList.remove('open');
+}
+
+function saveRow() {
+  const pn = document.getElementById('fPartName').value.trim();
+  const nm = document.getElementById('fName').value.trim();
+  const pr = document.getElementById('fProcess').value.trim();
+  const tg = document.getElementById('fTag').value;
+  const hr = parseFloat(document.getElementById('fHours').value) || 0;
+  const me = document.getElementById('fMemo').value.trim();
+  if (!pn || !nm) { showNotify('部位名と作業名は必須です', true); return; }
+  if (editIdx !== null) {
+    allData[editIdx] = {...allData[editIdx], part_name:pn, name:nm, process:pr, tag:tg, hours:hr, memo:me, _dirty:true};
+  } else {
+    allData.push({part_name:pn, name:nm, process:pr, tag:tg, hours:hr, memo:me, _new:true, _dirty:false, _del:false});
+  }
+  closeModal();
+  renderSidebar();
+  renderTable();
+  showNotify('変更しました（未保存）');
+}
+
+function delRow(idx) {
+  if (!confirm('削除しますか？')) return;
+  if (allData[idx]._new) { allData.splice(idx,1); }
+  else { allData[idx]._del = true; }
+  renderSidebar();
+  renderTable();
+  showNotify('削除しました（未保存）');
+}
+
+async function saveAll() {
+  const toInsert = allData.filter(r => r._new && !r._del);
+  const toUpdate = allData.filter(r => r._dirty && !r._new && !r._del);
+  const toDelete = allData.filter(r => r._del && !r._new);
+  document.getElementById('syncStatus').textContent = '保存中...';
+  try {
+    for (const r of toDelete) {
+      await sbFetch('standard_hours?id=eq.'+r.id, {method:'DELETE'});
+    }
+    if (toInsert.length) {
+      const body = toInsert.map(r => ({part_name:r.part_name,name:r.name,process:r.process,tag:r.tag,hours:r.hours,memo:r.memo||''}));
+      await sbFetch('standard_hours', {method:'POST', body:JSON.stringify(body)});
+    }
+    for (const r of toUpdate) {
+      await sbFetch('standard_hours?id=eq.'+r.id, {method:'PATCH', body:JSON.stringify({part_name:r.part_name,name:r.name,process:r.process,tag:r.tag,hours:r.hours,memo:r.memo||''})});
+    }
+    showNotify('✅ 保存完了！');
+    await loadData();
+  } catch(e) {
+    showNotify('❌ 保存エラー: ' + e.message, true);
+    document.getElementById('syncStatus').textContent = '⚠ 保存失敗';
+  }
+}
+
+// index.htmlのPARTS_DATAから一括インポート
+function importFromIndex() {
+  if (!confirm('見積ソフトの標準工数データを一括インポートします。\n既存データに追加されます。\nよろしいですか？')) return;
+  
+  // このページ自体には見積ソフトのデータがないため、ユーザーにペーストしてもらう
+  const json = prompt('見積ソフト(index.html)のPARTS_DATAのJSONをペーストしてください：\n（開発者ツールのコンソールで: JSON.stringify(PARTS_DATA) を実行してコピー）');
+  if (!json) return;
+  try {
+    const data = JSON.parse(json);
+    let count = 0;
+    Object.entries(data).forEach(([partName, items]) => {
+      items.forEach(item => {
+        if (item.hours && item.hours > 0) {
+          allData.push({
+            part_name: partName,
+            name: item.name||partName,
+            process: item.process||'',
+            tag: item.tag||'other',
+            hours: item.hours||0,
+            memo: '',
+            _new: true, _dirty: false, _del: false
+          });
+          count++;
+        }
+      });
+    });
+    renderSidebar();
+    renderTable();
+    showNotify(count + '件インポートしました（未保存）');
+  } catch(e) {
+    showNotify('JSONの解析に失敗しました', true);
+  }
+}
+
+function showNotify(msg, isErr=false) {
+  const el = document.getElementById('notify');
+  el.textContent = msg;
+  el.className = 'notify show' + (isErr ? ' err' : '');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// モーダル外クリックで閉じる
+document.getElementById('editModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+loadData();
+</script>
+</body>
+</html>
