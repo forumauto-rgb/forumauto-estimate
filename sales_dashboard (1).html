@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>売上分析 | フォーラムオート</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#f4f4f0;--surface:#fff;--border:#e0dfd8;
+  --text:#1a1a18;--text2:#6b6b65;--text3:#9b9b94;
+  --accent:#c0392b;--green:#1a7a52;--green-bg:#e8f5ee;
+  --amber:#b8620a;--amber-bg:#fef3e2;--blue:#1a5fa8;--blue-bg:#e8f0fb;
+  --red-bg:#fdecea;--radius:10px;--radius-sm:6px;
+  --kei:#1a5fa8;--kei-bg:#e8f0fb;
+  --futsuu:#1a7a52;--futsuu-bg:#e8f5ee;
+  --minivan:#b8620a;--minivan-bg:#fef3e2;
+}
+body{font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh;}
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;}
+.header h1{font-size:15px;font-weight:600;}
+.header-left{display:flex;align-items:center;gap:10px;}
+.dot-red{width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block;}
+a.home-btn{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);text-decoration:none;padding:5px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);}
+.container{max-width:1100px;margin:0 auto;padding:18px 20px 50px;}
+
+/* 説明バナー */
+.info-banner{background:var(--blue-bg);border:1px solid #b5d4f4;border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--blue);line-height:1.7;}
+.info-banner strong{font-weight:600;}
+
+/* 期間・フィルター */
+.period-bar{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.tabs{display:flex;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface);}
+.tab{padding:7px 14px;font-size:13px;border:none;background:transparent;cursor:pointer;color:var(--text2);font-family:inherit;transition:background 0.12s;}
+.tab.active{background:var(--accent);color:#fff;}
+.date-inputs{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);}
+.date-inputs input{padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--surface);color:var(--text);font-family:inherit;}
+.load-btn{margin-left:auto;padding:7px 18px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;cursor:pointer;font-family:inherit;}
+
+/* フィルター行 */
+.filter-row{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
+.filter-label{font-size:12px;color:var(--text3);margin-right:2px;}
+.ftab{padding:5px 12px;font-size:12px;border:1px solid var(--border);border-radius:20px;cursor:pointer;background:var(--surface);color:var(--text2);font-family:inherit;transition:all 0.12s;}
+.ftab.active{background:var(--text);color:#fff;border-color:var(--text);}
+.ftab.kei.active{background:var(--kei);border-color:var(--kei);}
+.ftab.futsuu.active{background:var(--futsuu);border-color:var(--futsuu);}
+.ftab.minivan.active{background:var(--minivan);border-color:var(--minivan);}
+.sep{width:1px;height:20px;background:var(--border);margin:0 4px;}
+
+/* 原価率パネル */
+.cost-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px 18px;margin-bottom:14px;}
+.cost-hdr{display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;}
+.cost-hdr h3{font-size:13px;font-weight:600;}
+.cost-hdr .hint{font-size:11px;color:var(--text3);}
+.cost-body{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:12px;}
+.sl-row{display:flex;flex-direction:column;gap:3px;}
+.sl-lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);}
+.sl-lbl strong{color:var(--accent);}
+.sl-desc{font-size:11px;color:var(--text3);line-height:1.5;}
+input[type=range]{width:100%;accent-color:var(--accent);}
+
+/* メトリクス */
+.section-head{font-size:12px;font-weight:600;color:var(--text3);letter-spacing:0.08em;margin-bottom:8px;margin-top:4px;}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px;}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px 15px;position:relative;}
+.metric.hl{border-color:var(--accent);border-width:2px;}
+.m-lbl{font-size:11px;color:var(--text3);margin-bottom:3px;letter-spacing:0.04em;}
+.m-val{font-size:20px;font-weight:700;color:var(--text);letter-spacing:-0.02em;}
+.m-val.g{color:var(--green);}
+.m-val.r{color:var(--accent);}
+.m-val.a{color:var(--amber);}
+.m-sub{font-size:11px;color:var(--text3);margin-top:3px;}
+.m-badge{position:absolute;top:10px;right:10px;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600;}
+.bg{background:var(--green-bg);color:var(--green);}
+.bb{background:var(--amber-bg);color:var(--amber);}
+.br{background:var(--red-bg);color:var(--accent);}
+
+/* 車格別サマリー */
+.grade-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.grade-card{border-radius:var(--radius);padding:12px 14px;border:1px solid transparent;}
+.grade-card.kei{background:var(--kei-bg);border-color:#b5d4f4;}
+.grade-card.futsuu{background:var(--futsuu-bg);border-color:#9FE1CB;}
+.grade-card.minivan{background:var(--minivan-bg);border-color:#FAC775;}
+.gc-title{font-size:11px;font-weight:600;margin-bottom:8px;}
+.kei .gc-title{color:var(--kei);}
+.futsuu .gc-title{color:var(--futsuu);}
+.minivan .gc-title{color:var(--minivan);}
+.gc-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;}
+.gc-lbl{color:var(--text2);}
+.gc-val{font-weight:600;}
+
+/* チャート */
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.cc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
+.cc.full{grid-column:1/-1;}
+.cc h3{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:6px;}
+.cc .ch-desc{font-size:11px;color:var(--text3);margin-bottom:10px;}
+.legend{display:flex;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+.legend span{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2);}
+.ld{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+
+/* テーブル */
+.tbl-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;overflow-x:auto;}
+.tbl-card h3{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:4px;}
+.tbl-card .tbl-desc{font-size:11px;color:var(--text3);margin-bottom:10px;}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:680px;}
+th{text-align:left;padding:7px 10px;color:var(--text3);font-weight:500;border-bottom:1px solid var(--border);font-size:11px;letter-spacing:0.04em;}
+td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text);}
+tr:last-child td{border-bottom:none;}
+tr.dr:hover td{background:var(--bg);cursor:pointer;}
+td.num{text-align:right;font-variant-numeric:tabular-nums;}
+td.pg{text-align:right;font-weight:600;color:var(--green);font-variant-numeric:tabular-nums;}
+td.pa{text-align:right;font-weight:600;color:var(--amber);font-variant-numeric:tabular-nums;}
+td.pr2{text-align:right;font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums;}
+.sb{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;}
+.sb-ins{background:var(--blue-bg);color:var(--blue);}
+.sb-self{background:var(--green-bg);color:var(--green);}
+.sb-kei{background:var(--kei-bg);color:var(--kei);}
+.sb-futsuu{background:var(--futsuu-bg);color:var(--futsuu);}
+.sb-minivan{background:var(--minivan-bg);color:var(--minivan);}
+
+/* モーダル */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--surface);border-radius:var(--radius);padding:22px;max-width:720px;width:100%;margin:auto;}
+.modal-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;}
+.modal-hdr h2{font-size:17px;font-weight:700;}
+.modal-sub{font-size:12px;color:var(--text3);margin-bottom:16px;}
+.close-btn{border:none;background:none;font-size:22px;cursor:pointer;color:var(--text2);padding:2px 8px;flex-shrink:0;}
+
+/* モーダル内グリッド */
+.dg4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:14px;}
+.dg2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.di{background:var(--bg);border-radius:var(--radius-sm);padding:10px 12px;}
+.di .dl{font-size:11px;color:var(--text3);margin-bottom:3px;}
+.di .dv{font-size:14px;font-weight:600;color:var(--text);}
+.di .dv.g{color:var(--green);}
+.di .dv.r{color:var(--accent);}
+.di .dv.a{color:var(--amber);}
+.di .dv.b{color:var(--blue);}
+
+/* 内訳バー */
+.breakdown{background:var(--bg);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;}
+.breakdown h4{font-size:12px;color:var(--text3);margin-bottom:12px;letter-spacing:0.04em;}
+.br-row{margin-bottom:10px;}
+.br-labels{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;}
+.br-lbl{color:var(--text2);}
+.br-nums{display:flex;gap:12px;}
+.br-num{color:var(--text);font-weight:600;}
+.br-cost{font-size:11px;color:var(--accent);}
+.br-profit{font-size:11px;color:var(--green);}
+.br-bar-wrap{height:8px;background:var(--border);border-radius:4px;position:relative;overflow:hidden;}
+.br-bar-c{height:8px;background:var(--accent);opacity:0.7;position:absolute;left:0;top:0;border-radius:4px 0 0 4px;}
+.br-bar-p{height:8px;background:var(--green);position:absolute;top:0;border-radius:0 4px 4px 0;}
+
+/* 合計バー */
+.total-bar{display:flex;height:20px;border-radius:4px;overflow:hidden;margin-bottom:14px;}
+.tb-labor{background:#1a5fa8;}
+.tb-parts{background:#e74c3c;}
+.tb-mat{background:#f59e0b;}
+.tb-legend{display:flex;gap:12px;margin-top:6px;flex-wrap:wrap;}
+.tb-legend span{font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px;}
+
+/* 過去履歴 */
+.hist-title{font-size:12px;color:var(--text3);margin-bottom:8px;letter-spacing:0.04em;}
+.ht{width:100%;border-collapse:collapse;font-size:12px;}
+.ht th{font-size:11px;color:var(--text3);padding:5px 8px;border-bottom:1px solid var(--border);font-weight:500;}
+.ht td{padding:7px 8px;border-bottom:1px solid var(--border);}
+.ht tr:last-child td{border-bottom:none;}
+.ht tr:hover td{background:var(--bg);}
+
+.loading{text-align:center;padding:30px;color:var(--text3);font-size:13px;}
+.err{background:var(--red-bg);color:var(--accent);border:1px solid #f5c6c6;border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;margin-bottom:14px;}
+
+@media(max-width:640px){
+  .charts{grid-template-columns:1fr;}
+  .cc.full{grid-column:1;}
+  .dg4{grid-template-columns:1fr 1fr;}
+  .grade-summary{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <span class="dot-red"></span>
+    <h1>売上分析ダッシュボード</h1>
+  </div>
+  <a href="index_top.html" class="home-btn">🏠 ホーム</a>
+</div>
+
+<div class="container">
+
+  <!-- 説明バナー -->
+  <div class="info-banner">
+    <strong>📖 使い方：</strong>
+    上の「期間タブ」で集計したい期間を選んで「読み込み」を押すと売上データが表示されます。
+    「保険 / 自費」で案件種別を絞り込み、「軽・普通・ミニバン」で車格別に絞り込めます。
+    原価率スライダーを動かすと粗利がリアルタイムで再計算されます。
+    案件一覧の行をタップすると<strong>1台ごとの詳細分析</strong>が開きます。
+  </div>
+
+  <!-- 期間バー -->
+  <div class="period-bar">
+    <div class="tabs">
+      <button class="tab" data-p="day">日</button>
+      <button class="tab active" data-p="week">週</button>
+      <button class="tab" data-p="month">月</button>
+      <button class="tab" data-p="year">年</button>
+      <button class="tab" data-p="custom">期間指定</button>
+    </div>
+    <div class="date-inputs" id="customRange" style="display:none;">
+      <input type="date" id="dateFrom">〜<input type="date" id="dateTo">
+    </div>
+    <button class="load-btn" id="loadBtn">読み込み</button>
+  </div>
+
+  <!-- フィルター -->
+  <div class="filter-row">
+    <span class="filter-label">種別：</span>
+    <button class="ftab active" data-cat="all">すべて</button>
+    <button class="ftab" data-cat="insurance">保険案件</button>
+    <button class="ftab" data-cat="self">自費案件</button>
+    <div class="sep"></div>
+    <span class="filter-label">車格：</span>
+    <button class="ftab kei" data-grade="all">すべて</button>
+    <button class="ftab kei" data-grade="kei">軽自動車</button>
+    <button class="ftab futsuu" data-grade="futsuu">普通車</button>
+    <button class="ftab minivan" data-grade="minivan">ミニバン</button>
+  </div>
+
+  <!-- 原価率設定 -->
+  <div class="cost-panel">
+    <div class="cost-hdr" id="costToggle">
+      <h3>⚙ 原価率設定</h3>
+      <span class="hint" id="costLbl">▲ 閉じる　※スライダーを動かすと粗利が自動で再計算されます</span>
+    </div>
+    <div id="costBody" class="cost-body">
+      <div class="sl-row">
+        <div class="sl-lbl"><span>工賃原価率</span><strong id="lv">60%</strong></div>
+        <input type="range" id="laborRate" min="0" max="100" value="60" step="1">
+        <div class="sl-desc">工賃売上のうち何%が原価か。<br>人件費・外注費などが含まれます。</div>
+      </div>
+      <div class="sl-row">
+        <div class="sl-lbl"><span>部品原価率</span><strong id="pv">80%</strong></div>
+        <input type="range" id="partsRate" min="0" max="100" value="80" step="1">
+        <div class="sl-desc">部品代売上のうち何%が仕入原価か。<br>通常は仕入値÷売値で設定します。</div>
+      </div>
+      <div class="sl-row">
+        <div class="sl-lbl"><span>材料原価率</span><strong id="mv">70%</strong></div>
+        <input type="range" id="matRate" min="0" max="100" value="70" step="1">
+        <div class="sl-desc">塗料・副資材などの原価率。<br>消耗品費の実績から設定します。</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="errArea"></div>
+
+  <!-- 全体サマリー -->
+  <div class="section-head">■ 全体サマリー（絞り込み結果）</div>
+  <div class="metrics" id="metricsArea"><div class="loading">読み込みボタンを押してください</div></div>
+
+  <!-- 車格別サマリー -->
+  <div class="section-head" id="gradeHead" style="display:none;">■ 車格別サマリー</div>
+  <div class="grade-summary" id="gradeArea" style="display:none;"></div>
+
+  <!-- チャート -->
+  <div class="charts" id="chartsArea" style="display:none;">
+    <div class="cc full">
+      <h3>売上・原価・粗利 日別推移</h3>
+      <div class="ch-desc">棒グラフ＝売上（青）と原価（赤）、折れ線＝粗利（緑）。粗利が大きいほど儲かっています。</div>
+      <div class="legend">
+        <span><span class="ld" style="background:#dbeafe;border:1px solid #1a5fa8"></span>売上</span>
+        <span><span class="ld" style="background:#fee2e2;border:1px solid #e74c3c"></span>原価</span>
+        <span><span class="ld" style="background:#1a7a52"></span>粗利（折れ線）</span>
+      </div>
+      <div style="position:relative;height:200px;"><canvas id="cTrend" role="img" aria-label="売上推移">推移</canvas></div>
+    </div>
+    <div class="cc">
+      <h3>保険 / 自費 売上構成</h3>
+      <div class="ch-desc">保険案件と自費案件の売上比率です。</div>
+      <div style="position:relative;height:170px;"><canvas id="cCat" role="img" aria-label="構成">構成</canvas></div>
+      <div class="legend" id="catLegend" style="justify-content:center;margin-top:8px;"></div>
+    </div>
+    <div class="cc">
+      <h3>粗利率分布（案件別）</h3>
+      <div class="ch-desc">粗利率が40%以上（緑）なら優良案件、25%未満（赤）は要改善です。</div>
+      <div style="position:relative;height:170px;"><canvas id="cMargin" role="img" aria-label="粗利率分布">粗利率</canvas></div>
+    </div>
+  </div>
+
+  <!-- 案件テーブル -->
+  <div class="tbl-card" id="tblArea" style="display:none;">
+    <h3>案件一覧</h3>
+    <div class="tbl-desc">行をタップすると1台ごとの詳細分析が開きます。車格の色：<span class="sb sb-kei">軽</span> <span class="sb sb-futsuu">普通</span> <span class="sb sb-minivan">ミニバン</span></div>
+    <table>
+      <thead>
+        <tr>
+          <th>見積番号</th><th>顧客名</th><th>車種</th><th>車格</th><th>種別</th>
+          <th style="text-align:right">売上</th>
+          <th style="text-align:right">原価</th>
+          <th style="text-align:right">粗利</th>
+          <th style="text-align:right">粗利率</th>
+          <th>担当</th>
+        </tr>
+      </thead>
+      <tbody id="tblBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 1台詳細モーダル -->
+<div class="modal-bg" id="detailModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h2 id="modalTitle">案件詳細</h2>
+      <button class="close-btn" id="modalClose">✕</button>
+    </div>
+    <div class="modal-sub" id="modalSub"></div>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<script>
+var SB='https://uhppgdwbyrijnqpvusxw.supabase.co';
+var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVocHBnZHdieXJpam5xcHZ1c3h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NDEyMDksImV4cCI6MjA4OTExNzIwOX0.mJ2GXQUsRZAZ-VL6XTVTz3gfG3MTNtfnWxsIPU_DK60';
+var HDR={'apikey':KEY,'Authorization':'Bearer '+KEY};
+var allEst=[],currentCat='all',currentGrade='all',currentPeriod='week',charts={};
+
+function fmt(n){return '¥'+Math.round(n).toLocaleString('ja-JP');}
+function fmtM(n){var v=Math.abs(Math.round(n));return (n<0?'-':'')+'¥'+(v>=10000?(v/10000).toFixed(1)+'万':v.toLocaleString('ja-JP'));}
+function lr(){return parseInt(document.getElementById('laborRate').value)/100;}
+function pr(){return parseInt(document.getElementById('partsRate').value)/100;}
+function mr(){return parseInt(document.getElementById('matRate').value)/100;}
+
+// 車格判定（車種名から推定）
+var KEI_WORDS=['ハイゼット','ムーブ','タント','ルーミー','ソリオ','ワゴンR','アルト','ミラ','コペン','N-BOX','NBOX','スペーシア','デイズ','eKワゴン','ジムニー','ラパン','フレア','ピクシス','サンバー','アクティ','バモス','ライフ','パレット','ザッツ','モコ','プレオ','ステラ','ルクラ','カスタム'];
+var MINIVAN_WORDS=['アルファード','ヴェルファイア','エルグランド','オデッセイ','ステップワゴン','ステップW','セレナ','ヴォクシー','ノア','エスクァイア','シエンタ','フリード','ストリーム','ウィッシュ','アイシス','プレマシー','MPV','ビアンテ','デリカ','エクスパンダー'];
+
+function detectGrade(carName){
+  var n=(carName||'').replace(/\s/g,'');
+  for(var i=0;i<KEI_WORDS.length;i++){if(n.indexOf(KEI_WORDS[i])>=0) return 'kei';}
+  for(var i=0;i<MINIVAN_WORDS.length;i++){if(n.indexOf(MINIVAN_WORDS[i])>=0) return 'minivan';}
+  return 'futsuu';
+}
+
+function detectCat(row){
+  return (row.repair_type||'').toLowerCase()==='insurance'?'insurance':'self';
+}
+
+function calcEst(row){
+  var sales=row.subtotal||0;
+  var laborCost=Math.round((row.labor_total||0)*lr());
+  var partsCost=Math.round((row.parts_total||0)*pr());
+  var matCost=Math.round((row.mat_total||0)*mr());
+  var cost=laborCost+partsCost+matCost;
+  var profit=sales-cost;
+  var rate=sales>0?Math.round(profit/sales*100):0;
+  return{sales:sales,cost:cost,profit:profit,rate:rate,laborCost:laborCost,partsCost:partsCost,matCost:matCost};
+}
+
+// スライダー
+['laborRate','partsRate','matRate'].forEach(function(id){
+  var lblId={laborRate:'lv',partsRate:'pv',matRate:'mv'}[id];
+  document.getElementById(id).addEventListener('input',function(){
+    document.getElementById(lblId).textContent=this.value+'%';
+    if(allEst.length) render();
+  });
+});
+
+// 原価率パネル開閉
+var costOpen=true;
+document.getElementById('costToggle').addEventListener('click',function(){
+  costOpen=!costOpen;
+  document.getElementById('costBody').style.display=costOpen?'grid':'none';
+  document.getElementById('costLbl').textContent=costOpen?'▲ 閉じる　※スライダーを動かすと粗利が自動で再計算されます':'▼ 開く';
+});
+
+// 期間タブ
+document.querySelectorAll('.tab[data-p]').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('.tab[data-p]').forEach(function(b){b.classList.remove('active');});
+    this.classList.add('active');
+    currentPeriod=this.dataset.p;
+    document.getElementById('customRange').style.display=currentPeriod==='custom'?'flex':'none';
+  });
+});
+
+// フィルタータブ（種別）
+document.querySelectorAll('.ftab[data-cat]').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('.ftab[data-cat]').forEach(function(b){b.classList.remove('active');});
+    this.classList.add('active');
+    currentCat=this.dataset.cat;
+    if(allEst.length) render();
+  });
+});
+
+// フィルタータブ（車格）
+document.querySelectorAll('.ftab[data-grade]').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('.ftab[data-grade]').forEach(function(b){b.classList.remove('active');});
+    this.classList.add('active');
+    currentGrade=this.dataset.grade;
+    if(allEst.length) render();
+  });
+});
+
+function getRange(){
+  var now=new Date(),from,to=new Date(now);
+  if(currentPeriod==='day'){from=new Date(now);from.setHours(0,0,0,0);}
+  else if(currentPeriod==='week'){from=new Date(now);from.setDate(now.getDate()-6);from.setHours(0,0,0,0);}
+  else if(currentPeriod==='month'){from=new Date(now.getFullYear(),now.getMonth(),1);}
+  else if(currentPeriod==='year'){from=new Date(now.getFullYear(),0,1);}
+  else{
+    var f=document.getElementById('dateFrom').value,t=document.getElementById('dateTo').value;
+    if(!f||!t){showErr('期間を指定してください');return null;}
+    from=new Date(f);to=new Date(t);to.setHours(23,59,59,999);
+  }
+  return{from:from.toISOString(),to:to.toISOString()};
+}
+
+function showErr(m){document.getElementById('errArea').innerHTML='<div class="err">'+m+'</div>';}
+function clearErr(){document.getElementById('errArea').innerHTML='';}
+
+document.getElementById('loadBtn').addEventListener('click',loadData);
+
+async function loadData(){
+  clearErr();
+  var range=getRange();
+  if(!range) return;
+  document.getElementById('metricsArea').innerHTML='<div class="loading">データ読み込み中...</div>';
+  document.getElementById('chartsArea').style.display='none';
+  document.getElementById('tblArea').style.display='none';
+  document.getElementById('gradeArea').style.display='none';
+  document.getElementById('gradeHead').style.display='none';
+  try{
+    var url=SB+'/rest/v1/estimates?select=*&created_at=gte.'+range.from+'&created_at=lte.'+range.to+'&order=created_at.desc&limit=500';
+    var res=await fetch(url,{headers:HDR});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    allEst=await res.json();
+    render();
+  }catch(e){
+    showErr('データ取得エラー: '+e.message);
+    document.getElementById('metricsArea').innerHTML='';
+  }
+}
+
+function getFiltered(){
+  return allEst.filter(function(r){
+    if(currentCat!=='all'&&detectCat(r)!==currentCat) return false;
+    if(currentGrade!=='all'&&detectGrade(r.car_name)!==currentGrade) return false;
+    return true;
+  });
+}
+
+function render(){
+  var est=getFiltered();
+  var totalS=0,totalC=0,totalP=0,totalL=0,totalPa=0,totalM=0;
+  var gradeStats={kei:{s:0,c:0,p:0,n:0},futsuu:{s:0,c:0,p:0,n:0},minivan:{s:0,c:0,p:0,n:0}};
+  var catStats={insurance:{s:0,p:0},self:{s:0,p:0}};
+
+  est.forEach(function(r){
+    var p=calcEst(r);
+    var grade=detectGrade(r.car_name);
+    var cat=detectCat(r);
+    totalS+=p.sales;totalC+=p.cost;totalP+=p.profit;
+    totalL+=(r.labor_total||0);totalPa+=(r.parts_total||0);totalM+=(r.mat_total||0);
+    gradeStats[grade].s+=p.sales;gradeStats[grade].c+=p.cost;gradeStats[grade].p+=p.profit;gradeStats[grade].n++;
+    catStats[cat].s+=p.sales;catStats[cat].p+=p.profit;
+  });
+
+  var count=est.length;
+  var pr2=totalS>0?Math.round(totalP/totalS*100):0;
+  var avg=count>0?Math.round(totalP/count):0;
+  var pc=pr2>=40?'g':pr2>=25?'a':'r';
+  var pb=pr2>=40?'bg':pr2>=25?'bb':'br';
+  var pl=pr2>=40?'優良（目標達成）':pr2>=25?'標準（改善余地あり）':'要改善';
+
+  // メトリクス
+  var h='';
+  h+='<div class="metric hl"><div class="m-lbl">粗利合計</div><div class="m-val '+pc+'">'+fmtM(totalP)+'</div><div class="m-sub">売上から原価を引いた利益</div></div>';
+  h+='<div class="metric"><div class="m-lbl">粗利率</div><div class="m-val '+pc+'">'+pr2+'%</div><span class="m-badge '+pb+'">'+pl+'</span></div>';
+  h+='<div class="metric"><div class="m-lbl">売上合計</div><div class="m-val">'+fmtM(totalS)+'</div><div class="m-sub">'+count+'件の合計（税抜）</div></div>';
+  h+='<div class="metric"><div class="m-lbl">原価合計</div><div class="m-val r">'+fmtM(totalC)+'</div><div class="m-sub">工賃+部品+材料の原価</div></div>';
+  h+='<div class="metric"><div class="m-lbl">案件数</div><div class="m-val">'+count+'件</div><div class="m-sub">平均単価 '+fmt(count>0?Math.round(totalS/count):0)+'</div></div>';
+  h+='<div class="metric"><div class="m-lbl">1件あたり粗利</div><div class="m-val '+pc+'">'+fmt(avg)+'</div><div class="m-sub">案件平均の粗利額</div></div>';
+  document.getElementById('metricsArea').innerHTML=h;
+
+  // 車格別サマリー
+  var gradeH='';
+  var gradeList=[{key:'kei',label:'軽自動車',cls:'kei'},{key:'futsuu',label:'普通車',cls:'futsuu'},{key:'minivan',label:'ミニバン',cls:'minivan'}];
+  gradeList.forEach(function(g){
+    var gs=gradeStats[g.key];
+    var gpr=gs.s>0?Math.round(gs.p/gs.s*100):0;
+    gradeH+='<div class="grade-card '+g.cls+'">';
+    gradeH+='<div class="gc-title">'+g.label+' ('+gs.n+'件)</div>';
+    gradeH+='<div class="gc-row"><span class="gc-lbl">売上</span><span class="gc-val">'+fmtM(gs.s)+'</span></div>';
+    gradeH+='<div class="gc-row"><span class="gc-lbl">粗利</span><span class="gc-val">'+fmtM(gs.p)+'</span></div>';
+    gradeH+='<div class="gc-row"><span class="gc-lbl">粗利率</span><span class="gc-val">'+gpr+'%</span></div>';
+    gradeH+='<div class="gc-row"><span class="gc-lbl">平均単価</span><span class="gc-val">'+fmt(gs.n>0?Math.round(gs.s/gs.n):0)+'</span></div>';
+    gradeH+='</div>';
+  });
+  document.getElementById('gradeArea').innerHTML=gradeH;
+  document.getElementById('gradeArea').style.display='grid';
+  document.getElementById('gradeHead').style.display='block';
+
+  document.getElementById('chartsArea').style.display='grid';
+  document.getElementById('tblArea').style.display='block';
+  drawTrend(est);
+  drawCat(catStats,totalS);
+  drawMargin(est);
+  drawTable(est);
+}
+
+function dc(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+
+function drawTrend(est){
+  dc('trend');
+  var g={};
+  est.forEach(function(r){
+    var d=(r.created_at||'').substring(0,10),p=calcEst(r);
+    if(!g[d])g[d]={s:0,c:0,p:0};
+    g[d].s+=p.sales;g[d].c+=p.cost;g[d].p+=p.profit;
+  });
+  var labels=Object.keys(g).sort();
+  charts['trend']=new Chart(document.getElementById('cTrend'),{
+    type:'bar',
+    data:{labels:labels,datasets:[
+      {label:'売上',data:labels.map(function(d){return Math.round(g[d].s);}),backgroundColor:'#dbeafe',borderColor:'#1a5fa8',borderWidth:1.5,order:2},
+      {label:'原価',data:labels.map(function(d){return Math.round(g[d].c);}),backgroundColor:'#fee2e2',borderColor:'#e74c3c',borderWidth:1.5,order:3},
+      {label:'粗利',data:labels.map(function(d){return Math.round(g[d].p);}),type:'line',borderColor:'#1a7a52',borderWidth:2.5,pointRadius:4,fill:false,tension:0.3,order:1}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{font:{size:11},autoSkip:true,maxTicksLimit:14}},
+        y:{ticks:{font:{size:11},callback:function(v){return '¥'+(Math.round(v)/10000).toFixed(0)+'万';}}}}}
+  });
+}
+
+function drawCat(catStats,totalS){
+  dc('cat');
+  var insS=catStats.insurance.s,selfS=catStats.self.s;
+  var total=insS+selfS||1;
+  document.getElementById('catLegend').innerHTML=
+    '<span><span class="ld" style="background:#1a5fa8"></span>保険 '+Math.round(insS/total*100)+'%</span>'+
+    '<span><span class="ld" style="background:#1a7a52"></span>自費 '+Math.round(selfS/total*100)+'%</span>';
+  charts['cat']=new Chart(document.getElementById('cCat'),{
+    type:'doughnut',
+    data:{labels:['保険案件','自費案件'],datasets:[{data:[insS,selfS],backgroundColor:['#1a5fa8','#1a7a52'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'60%'}
+  });
+}
+
+function drawMargin(est){
+  dc('margin');
+  var bins=[0,0,0,0,0,0,0,0,0,0];
+  est.forEach(function(r){var p=calcEst(r);if(p.sales>0&&p.rate<=100)bins[Math.min(Math.floor(p.rate/10),9)]++;});
+  charts['margin']=new Chart(document.getElementById('cMargin'),{
+    type:'bar',
+    data:{labels:['0-10%','10-20%','20-30%','30-40%','40-50%','50-60%','60-70%','70-80%','80-90%','90%+'],
+      datasets:[{data:bins,backgroundColor:bins.map(function(_,i){return i>=4?'#1a7a52':i>=2?'#f59e0b':'#e74c3c';})}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{font:{size:10},maxRotation:45,autoSkip:false}},y:{ticks:{font:{size:11},stepSize:1}}}}
+  });
+}
+
+function gradeLabel(g){return g==='kei'?'軽':g==='minivan'?'ミニバン':'普通車';}
+function gradeSbClass(g){return g==='kei'?'sb-kei':g==='minivan'?'sb-minivan':'sb-futsuu';}
+
+function drawTable(est){
+  var h='';
+  est.forEach(function(r){
+    var p=calcEst(r);
+    var grade=detectGrade(r.car_name);
+    var cat=detectCat(r);
+    var pc=p.rate>=40?'pg':p.rate>=25?'pa':'pr2';
+    var catHtml=cat==='insurance'?'<span class="sb sb-ins">保険</span>':'<span class="sb sb-self">自費</span>';
+    var gradeHtml='<span class="sb '+gradeSbClass(grade)+'">'+gradeLabel(grade)+'</span>';
+    var key=encodeURIComponent(r.id);
+    h+='<tr class="dr" onclick="openDetail(\''+key+'\')"><td>'+(r.estimate_no||'-')+'</td>';
+    h+='<td>'+(r.customer_name||'-')+'</td>';
+    h+='<td>'+(r.car_name||'-')+'</td>';
+    h+='<td>'+gradeHtml+'</td>';
+    h+='<td>'+catHtml+'</td>';
+    h+='<td class="num">'+fmt(p.sales)+'</td>';
+    h+='<td class="num" style="color:var(--accent)">'+fmt(p.cost)+'</td>';
+    h+='<td class="'+pc+'">'+fmt(p.profit)+'</td>';
+    h+='<td class="'+pc+'">'+p.rate+'%</td>';
+    h+='<td style="font-size:12px;color:var(--text2)">'+(r.staff_name||'-')+'</td></tr>';
+  });
+  document.getElementById('tblBody').innerHTML=h||'<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:20px;">データなし</td></tr>';
+}
+
+// 1台詳細モーダル
+function openDetail(safeId){
+  var id;
+  try{id=decodeURIComponent(safeId);}catch(e){return;}
+  var row=allEst.find(function(r){return r.id===id;});
+  if(!row) return;
+
+  var p=calcEst(row);
+  var grade=detectGrade(row.car_name);
+  var cat=detectCat(row);
+  var gradeName=gradeLabel(grade);
+  var catName=cat==='insurance'?'保険案件':'自費案件';
+
+  document.getElementById('modalTitle').textContent=(row.customer_name||'不明')+' 様';
+  document.getElementById('modalSub').textContent=
+    (row.car_name||'-')+' ／ '+gradeName+' ／ '+catName+' ／ 見積番号: '+(row.estimate_no||'-');
+
+  var labor=row.labor_total||0,parts=row.parts_total||0,mat=row.mat_total||0;
+  var maxV=Math.max(labor,parts,mat,1);
+  var pc=p.rate>=40?'g':p.rate>=25?'a':'r';
+
+  var h='';
+
+  // 基本情報4列
+  h+='<div class="dg4">';
+  h+='<div class="di"><div class="dl">売上（税抜）</div><div class="dv b">'+fmt(p.sales)+'</div></div>';
+  h+='<div class="di"><div class="dl">原価合計</div><div class="dv r">'+fmt(p.cost)+'</div></div>';
+  h+='<div class="di"><div class="dl">粗利</div><div class="dv '+pc+'">'+fmt(p.profit)+'</div></div>';
+  h+='<div class="di"><div class="dl">粗利率</div><div class="dv '+pc+'">'+p.rate+'%</div></div>';
+  h+='</div>';
+
+  // 案件情報
+  h+='<div class="dg4">';
+  h+='<div class="di"><div class="dl">見積日</div><div class="dv">'+(row.estimate_date||((row.created_at||'').substring(0,10))||'-')+'</div></div>';
+  h+='<div class="di"><div class="dl">担当者</div><div class="dv">'+(row.staff_name||'-')+'</div></div>';
+  h+='<div class="di"><div class="dl">保険会社</div><div class="dv">'+(row.ins_company||'-')+'</div></div>';
+  h+='<div class="di"><div class="dl">ナンバー</div><div class="dv">'+(row.plate||'-')+'</div></div>';
+  h+='</div>';
+
+  // 車両情報
+  h+='<div class="dg4">';
+  h+='<div class="di"><div class="dl">車格</div><div class="dv">'+gradeName+'</div></div>';
+  h+='<div class="di"><div class="dl">グレード係数</div><div class="dv">'+(row.grade_coef||'-')+'</div></div>';
+  h+='<div class="di"><div class="dl">塗装種別</div><div class="dv">'+(row.paint_type||'-')+'</div></div>';
+  h+='<div class="di"><div class="dl">クリア種別</div><div class="dv">'+(row.clear_type||'-')+'</div></div>';
+  h+='</div>';
+
+  // 売上内訳と原価バー
+  h+='<div class="breakdown">';
+  h+='<h4>売上内訳と原価（バーの赤＝原価・緑＝粗利）</h4>';
+
+  var items=[
+    {lbl:'工賃',sales:labor,cost:p.laborCost,color:'#1a5fa8'},
+    {lbl:'部品代',sales:parts,cost:p.partsCost,color:'#e74c3c'},
+    {lbl:'材料費',sales:mat,cost:p.matCost,color:'#f59e0b'}
+  ];
+  items.forEach(function(item){
+    if(item.sales<=0) return;
+    var profit2=item.sales-item.cost;
+    var costW=Math.round(item.cost/item.sales*100);
+    var profitW=100-costW;
+    h+='<div class="br-row">';
+    h+='<div class="br-labels"><span class="br-lbl">'+item.lbl+'</span>';
+    h+='<div class="br-nums"><span class="br-num">'+fmt(item.sales)+'</span><span class="br-cost">原価 '+fmt(item.cost)+'</span><span class="br-profit">粗利 '+fmt(profit2)+'</span></div></div>';
+    h+='<div class="br-bar-wrap"><div class="br-bar-c" style="width:'+costW+'%"></div><div class="br-bar-p" style="left:'+costW+'%;width:'+profitW+'%"></div></div>';
+    h+='</div>';
+  });
+
+  // 合計構成バー
+  var total3=labor+parts+mat||1;
+  var lw=Math.round(labor/total3*100),pw=Math.round(parts/total3*100),mw=100-lw-pw;
+  h+='<div style="margin-top:12px;"><div style="font-size:11px;color:var(--text3);margin-bottom:4px;">売上構成（工賃・部品・材料）</div>';
+  h+='<div class="total-bar"><div class="tb-labor" style="width:'+lw+'%"></div><div class="tb-parts" style="width:'+pw+'%"></div><div class="tb-mat" style="width:'+mw+'%"></div></div>';
+  h+='<div class="tb-legend"><span><span class="ld" style="background:#1a5fa8"></span>工賃 '+lw+'% ('+fmt(labor)+')</span><span><span class="ld" style="background:#e74c3c"></span>部品 '+pw+'% ('+fmt(parts)+')</span><span><span class="ld" style="background:#f59e0b"></span>材料 '+mw+'% ('+fmt(mat)+')</span></div>';
+  h+='</div></div>';
+
+  // 備考
+  if(row.memo){
+    h+='<div style="background:var(--bg);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:14px;font-size:13px;color:var(--text2);">📝 <strong>備考：</strong>'+row.memo+'</div>';
+  }
+
+  // 同一顧客の過去案件
+  var cn=row.customer_name||'';
+  if(cn){
+    var hist=allEst.filter(function(r){return r.customer_name===cn&&r.id!==row.id;}).slice(0,8);
+    if(hist.length>0){
+      h+='<div class="hist-title">同一顧客の過去案件（'+hist.length+'件）</div>';
+      h+='<table class="ht"><thead><tr><th>見積番号</th><th>車種</th><th>日付</th><th>保険会社</th><th style="text-align:right">売上</th><th style="text-align:right">粗利率</th><th>担当</th></tr></thead><tbody>';
+      hist.forEach(function(r){
+        var p2=calcEst(r);
+        var col=p2.rate>=40?'#1a7a52':p2.rate>=25?'#b8620a':'#c0392b';
+        h+='<tr>';
+        h+='<td>'+(r.estimate_no||'-')+'</td>';
+        h+='<td>'+(r.car_name||'-')+'</td>';
+        h+='<td>'+((r.estimate_date||r.created_at||'').substring(0,10))+'</td>';
+        h+='<td style="font-size:11px">'+(r.ins_company||'-')+'</td>';
+        h+='<td style="text-align:right">'+fmt(p2.sales)+'</td>';
+        h+='<td style="text-align:right;color:'+col+';font-weight:600">'+p2.rate+'%</td>';
+        h+='<td style="font-size:11px">'+(r.staff_name||'-')+'</td>';
+        h+='</tr>';
+      });
+      h+='</tbody></table>';
+    } else {
+      h+='<div style="font-size:12px;color:var(--text3);padding:8px 0;">この顧客の過去案件はありません。</div>';
+    }
+  }
+
+  document.getElementById('modalContent').innerHTML=h;
+  document.getElementById('detailModal').classList.add('open');
+}
+
+document.getElementById('modalClose').addEventListener('click',function(){document.getElementById('detailModal').classList.remove('open');});
+document.getElementById('detailModal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+</script>
+</body>
+</html>
