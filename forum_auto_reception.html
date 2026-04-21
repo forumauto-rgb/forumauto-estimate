@@ -1659,9 +1659,9 @@ function searchMapTab() {
 
         // Googleナビリンク（工場から現場）
        const naviUrl = 'https://www.google.com/maps/dir/?api=1'
-　　　  + '&origin=' + encodeURIComponent('静岡県袋井市下山梨545')
-　　　  + '&destination=' + encodeURIComponent(fullAddr)
- 　　　 + '&travelmode=driving';
+  + '&origin=' + FORUM_AUTO_LAT + ',' + FORUM_AUTO_LNG
+  + '&destination=' + encodeURIComponent(fullAddr)
+  + '&travelmode=driving';
         document.getElementById('googleNaviBtn').href = naviUrl;
 
         // 現在地からのナビリンク（スマホ用）
