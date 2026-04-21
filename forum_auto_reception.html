@@ -1227,7 +1227,25 @@ textarea { resize: vertical; min-height: 80px; }
                  text-decoration:none;margin-bottom:10px;">
           🧭 Googleマップで現場までナビ起動
         </a>
-
+　　　　　// 現場共有LINE
+function shareToLINE() {
+  if (!_mapCurrentAddr) { showToast('先に住所を検索してください', 'error'); return; }
+  const leg = document.getElementById('summaryDur').textContent;
+  const eta = document.getElementById('summaryETA').textContent;
+  const msg = '【現場共有】\n📍 ' + _mapCurrentAddr
+    + '\n🚗 所要時間: ' + leg
+    + '\n⏰ 到着予定: ' + eta
+    + '\nhttps://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(_mapCurrentAddr);
+  // クリップボードにコピー
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(msg).then(function() {
+      showToast('住所をコピーしました。LINEに貼り付けてください', 'success');
+      window.open('https://line.me/ti/g/dUCBJhxCE-', '_blank');
+    });
+  } else {
+    window.open('https://line.me/ti/g/dUCBJhxCE-', '_blank');
+  }
+}
         <!-- ② 受付票に住所を転記 -->
         <button onclick="copyAddressToReception()"
           style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
@@ -1245,7 +1263,14 @@ textarea { resize: vertical; min-height: 80px; }
                  text-decoration:none;margin-bottom:10px;">
           📱 現在地から現場へナビ（スマホ）
         </a>
-
+　　　　　<!-- ④ 現場共有LINE -->
+        <button onclick="shareToLINE()"
+          style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
+                 background:#06C755;border:none;color:white;
+                 border-radius:10px;padding:12px;font-size:14px;font-weight:700;
+                 cursor:pointer;margin-bottom:10px;">
+          💬 現場共有LINE
+        </button>
         <!-- 転記完了メッセージ -->
         <div id="copySuccessMsg" style="display:none;background:#e8f5e9;border-radius:8px;padding:10px 14px;font-size:13px;color:#2e7d32;font-weight:700;text-align:center;">
           ✅ 受付票の「現場住所」欄に転記しました
