@@ -2487,6 +2487,24 @@ function showLoading(msg='処理中...') {
 function hideLoading() {
   document.getElementById('loadingOverlay').classList.remove('show');
 }
+ // 現場共有LINE
+function shareToLINE() {
+  if (!_mapCurrentAddr) { showToast('先に住所を検索してください', 'error'); return; }
+  var leg = document.getElementById('summaryDur').textContent;
+  var eta = document.getElementById('summaryETA').textContent;
+  var msg = '【現場共有】\n📍 ' + _mapCurrentAddr
+    + '\n🚗 所要時間: ' + leg
+    + '\n⏰ 到着予定: ' + eta
+    + '\nhttps://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(_mapCurrentAddr);
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(msg).then(function() {
+      showToast('住所をコピーしました。LINEに貼り付けてください', 'success');
+      window.open('https://line.me/ti/g/dUCBJhxCE-', '_blank');
+    });
+  } else {
+    window.open('https://line.me/ti/g/dUCBJhxCE-', '_blank');
+  }
+} 
 </script>
 <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7EOjNdQp0YdyQ9TxbYkuAJjxxyRrabnQ&callback=initMap&language=ja"></script>
 </body>
