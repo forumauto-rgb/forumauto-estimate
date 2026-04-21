@@ -672,8 +672,8 @@ function searchLocation() {
     if (marker) marker.setMap(null);
     marker = new google.maps.Marker({map:map, position:location, title:'現場'});
     directionsService.route({
-      origin: {lat:FORUM_AUTO_LAT, lng:FORUM_AUTO_LNG},
-      destination: location,
+     origin: FORUM_AUTO_ADDR,
+      destination: loc,
       travelMode: google.maps.TravelMode.DRIVING
     }, function(result, st) {
       if (st === 'OK') {
