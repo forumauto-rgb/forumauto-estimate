@@ -1229,7 +1229,6 @@ textarea { resize: vertical; min-height: 80px; }
         </a>
 
         <!-- ② 受付票に住所を転記 -->
-        <!-- ② 受付票に住所を転記 -->
         <button onclick="copyAddressToReception()"
           style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
                  background:white;border:2px solid var(--accent);color:var(--accent);
@@ -1239,12 +1238,15 @@ textarea { resize: vertical; min-height: 80px; }
         </button>
 
         <!-- ③ 現在地から現場へのナビ（スマホ用） -->
-        <a id="currentNaviBtn" href="#" target="_blank"
+       <a id="currentNaviBtn" href="#" target="_blank"
           style="display:flex;align-items:center;justify-content:center;gap:8px;
                  background:white;border:2px solid #2e7d32;color:#2e7d32;
                  border-radius:10px;padding:12px;font-size:14px;font-weight:700;
                  text-decoration:none;margin-bottom:10px;">
-          <!-- ④ 現場共有LINE -->
+          📱 現在地から現場へナビ（スマホ）
+        </a>
+
+        <!-- ④ 現場共有LINE -->
         <button onclick="shareToLINE()"
           style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
                  background:#06C755;border:none;color:white;
@@ -1252,14 +1254,7 @@ textarea { resize: vertical; min-height: 80px; }
                  cursor:pointer;margin-bottom:10px;">
           💬 現場共有LINE
         </button>
-　　　　　<!-- ④ 現場共有LINE -->
-        <button onclick="shareToLINE()"
-          style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
-                 background:#06C755;border:none;color:white;
-                 border-radius:10px;padding:12px;font-size:14px;font-weight:700;
-                 cursor:pointer;margin-bottom:10px;">
-          💬 現場共有LINE
-        </button>
+　　　　
         <!-- 転記完了メッセージ -->
         <div id="copySuccessMsg" style="display:none;background:#e8f5e9;border-radius:8px;padding:10px 14px;font-size:13px;color:#2e7d32;font-weight:700;text-align:center;">
           ✅ 受付票の「現場住所」欄に転記しました
