@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>フォーラムオート 受付システム</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23e8392a'/><rect x='8' y='52' width='70' height='20' rx='4' fill='%23ffffff'/><rect x='68' y='44' width='24' height='28' rx='4' fill='%23ffffff'/><rect x='71' y='47' width='18' height='12' rx='2' fill='%23a8c8e8'/><rect x='10' y='40' width='60' height='12' rx='2' fill='%23eeeeee' transform='rotate(-9 40 46)'/><rect x='18' y='28' width='30' height='14' rx='4' fill='%231a2744'/><rect x='22' y='24' width='22' height='10' rx='3' fill='%23263a6e'/><rect x='24' y='25' width='8' height='7' rx='1' fill='%23a8c8e8' opacity='.9'/><rect x='34' y='25' width='8' height='7' rx='1' fill='%23a8c8e8' opacity='.9'/><circle cx='22' cy='74' r='8' fill='%23333'/><circle cx='22' cy='74' r='4' fill='%23666'/><circle cx='52' cy='74' r='8' fill='%23333'/><circle cx='52' cy='74' r='4' fill='%23666'/><circle cx='80' cy='74' r='8' fill='%23333'/><circle cx='80' cy='74' r='4' fill='%23666'/></svg>">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Oswald:wght@400;600&display=swap');
+:root {
+  --primary: #1a2744;--accent: #e8392a;--accent2: #f5a623;--bg: #f0f2f5;--card: #ffffff;
+  --text: #1a2744;--text-light: #6b7a99;--border: #d8dde8;--success: #2ecc71;
+  --shadow: 0 4px 20px rgba(26,39,68,0.10);--radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+.header { background: var(--primary); color: white; padding: 0; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 16px rgba(0,0,0,0.2); }
+.header-inner { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; }
+.header-logo { display: flex; align-items: center; gap: 10px; }
+.header-logo .logo-icon { width: 36px; height: 36px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.header-logo h1 { font-family: 'Oswald', sans-serif; font-size: 18px; letter-spacing: 1px; line-height: 1.2; }
+.header-logo p { font-size: 11px; opacity: 0.7; }
+.header-time { font-size: 13px; opacity: 0.8; text-align: right; }
+.tab-nav { background: var(--primary); border-top: 1px solid rgba(255,255,255,0.1); display: flex; overflow-x: auto; scrollbar-width: none; }
+.tab-nav::-webkit-scrollbar { display: none; }
+.tab-btn { flex-shrink: 0; padding: 10px 18px; color: rgba(255,255,255,0.6); background: none; border: none; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; font-size: 13px; font-weight: 500; border-bottom: 3px solid transparent; transition: all 0.2s; white-space: nowrap; }
+.tab-btn.active { color: white; border-bottom-color: var(--accent); }
+.tab-btn:hover { color: white; }
+.main { padding: 16px; max-width: 900px; margin: 0 auto; }
+.card { background: var(--card); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow); }
+.card-title { font-size: 14px; font-weight: 700; color: var(--primary); margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid var(--bg); display: flex; align-items: center; gap: 8px; }
+.card-title .icon { width: 28px; height: 28px; background: var(--primary); color: white; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.card-title .icon.red { background: var(--accent); }
+.card-title .icon.orange { background: var(--accent2); }
+.card-title .icon.green { background: var(--success); }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-grid.single { grid-template-columns: 1fr; }
+.form-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-group.full { grid-column: 1 / -1; }
+label { font-size: 11px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
+label .required { color: var(--accent); margin-left: 3px; }
+input, select, textarea { padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; font-family: 'Noto Sans JP', sans-serif; color: var(--text); background: white; transition: border-color 0.2s; width: 100%; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); }
+textarea { resize: vertical; min-height: 80px; }
+.type-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.type-btn { flex: 1; min-width: 80px; padding: 10px 8px; border: 2px solid var(--border); border-radius: 8px; background: white; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; font-size: 12px; font-weight: 700; color: var(--text-light); text-align: center; transition: all 0.2s; }
+.type-btn.active { border-color: var(--accent); background: #fff0ee; color: var(--accent); }
+.type-btn:hover { border-color: var(--primary); color: var(--primary); }
+.type-btn .type-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+#map { width: 100%; height: 250px; border-radius: 8px; border: 1.5px solid var(--border); background: #e8edf5; overflow: hidden; }
+.map-placeholder { width: 100%; height: 250px; border-radius: 8px; border: 1.5px solid var(--border); background: linear-gradient(135deg, #e8edf5 0%, #d0d8e8 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-light); gap: 8px; }
+.map-placeholder .map-icon { font-size: 36px; }
+.map-info { display: flex; gap: 8px; margin-top: 8px; }
+.map-info-box { flex: 1; background: var(--bg); border-radius: 8px; padding: 10px; text-align: center; }
+.map-info-box .label { font-size: 10px; color: var(--text-light); font-weight: 700; }
+.map-info-box .value { font-size: 16px; font-weight: 700; color: var(--primary); margin-top: 2px; }
+.search-bar { display: flex; gap: 8px; margin-bottom: 10px; }
+.search-bar input { flex: 1; }
+.search-bar button { padding: 10px 16px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.search-bar button:hover { background: #263a6e; }
+.rental-cars { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+.rental-car-card { border: 2px solid var(--border); border-radius: 10px; padding: 12px; cursor: pointer; transition: all 0.2s; text-align: center; }
+.rental-car-card:hover { border-color: var(--primary); }
+.rental-car-card.selected { border-color: #2e7d32 !important; background: #e8f5e9 !important; box-shadow: 0 0 0 3px rgba(46,125,50,0.3); }
+.rental-car-card.unavailable { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+.rental-car-icon { font-size: 28px; margin-bottom: 6px; }
+.rental-car-name { font-size: 13px; font-weight: 700; }
+.rental-car-num { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+.rental-car-price { font-size: 12px; color: var(--accent); font-weight: 700; margin-top: 4px; }
+.rental-car-status { font-size: 10px; padding: 2px 8px; border-radius: 20px; margin-top: 4px; display: inline-block; }
+.car-svg-wrapper { position: relative; display: inline-block; width: 100%; cursor: crosshair; }
+.car-svg-wrapper svg { width: 100%; height: auto; display: block; }
+.damage-mark { position: absolute; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; transform: translate(-50%, -50%); cursor: pointer; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: transform 0.1s; z-index: 10; }
+.damage-mark:hover { transform: translate(-50%, -50%) scale(1.2); }
+.damage-toolbar { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.damage-type-btn { padding: 6px 14px; border: 2px solid var(--border); border-radius: 6px; background: white; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; font-size: 12px; font-weight: 700; transition: all 0.2s; }
+.damage-type-btn.active { border-color: var(--accent); background: #fff0ee; color: var(--accent); }
+.damage-type-btn.scratch.active { background: #fde8e8; border-color: #e74c3c; color: #e74c3c; }
+.damage-type-btn.dent.active { background: #fef0e8; border-color: #e67e22; color: #e67e22; }
+.damage-type-btn.crack.active { background: #f0e8fe; border-color: #9b59b6; color: #9b59b6; }
+.damage-list { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+.damage-tag { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 4px; cursor: pointer; }
+.damage-tag .remove { opacity: 0.6; }
+.car-diagram-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.diagram-tab { padding: 6px 14px; border: 1.5px solid var(--border); border-radius: 6px; background: white; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; font-size: 12px; font-weight: 700; color: var(--text-light); transition: all 0.2s; }
+.diagram-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+.sign-area { border: 2px solid var(--border); border-radius: 10px; overflow: hidden; background: white; }
+.sign-canvas { display: block; width: 100%; height: 180px; cursor: crosshair; touch-action: none; }
+.sign-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg); border-top: 1px solid var(--border); }
+.sign-toolbar span { font-size: 12px; color: var(--text-light); }
+.sign-clear-btn { padding: 4px 12px; background: var(--accent); color: white; border: none; border-radius: 6px; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; font-size: 12px; font-weight: 700; }
+.btn { padding: 12px 24px; border-radius: 8px; border: none; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; font-size: 14px; font-weight: 700; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-accent { background: var(--accent); color: white; }
+.btn-outline { background: white; color: var(--primary); border: 2px solid var(--primary); }
+.btn-outline:hover { background: var(--primary); color: white; }
+.btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.badge-new { background: #e8f0ff; color: #1a2744; }
+.badge-progress { background: #fff3e0; color: #e65100; }
+.badge-done { background: #e8f8ee; color: #1b8a4a; }
+.case-list { display: flex; flex-direction: column; gap: 10px; }
+.case-item { background: white; border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); cursor: pointer; transition: all 0.2s; border: 1.5px solid transparent; }
+.case-item:hover { border-color: var(--primary); transform: translateX(2px); }
+.case-item-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.icon-bg-red { background: #fff0ee; }
+.icon-bg-blue { background: #e8f0ff; }
+.icon-bg-green { background: #e8f8ee; }
+.case-item-body { flex: 1; min-width: 0; }
+.case-item-name { font-size: 14px; font-weight: 700; }
+.case-item-sub { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+.case-item-right { text-align: right; flex-shrink: 0; }
+.case-item-num { font-size: 11px; color: var(--text-light); }
+.case-item-time { font-size: 12px; font-weight: 700; color: var(--primary); margin-top: 2px; }
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--primary); color: white; padding: 12px 24px; border-radius: 30px; font-size: 14px; font-weight: 700; box-shadow: 0 8px 24px rgba(0,0,0,0.2); transition: transform 0.3s ease; z-index: 999; white-space: nowrap; }
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.success { background: var(--success); }
+.toast.error { background: var(--accent); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.rental-detail { margin-top: 16px; padding-top: 16px; border-top: 2px dashed var(--border); display: none; }
+.rental-detail.show { display: block; }
+.checklist { display: flex; flex-direction: column; gap: 8px; }
+.check-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+.check-item:hover { background: var(--bg); }
+.check-item.checked { border-color: var(--success); background: #e8f8ee; }
+.check-item input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--success); }
+.check-item label { cursor: pointer; font-size: 13px; font-weight: 500; }
+@media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } .form-grid.three { grid-template-columns: 1fr 1fr; } .rental-cars { grid-template-columns: 1fr 1fr; } .main { padding: 12px; } .card { padding: 16px; } }
+.loading-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(26,39,68,0.5); z-index: 500; align-items: center; justify-content: center; }
+.loading-overlay.show { display: flex; }
+.loading-box { background: white; border-radius: 16px; padding: 32px 40px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+.spinner { width: 40px; height: 40px; border: 4px solid var(--bg); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.arrival-display { background: linear-gradient(135deg, var(--primary), #263a6e); color: white; border-radius: 10px; padding: 16px; text-align: center; margin-top: 10px; display: none; }
+.arrival-display.show { display: block; }
+.arrival-time { font-size: 36px; font-weight: 700; font-family: 'Oswald', sans-serif; }
+.arrival-label { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+.arrival-distance { font-size: 14px; opacity: 0.9; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="header-logo">
+      <div class="logo-icon">🔧</div>
+      <div><h1>FORUM AUTO</h1><p>受付・レンタカー管理システム</p></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <a href="index_top.html" style="display:flex;align-items:center;gap:5px;padding:6px 14px;background:rgba(255,255,255,0.15);border-radius:8px;color:white;text-decoration:none;font-size:13px;font-weight:bold;border:1px solid rgba(255,255,255,0.2);">🏠 ホームに戻る</a>
+      <div class="header-time" id="headerTime"></div>
+    </div>
+  </div>
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('reception',this)">📋 新規受付</button>
+    <button class="tab-btn" onclick="switchTab('rental',this)">🚗 レンタカー貸出</button>
+    <button class="tab-btn" onclick="switchTab('cases',this)">📁 案件一覧</button>
+    <button class="tab-btn" onclick="switchTab('map',this)">📍 現場マップ</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- 新規受付タブ -->
+  <div class="tab-content active" id="tab-reception">
+    <div class="card">
+      <div class="card-title"><div class="icon red">📞</div>受付種別</div>
+      <div class="type-buttons">
+        <button class="type-btn active" onclick="selectType(this,'レッカー')" id="type-wrecker"><span class="type-icon">🚛</span>レッカー</button>
+        <button class="type-btn" onclick="selectType(this,'修理入庫')" id="type-repair"><span class="type-icon">🔧</span>修理入庫</button>
+        <button class="type-btn" onclick="selectType(this,'板金塗装')" id="type-paint"><span class="type-icon">🎨</span>板金塗装</button>
+        <button class="type-btn" onclick="selectType(this,'車検')" id="type-shaken"><span class="type-icon">📋</span>車検</button>
+        <button class="type-btn" onclick="selectType(this,'その他')" id="type-other"><span class="type-icon">📝</span>その他</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon">👤</div>顧客・車両情報</div>
+      <div class="form-grid">
+        <div class="form-group" style="position:relative;">
+          <label>顧客名<span class="required">*</span></label>
+          <input type="text" id="customerName" placeholder="山田 太郎（2文字以上で既存客を検索）" oninput="searchCustomer(this.value)" autocomplete="off">
+          <div id="customerDropdown" style="display:none;position:absolute;z-index:200;background:#fff;border:1px solid #d8dde8;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.15);width:100%;max-height:220px;overflow-y:auto;margin-top:2px;top:100%;"></div>
+        </div>
+        <div class="form-group"><label>電話番号<span class="required">*</span></label><input type="tel" id="phone" placeholder="090-0000-0000"></div>
+        <div class="form-group"><label>車名</label><input type="text" id="carName" placeholder="プリウス"></div>
+        <div class="form-group"><label>ナンバー</label><input type="text" id="carNum" placeholder="静岡 300 あ 1234"></div>
+        <div class="form-group"><label>色名</label><input type="text" id="carColor" placeholder="パールホワイト"></div>
+        <div class="form-group"><label>保険会社</label><input type="text" id="insurance" placeholder="東京海上日動"></div>
+        <div class="form-group full">
+          <label>問診内容</label>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;">
+            <button type="button" onclick="addSymptom('フロントバンパー擦り傷・凹み')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">フロントバンパー</button>
+            <button type="button" onclick="addSymptom('リアバンパー擦り傷・凹み')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">リアバンパー</button>
+            <button type="button" onclick="addSymptom('左フロントドア凹み・擦り傷')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">左ドア</button>
+            <button type="button" onclick="addSymptom('右フロントドア凹み・擦り傷')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">右ドア</button>
+            <button type="button" onclick="addSymptom('左フロントフェンダー凹み・擦り傷')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">左フェンダー</button>
+            <button type="button" onclick="addSymptom('右フロントフェンダー凹み・擦り傷')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">右フェンダー</button>
+            <button type="button" onclick="addSymptom('ボンネット凹み・擦り傷')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">ボンネット</button>
+            <button type="button" onclick="addSymptom('トランクリッド凹み')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">トランク</button>
+            <button type="button" onclick="addSymptom('保険修理対応')" style="font-size:11px;padding:4px 8px;border:1px solid #c5cae9;border-radius:6px;background:#e8eaf6;color:#3949ab;cursor:pointer;">保険対応</button>
+            <button type="button" onclick="addSymptom('自費修理希望')" style="font-size:11px;padding:4px 8px;border:1px solid #c5cae9;border-radius:6px;background:#e8eaf6;color:#3949ab;cursor:pointer;">自費修理</button>
+            <button type="button" onclick="document.getElementById('symptoms').value=''" style="font-size:11px;padding:4px 8px;border:1px solid #ffcdd2;border-radius:6px;background:#fff5f5;color:#c62828;cursor:pointer;">🗑 クリア</button>
+          </div>
+          <textarea id="symptoms" placeholder="事故状況・症状・お客様からのご要望など" style="min-height:90px;"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="locationCard">
+      <div class="card-title"><div class="icon red">📍</div>現場位置・到着時間</div>
+      <div class="search-bar">
+        <input type="text" id="locationInput" placeholder="現場住所を入力（例：袋井市 国道1号線）">
+        <button onclick="searchLocation()">🔍 検索</button>
+      </div>
+      <div id="map" style="display:none;"></div>
+      <div class="map-placeholder" id="mapPlaceholder">
+        <div class="map-icon">🗺️</div>
+        <div style="font-size:14px;font-weight:700;">住所を入力して現場を特定</div>
+        <div style="font-size:12px;">Googleマップで位置を確認します</div>
+      </div>
+      <div class="arrival-display" id="arrivalDisplay">
+        <div class="arrival-label">📍 フォーラムオートから現場まで</div>
+        <div class="arrival-time" id="arrivalTime">--分</div>
+        <div class="arrival-distance" id="arrivalDistance">距離: -- km</div>
+        <div style="font-size:12px;opacity:0.8;margin-top:4px;" id="arrivalETA"></div>
+      </div>
+      <div class="form-grid" style="margin-top:12px;">
+        <div class="form-group"><label>搬送先住所</label><input type="text" id="destAddr" placeholder="フォーラムオート（袋井市）"></div>
+        <div class="form-group">
+          <label>担当者</label>
+          <select id="staff"><option value="">選択してください</option><option>永田</option><option>スタッフA</option><option>スタッフB</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon orange">🚗</div>レンタカー手配</div>
+      <div class="type-buttons" style="margin-bottom:0;">
+        <button class="type-btn" onclick="toggleRental(true,this)" id="rental-yes"><span class="type-icon">✅</span>必要</button>
+        <button class="type-btn active" onclick="toggleRental(false,this)" id="rental-no"><span class="type-icon">❌</span>不要</button>
+      </div>
+      <div id="rentalQuick" style="display:none;margin-top:12px;padding:12px;background:var(--bg);border-radius:8px;">
+        <div style="font-size:12px;color:var(--text-light);font-weight:700;margin-bottom:8px;">▼ 貸出車両を選択（詳細はレンタカータブで設定）</div>
+        <div class="rental-cars" id="quickRentalCars"><div style="font-size:13px;color:var(--text-light);">読み込み中...</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon green">✅</div>受入チェック</div>
+      <div class="checklist">
+        <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox" onclick="event.stopPropagation();toggleCheck(this.parentElement)"><label>車両確認済み</label></div>
+        <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox" onclick="event.stopPropagation();toggleCheck(this.parentElement)"><label>保険証確認済み</label></div>
+        <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox" onclick="event.stopPropagation();toggleCheck(this.parentElement)"><label>鍵・書類預かり</label></div>
+        <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox" onclick="event.stopPropagation();toggleCheck(this.parentElement)"><label>お客様への説明完了</label></div>
+      </div>
+      <div class="form-group" style="margin-top:12px;"><label>備考</label><textarea id="remarks" placeholder="特記事項があれば入力" style="min-height:60px;"></textarea></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="clearForm()">🗑️ クリア</button>
+      <button class="btn btn-accent" onclick="saveReception()">💾 案件登録</button>
+    </div>
+  </div>
+
+  <!-- レンタカー貸出タブ -->
+  <div class="tab-content" id="tab-rental">
+    <div class="card">
+      <div class="card-title"><div class="icon">📋</div>対象案件</div>
+      <div class="form-grid">
+        <div class="form-group"><label>案件番号</label><input type="text" id="rentalCaseNum" placeholder="FA-2026-0001"></div>
+        <div class="form-group"><label>顧客名</label><input type="text" id="rentalCustomer" placeholder="山田 太郎"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon orange">🚗</div>貸出車両選択</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+        <button id="filterAvailBtn" onclick="toggleAvailFilter()" style="background:#2e7d32;color:#fff;border:none;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;">✅ 空車のみ表示</button>
+        <button onclick="toggleAvailFilter()" id="filterAllBtn" style="background:#eee;color:#555;border:none;padding:6px 14px;border-radius:20px;font-size:12px;cursor:pointer;display:none;">🚗 全台表示</button>
+        <span id="availCount" style="font-size:12px;color:#6b7a99;"></span>
+      </div>
+      <div class="rental-cars" id="rentalCarList"><div style="font-size:13px;color:var(--text-light);">読み込み中...</div></div>
+      <div class="rental-detail show" id="rentalDetail">
+        <div class="form-grid three">
+          <div class="form-group"><label>貸出日<span class="required">*</span></label><input type="date" id="rentalStart"></div>
+          <div class="form-group"><label>返却予定日</label><input type="date" id="rentalEnd"></div>
+          <div class="form-group"><label>日数</label><input type="number" id="rentalDays" placeholder="0" readonly style="background:var(--bg);"></div>
+          <div class="form-group"><label>貸出時キロ<span class="required">*</span></label><input type="number" id="rentalStartKm" placeholder="12345（必須）" oninput="this.style.borderColor=this.value?'':'#e8392a'"></div>
+          <div class="form-group"><label>返却時キロ</label><input type="number" id="rentalEndKm" placeholder="返却時に入力"></div>
+          <div class="form-group"><label>請求金額</label><input type="number" id="rentalBilling" placeholder="自動計算" readonly style="background:var(--bg);"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon">👤</div>運転者情報</div>
+      <div class="form-grid">
+        <div class="form-group"><label>運転者氏名<span class="required">*</span></label><input type="text" id="driverName" placeholder="山田 太郎"></div>
+        <div class="form-group"><label>免許証番号<span class="required">*</span></label><input type="text" id="licenseNum" placeholder="123456789012"></div>
+        <div class="form-group"><label>免許証有効期限</label><input type="date" id="licenseExpiry"></div>
+        <div class="form-group"><label>電話番号</label><input type="tel" id="driverPhone" placeholder="090-0000-0000"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon red">🔍</div>車体傷確認</div>
+      <div style="font-size:12px;color:var(--text-light);margin-bottom:10px;">傷・へこみ・割れの種類を選んで、車体図の該当箇所をタップしてマークしてください</div>
+      <div class="damage-toolbar">
+        <button class="damage-type-btn scratch active" onclick="selectDamageType('scratch',this)">🔴 キズ</button>
+        <button class="damage-type-btn dent" onclick="selectDamageType('dent',this)">🟠 へこみ</button>
+        <button class="damage-type-btn crack" onclick="selectDamageType('crack',this)">🟣 割れ</button>
+        <button class="damage-type-btn" onclick="clearDamages()" style="margin-left:auto;color:var(--accent);">🗑️ クリア</button>
+      </div>
+      <div class="car-diagram-tabs">
+        <button class="diagram-tab active" onclick="showView('front',this)">前面</button>
+        <button class="diagram-tab" onclick="showView('rear',this)">後面</button>
+        <button class="diagram-tab" onclick="showView('left',this)">左側</button>
+        <button class="diagram-tab" onclick="showView('right',this)">右側</button>
+        <button class="diagram-tab" onclick="showView('top',this)">上面</button>
+      </div>
+      <div class="car-svg-wrapper" id="carDiagramWrapper" onclick="addDamageMark(event)">
+        <svg id="svg-front" viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg">
+          <rect x="40" y="80" width="320" height="140" rx="20" fill="#dde3ef" stroke="#1a2744" stroke-width="2.5"/>
+          <path d="M100 80 Q110 30 180 25 L220 25 Q290 30 300 80Z" fill="#c8d0e0" stroke="#1a2744" stroke-width="2"/>
+          <path d="M110 78 Q120 38 180 33 L220 33 Q280 38 290 78Z" fill="#a8c8e8" stroke="#1a2744" stroke-width="1.5" opacity="0.8"/>
+          <rect x="30" y="195" width="340" height="30" rx="10" fill="#b8c4d8" stroke="#1a2744" stroke-width="2"/>
+          <ellipse cx="90" cy="175" rx="35" ry="16" fill="#a8c8e8" stroke="#1a2744" stroke-width="1.5"/>
+          <ellipse cx="310" cy="175" rx="35" ry="16" fill="#a8c8e8" stroke="#1a2744" stroke-width="1.5"/>
+          <rect x="140" y="200" width="120" height="18" rx="5" fill="#8898b8" stroke="#1a2744" stroke-width="1.5"/>
+          <rect x="160" y="215" width="80" height="14" rx="3" fill="white" stroke="#1a2744" stroke-width="1"/>
+          <circle cx="100" cy="220" r="18" fill="#5a6a8a" stroke="#1a2744" stroke-width="2"/><circle cx="100" cy="220" r="10" fill="#8898b8"/>
+          <circle cx="300" cy="220" r="18" fill="#5a6a8a" stroke="#1a2744" stroke-width="2"/><circle cx="300" cy="220" r="10" fill="#8898b8"/>
+          <text x="200" y="255" text-anchor="middle" font-size="11" fill="#6b7a99" font-family="sans-serif">前面 FRONT</text>
+        </svg>
+        <svg id="svg-rear" viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+          <rect x="40" y="80" width="320" height="140" rx="20" fill="#dde3ef" stroke="#1a2744" stroke-width="2.5"/>
+          <path d="M100 80 Q110 30 180 25 L220 25 Q290 30 300 80Z" fill="#c8d0e0" stroke="#1a2744" stroke-width="2"/>
+          <rect x="30" y="195" width="340" height="30" rx="10" fill="#b8c4d8" stroke="#1a2744" stroke-width="2"/>
+          <rect x="45" y="165" width="60" height="22" rx="6" fill="#e88888" stroke="#1a2744" stroke-width="1.5"/>
+          <rect x="295" y="165" width="60" height="22" rx="6" fill="#e88888" stroke="#1a2744" stroke-width="1.5"/>
+          <path d="M130 78 Q140 48 180 44 L220 44 Q260 48 270 78Z" fill="#a8c8e8" stroke="#1a2744" stroke-width="1.5" opacity="0.8"/>
+          <rect x="155" y="200" width="90" height="16" rx="3" fill="white" stroke="#1a2744" stroke-width="1"/>
+          <circle cx="100" cy="220" r="18" fill="#5a6a8a" stroke="#1a2744" stroke-width="2"/><circle cx="100" cy="220" r="10" fill="#8898b8"/>
+          <circle cx="300" cy="220" r="18" fill="#5a6a8a" stroke="#1a2744" stroke-width="2"/><circle cx="300" cy="220" r="10" fill="#8898b8"/>
+          <text x="200" y="255" text-anchor="middle" font-size="11" fill="#6b7a99" font-family="sans-serif">後面 REAR</text>
+        </svg>
+        <svg id="svg-left" viewBox="0 0 500 220" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+          <rect x="30" y="70" width="440" height="110" rx="15" fill="#dde3ef" stroke="#1a2744" stroke-width="2.5"/>
+          <path d="M80 70 Q100 20 180 15 L320 15 Q400 20 420 70Z" fill="#c8d0e0" stroke="#1a2744" stroke-width="2"/>
+          <path d="M95 68 Q115 25 180 20 L320 20 Q390 25 405 68Z" fill="#a8c8e8" stroke="#1a2744" stroke-width="1.5" opacity="0.8"/>
+          <rect x="80" y="72" width="160" height="95" rx="8" fill="none" stroke="#1a2744" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <rect x="245" y="72" width="145" height="95" rx="8" fill="none" stroke="#1a2744" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <rect x="25" y="155" width="40" height="25" rx="8" fill="#b8c4d8" stroke="#1a2744" stroke-width="2"/>
+          <rect x="435" y="155" width="40" height="25" rx="8" fill="#b8c4d8" stroke="#1a2744" stroke-width="2"/>
+          <circle cx="120" cy="183" r="30" fill="#5a6a8a" stroke="#1a2744" stroke-width="2.5"/><circle cx="120" cy="183" r="17" fill="#8898b8"/><circle cx="120" cy="183" r="6" fill="#5a6a8a"/>
+          <circle cx="375" cy="183" r="30" fill="#5a6a8a" stroke="#1a2744" stroke-width="2.5"/><circle cx="375" cy="183" r="17" fill="#8898b8"/><circle cx="375" cy="183" r="6" fill="#5a6a8a"/>
+          <text x="250" y="215" text-anchor="middle" font-size="11" fill="#6b7a99" font-family="sans-serif">左側面 LEFT</text>
+        </svg>
+        <svg id="svg-right" viewBox="0 0 500 220" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+          <rect x="30" y="70" width="440" height="110" rx="15" fill="#dde3ef" stroke="#1a2744" stroke-width="2.5"/>
+          <path d="M80 70 Q100 20 180 15 L320 15 Q400 20 420 70Z" fill="#c8d0e0" stroke="#1a2744" stroke-width="2"/>
+          <path d="M95 68 Q115 25 180 20 L320 20 Q390 25 405 68Z" fill="#a8c8e8" stroke="#1a2744" stroke-width="1.5" opacity="0.8"/>
+          <rect x="80" y="72" width="160" height="95" rx="8" fill="none" stroke="#1a2744" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <rect x="245" y="72" width="145" height="95" rx="8" fill="none" stroke="#1a2744" stroke-width="1.5" stroke-dasharray="3,3"/>
+          <rect x="25" y="155" width="40" height="25" rx="8" fill="#b8c4d8" stroke="#1a2744" stroke-width="2"/>
+          <rect x="435" y="155" width="40" height="25" rx="8" fill="#b8c4d8" stroke="#1a2744" stroke-width="2"/>
+          <circle cx="120" cy="183" r="30" fill="#5a6a8a" stroke="#1a2744" stroke-width="2.5"/><circle cx="120" cy="183" r="17" fill="#8898b8"/>
+          <circle cx="375" cy="183" r="30" fill="#5a6a8a" stroke="#1a2744" stroke-width="2.5"/><circle cx="375" cy="183" r="17" fill="#8898b8"/>
+          <text x="250" y="215" text-anchor="middle" font-size="11" fill="#6b7a99" font-family="sans-serif">右側面 RIGHT</text>
+        </svg>
+        <svg id="svg-top" viewBox="0 0 300 500" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+          <rect x="40" y="40" width="220" height="420" rx="40" fill="#dde3ef" stroke="#1a2744" stroke-width="2.5"/>
+          <rect x="60" y="60" width="180" height="100" rx="10" fill="#a8c8e8" stroke="#1a2744" stroke-width="1.5" opacity="0.8"/>
+          <rect x="60" y="340" width="180" height="100" rx="10" fill="#a8c8e8" stroke="#1a2744" stroke-width="1.5" opacity="0.8"/>
+          <rect x="55" y="165" width="190" height="170" rx="8" fill="#c8d0e0" stroke="#1a2744" stroke-width="1"/>
+          <ellipse cx="58" cy="120" rx="18" ry="22" fill="#5a6a8a" stroke="#1a2744" stroke-width="2"/>
+          <ellipse cx="242" cy="120" rx="18" ry="22" fill="#5a6a8a" stroke="#1a2744" stroke-width="2"/>
+          <ellipse cx="58" cy="380" rx="18" ry="22" fill="#5a6a8a" stroke="#1a2744" stroke-width="2"/>
+          <ellipse cx="242" cy="380" rx="18" ry="22" fill="#5a6a8a" stroke="#1a2744" stroke-width="2"/>
+          <text x="150" y="490" text-anchor="middle" font-size="11" fill="#6b7a99" font-family="sans-serif">上面 TOP</text>
+        </svg>
+        <div id="damageMarkers"></div>
+      </div>
+      <div class="damage-list" id="damageList"><div style="font-size:12px;color:var(--text-light);">傷をタップして記録してください</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon green">✍️</div>お客様サイン</div>
+      <div style="font-size:12px;color:var(--text-light);margin-bottom:10px;">上記内容を確認の上、サインをお願いします</div>
+      <div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:12px;font-size:12px;line-height:1.8;">
+        <strong>レンタカー貸出規約（要約）</strong><br>
+        ・返却時に車体確認を行います<br>・上記記録以外の傷は借受人の負担となります<br>
+        ・燃料は満タン返しでお願いします<br>・交通違反・事故の際はすぐにご連絡ください
+      </div>
+      <div class="sign-area">
+        <canvas class="sign-canvas" id="signCanvas" width="800" height="180"></canvas>
+        <div class="sign-toolbar"><span>指またはペンでサインしてください</span><button class="sign-clear-btn" onclick="clearSign()">クリア</button></div>
+      </div>
+      <div style="margin-top:12px;">
+        <div class="check-item" onclick="toggleCheck(this)" id="confirmCheck">
+          <input type="checkbox" onclick="event.stopPropagation();toggleCheck(this.parentElement)">
+          <label>上記内容および貸出規約に同意します</label>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="printContract()">🖨️ 印刷</button>
+      <button class="btn btn-accent" onclick="saveRental()">💾 貸出登録</button>
+    </div>
+  </div>
+
+  <!-- 案件一覧タブ -->
+  <div class="tab-content" id="tab-cases">
+    <div class="card" style="padding:14px 16px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <input type="date" id="caseSearchDate" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);" onchange="loadCases()"/>
+        <input type="text" id="caseSearchName" placeholder="顧客名・車名で検索" style="flex:1;min-width:140px;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);" oninput="filterCaseList()"/>
+        <button onclick="caseSearchClear()" style="padding:7px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;background:white;cursor:pointer;color:var(--text-light);">リセット</button>
+        <button onclick="loadCases()" style="padding:7px 14px;border:none;border-radius:8px;font-size:12px;background:var(--primary);color:white;cursor:pointer;font-weight:700;">🔍 検索</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon">📁</div><span id="caseListTitle">受付案件</span><span id="caseListCount" style="font-size:12px;color:var(--text-light);margin-left:8px;font-weight:400;"></span></div>
+      <div class="case-list" id="caseList"><div style="text-align:center;padding:30px;color:var(--text-light);">読み込み中...</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon orange">🚗</div>レンタカー貸出中</div>
+      <div class="case-list" id="rentalCaseList"><div style="text-align:center;padding:20px;color:var(--text-light);">読み込み中...</div></div>
+    </div>
+  </div>
+
+  <!-- 現場マップタブ -->
+  <div class="tab-content" id="tab-map">
+    <div class="card">
+      <div class="card-title"><div class="icon red">📍</div>現場位置確認・配車</div>
+      <div class="search-bar">
+        <input type="text" id="mapSearchInput" placeholder="現場住所・交差点名・ランドマークを入力" onkeydown="if(event.key==='Enter')searchMapTab()">
+        <button onclick="searchMapTab()">🔍 検索</button>
+      </div>
+      <div id="mainMap" style="width:100%;height:380px;border-radius:10px;border:1.5px solid var(--border);background:#e8edf5;overflow:hidden;"></div>
+      <div class="map-info" id="mapInfoBoxes" style="display:none;">
+        <div class="map-info-box"><div class="label">📍 距離</div><div class="value" id="mapDistance">--</div></div>
+        <div class="map-info-box"><div class="label">⏱️ 到着時間</div><div class="value" id="mapDuration">--</div></div>
+        <div class="map-info-box"><div class="label">🕐 到着予定</div><div class="value" id="mapETA">--</div></div>
+      </div>
+      <div id="mapActionArea" style="display:none;margin-top:14px;">
+        <!-- ① Googleナビ -->
+        <a id="googleNaviBtn" href="#" target="_blank"
+          style="display:flex;align-items:center;justify-content:center;gap:8px;
+                 background:linear-gradient(135deg,#1a73e8,#1557b0);color:white;
+                 border-radius:10px;padding:14px;font-size:15px;font-weight:700;
+                 text-decoration:none;margin-bottom:10px;">
+          🧭 Googleマップで現場までナビ起動
+        </a>
+        <!-- ② 受付票に転記 -->
+        <button onclick="copyAddressToReception()"
+          style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
+                 background:white;border:2px solid var(--accent);color:var(--accent);
+                 border-radius:10px;padding:12px;font-size:14px;font-weight:700;
+                 cursor:pointer;margin-bottom:10px;">
+          📋 この住所を受付票に転記する
+        </button>
+        <!-- ③ 現在地ナビ -->
+        <a id="currentNaviBtn" href="#" target="_blank"
+          style="display:flex;align-items:center;justify-content:center;gap:8px;
+                 background:white;border:2px solid #2e7d32;color:#2e7d32;
+                 border-radius:10px;padding:12px;font-size:14px;font-weight:700;
+                 text-decoration:none;margin-bottom:10px;">
+          📱 現在地から現場へナビ（スマホ）
+        </a>
+        <!-- ④ 現場共有LINE -->
+        <button onclick="shareToLINE()"
+          style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
+                 background:#06C755;border:none;color:white;
+                 border-radius:10px;padding:12px;font-size:14px;font-weight:700;
+                 cursor:pointer;margin-bottom:10px;">
+          💬 現場共有LINE
+        </button>
+        <div id="copySuccessMsg" style="display:none;background:#e8f5e9;border-radius:8px;padding:10px 14px;font-size:13px;color:#2e7d32;font-weight:700;text-align:center;">
+          ✅ 受付票の「現場住所」欄に転記しました
+        </div>
+        <div id="mapSummaryBox" style="background:#f8f9ff;border:1px solid #c5cae9;border-radius:10px;padding:12px 14px;margin-top:4px;">
+          <div style="font-size:12px;font-weight:700;color:#1a3a6b;margin-bottom:8px;">📋 現場情報サマリー</div>
+          <table style="width:100%;font-size:12px;border-collapse:collapse;">
+            <tr><td style="color:#888;padding:3px 0;width:80px;">現場住所</td><td id="summaryAddr" style="font-weight:600;color:#1a2744;"></td></tr>
+            <tr><td style="color:#888;padding:3px 0;">距離</td><td id="summaryDist" style="font-weight:600;color:#1a2744;"></td></tr>
+            <tr><td style="color:#888;padding:3px 0;">所要時間</td><td id="summaryDur" style="font-weight:600;color:#1a2744;"></td></tr>
+            <tr><td style="color:#888;padding:3px 0;">到着予定</td><td id="summaryETA" style="font-weight:600;color:#1a2744;"></td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-box"><div class="spinner"></div><div style="font-size:14px;font-weight:700;" id="loadingText">処理中...</div></div>
+</div>
+
+<script>
+const MAPS_API_KEY = 'AIzaSyD7EOjNdQp0YdyQ9TxbYkuAJjxxyRrabnQ';
+const SUPABASE_URL = 'https://uhppgdwbyrijnqpvusxw.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVocHBnZHdieXJpam5xcHZ1c3h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NDEyMDksImV4cCI6MjA4OTExNzIwOX0.mJ2GXQUsRZAZ-VL6XTVTz3gfG3MTNtfnWxsIPU_DK60';
+
+const FORUM_AUTO_LAT = 34.7268;
+const FORUM_AUTO_LNG = 137.9195;
+const FORUM_AUTO_ADDR = '静岡県袋井市下山梨545';
+
+var map = null, mainMap = null, geocoder = null, directionsService = null, marker = null;
+var selectedType = 'レッカー', rentalNeeded = false, selectedRentalCar = null;
+var currentView = 'front', currentDamageType = 'scratch', damages = [];
+var signCtx = null, rentalCars = [];
+
+function updateTime() {
+  var now = new Date();
+  var d = now.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
+  var t = now.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('headerTime').innerHTML = d + '<br>' + t;
+}
+setInterval(updateTime, 1000);
+updateTime();
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(function(el){el.classList.remove('active');});
+  document.querySelectorAll('.tab-btn').forEach(function(el){el.classList.remove('active');});
+  var tabEl = document.getElementById('tab-' + name);
+  if (tabEl) tabEl.classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (name === 'cases') { var d=document.getElementById('caseSearchDate'); if(d&&!d.value) d.value=new Date().toISOString().split('T')[0]; loadCases(); }
+  if (name === 'rental') loadRentalCars();
+  if (name === 'map') initMainMap();
+}
+
+function selectType(btn, type) {
+  document.querySelectorAll('.type-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  selectedType = type;
+  document.getElementById('locationCard').style.display = (type==='レッカー'||type==='修理入庫') ? 'block' : 'none';
+}
+
+function toggleRental(needed, btn) {
+  rentalNeeded = needed;
+  document.querySelectorAll('#tab-reception .type-btn').forEach(function(b){
+    if(b.id==='rental-yes'||b.id==='rental-no') b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  document.getElementById('rentalQuick').style.display = needed ? 'block' : 'none';
+  if (needed) loadRentalCars();
+}
+
+function toggleCheck(item) {
+  item.classList.toggle('checked');
+  var cb = item.querySelector('input[type="checkbox"]');
+  if (cb) cb.checked = item.classList.contains('checked');
+}
+
+async function supabaseQuery(table, method, body, filter) {
+  method = method || 'GET'; filter = filter || '';
+  var url = SUPABASE_URL + '/rest/v1/' + encodeURIComponent(table) + filter;
+  var opts = {
+    method: method,
+    headers: {
+      'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': method==='POST' ? 'return=representation' : (method==='PATCH' ? 'return=minimal' : '')
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  var res = await fetch(url, opts);
+  if (!res.ok) throw new Error(await res.text());
+  return method === 'DELETE' ? null : res.json();
+}
+
+async function loadRentalCars() {
+  try {
+    var data = await supabaseQuery('レンタカーマスタ');
+    rentalCars = data || [];
+    renderRentalCars('rentalCarList');
+    renderRentalCars('quickRentalCars', true);
+  } catch(e) {
+    showToast('車両データの読み込みに失敗しました', 'error');
+    renderRentalCars('rentalCarList');
+    renderRentalCars('quickRentalCars', true);
+  }
+}
+
+var showOnlyAvailable = false;
+function toggleAvailFilter() {
+  showOnlyAvailable = !showOnlyAvailable;
+  var btnA = document.getElementById('filterAvailBtn');
+  var btnAll = document.getElementById('filterAllBtn');
+  if(btnA) btnA.style.display = showOnlyAvailable ? 'none' : 'inline-block';
+  if(btnAll) btnAll.style.display = showOnlyAvailable ? 'inline-block' : 'none';
+  renderRentalCars('rentalCarList');
+}
+
+function renderRentalCars(containerId, compact) {
+  var el = document.getElementById(containerId);
+  if (!el) return;
+  var cars = rentalCars;
+  if (showOnlyAvailable && containerId === 'rentalCarList') cars = cars.filter(function(c){return c['現在の状況']==='空き';});
+  cars = cars.slice().sort(function(a,b){return a['現在の状況']==='空き'?-1:1;});
+  var avail = rentalCars.filter(function(c){return c['現在の状況']==='空き';}).length;
+  var cnt = document.getElementById('availCount');
+  if(cnt) cnt.textContent = '空車 ' + avail + '台 / 全' + rentalCars.length + '台';
+  if (cars.length === 0) { el.innerHTML = '<div style="padding:20px;text-align:center;color:#e8392a;font-weight:700;">空車なし</div>'; return; }
+  el.innerHTML = cars.map(function(car) {
+    var available = car['現在の状況'] === '空き';
+    var borderColor = available ? '#2e7d32' : '#e8392a';
+    var badgeBg = available ? '#2e7d32' : '#e8392a';
+    var badgeText = available ? '空車' : '貸出中';
+    return '<div class="rental-car-card' + (!available?' unavailable':'') + '" onclick="selectRentalCar(\'' + car.id + '\',this)" data-car-id="' + car.id + '" style="border:2px solid ' + borderColor + ';position:relative;cursor:pointer;">'
+      + '<div class="rental-car-icon">🚗</div>'
+      + '<div class="rental-car-name">' + (car['め']||car['車種']||'') + '</div>'
+      + '<div class="rental-car-num">' + (car['登録番号']||'') + '</div>'
+      + '<div class="rental-car-price">¥' + Number(car['金額']||0).toLocaleString() + '/日</div>'
+      + '<span class="rental-car-status" style="background:' + badgeBg + ';color:#fff;border-radius:12px;padding:2px 10px;font-size:11px;font-weight:700;">' + badgeText + '</span>'
+      + '</div>';
+  }).join('');
+}
+
+function selectRentalCar(id, el) {
+  var car = rentalCars.find(function(c){return String(c.id)===String(id);});
+  if (!car) return;
+  if (car['現在の状況'] !== '空き') { showToast('この車両は現在貸出中です', 'error'); return; }
+  selectedRentalCar = car;
+  document.querySelectorAll('.rental-car-card').forEach(function(c){c.classList.remove('selected');});
+  document.querySelectorAll('[data-car-id="' + id + '"]').forEach(function(c){c.classList.add('selected');});
+  showToast((car['め']||car['車種']||'') + ' を選択しました ✅', 'success');
+  calcRentalBilling();
+}
+
+function calcRentalBilling() {
+  var start = document.getElementById('rentalStart');
+  var end = document.getElementById('rentalEnd');
+  var days = document.getElementById('rentalDays');
+  var billing = document.getElementById('rentalBilling');
+  if (!start||!end||!start.value||!end.value) return;
+  var d = Math.ceil((new Date(end.value)-new Date(start.value))/86400000);
+  if (days) days.value = d>0?d:0;
+  if (billing&&selectedRentalCar) billing.value = (d>0?d:0)*(selectedRentalCar['金額']||0);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var s = document.getElementById('rentalStart');
+  var e = document.getElementById('rentalEnd');
+  if (s) s.addEventListener('change', calcRentalBilling);
+  if (e) e.addEventListener('change', calcRentalBilling);
+  var today = new Date().toISOString().split('T')[0];
+  if (s) s.value = today;
+  initSign();
+  loadRentalCars();
+  loadCases();
+});
+
+function initMap() {
+  geocoder = new google.maps.Geocoder();
+  directionsService = new google.maps.DirectionsService();
+}
+
+function searchLocation() {
+  var addr = document.getElementById('locationInput').value;
+  if (!addr) { showToast('住所を入力してください', 'error'); return; }
+  if (!geocoder) { showToast('マップを読み込み中です', 'error'); return; }
+  showLoading('現場位置を検索中...');
+  geocoder.geocode({address: addr + ' 静岡県'}, function(results, status) {
+    hideLoading();
+    if (status !== 'OK' || !results[0]) { showToast('住所が見つかりませんでした', 'error'); return; }
+    var location = results[0].geometry.location;
+    var mapEl = document.getElementById('map');
+    document.getElementById('mapPlaceholder').style.display = 'none';
+    mapEl.style.display = 'block';
+    if (!map) {
+      map = new google.maps.Map(mapEl, {zoom:14, center:location, mapTypeId:'roadmap', disableDefaultUI:true, zoomControl:true});
+    } else { map.setCenter(location); }
+    if (marker) marker.setMap(null);
+    marker = new google.maps.Marker({map:map, position:location, title:'現場'});
+    directionsService.route({
+      origin: FORUM_AUTO_ADDR,
+      destination: location,
+      travelMode: google.maps.TravelMode.DRIVING
+    }, function(result, st) {
+      if (st === 'OK') {
+        var leg = result.routes[0].legs[0];
+        document.getElementById('arrivalDisplay').classList.add('show');
+        document.getElementById('arrivalTime').textContent = leg.duration.text;
+        document.getElementById('arrivalDistance').textContent = '距離: ' + leg.distance.text;
+        var eta = new Date(Date.now() + leg.duration.value*1000);
+        document.getElementById('arrivalETA').textContent = '到着予定: ' + eta.getHours() + ':' + String(eta.getMinutes()).padStart(2,'0');
+      }
+    });
+  });
+}
+
+function initMainMap() {
+  if (mainMap) return;
+  if (!window.google) return;
+  mainMap = new google.maps.Map(document.getElementById('mainMap'), {
+    zoom: 13,
+    center: {lat: FORUM_AUTO_LAT, lng: FORUM_AUTO_LNG},
+    mapTypeId: 'roadmap'
+  });
+  if (geocoder) {
+    geocoder.geocode({address: FORUM_AUTO_ADDR}, function(results, status) {
+      if (status === 'OK' && results[0]) {
+        var loc = results[0].geometry.location;
+        mainMap.setCenter(loc);
+        new google.maps.Marker({map:mainMap, position:loc, title:'フォーラムオート（下山梨545）'});
+      } else {
+        new google.maps.Marker({map:mainMap, position:{lat:FORUM_AUTO_LAT, lng:FORUM_AUTO_LNG}, title:'フォーラムオート'});
+      }
+    });
+  } else {
+    new google.maps.Marker({map:mainMap, position:{lat:FORUM_AUTO_LAT, lng:FORUM_AUTO_LNG}, title:'フォーラムオート'});
+  }
+}
+
+var _mapCurrentAddr = '', _mapCurrentLat = 0, _mapCurrentLng = 0;
+
+function searchMapTab() {
+  var addr = document.getElementById('mapSearchInput').value.trim();
+  if (!addr || !geocoder) return;
+  showLoading('検索中...');
+  var searchAddr = addr.includes('静岡') ? addr : addr + ' 静岡県';
+  geocoder.geocode({address: searchAddr}, function(results, status) {
+    hideLoading();
+    if (status !== 'OK' || !results[0]) { showToast('見つかりません。もう少し詳しい住所を入力してください', 'error'); return; }
+    var loc = results[0].geometry.location;
+    var fullAddr = results[0].formatted_address.replace('日本、','');
+    _mapCurrentAddr = fullAddr;
+    _mapCurrentLat = loc.lat();
+    _mapCurrentLng = loc.lng();
+
+    if (!mainMap) initMainMap();
+    mainMap.setCenter(loc);
+    mainMap.setZoom(15);
+
+    if (window._mapMarker) window._mapMarker.setMap(null);
+    window._mapMarker = new google.maps.Marker({map:mainMap, position:loc, title:fullAddr, animation:google.maps.Animation.DROP});
+
+    var directionsRenderer = new google.maps.DirectionsRenderer({map:mainMap, suppressMarkers:false});
+    directionsService.route({
+      origin: FORUM_AUTO_ADDR,
+      destination: loc,
+      travelMode: google.maps.TravelMode.DRIVING
+    }, function(result, st) {
+      if (st === 'OK') {
+        directionsRenderer.setDirections(result);
+        var leg = result.routes[0].legs[0];
+        var eta = new Date(Date.now() + leg.duration.value*1000);
+        var etaStr = eta.getHours() + ':' + String(eta.getMinutes()).padStart(2,'0');
+
+        document.getElementById('mapInfoBoxes').style.display = 'flex';
+        document.getElementById('mapDistance').textContent = leg.distance.text;
+        document.getElementById('mapDuration').textContent = leg.duration.text;
+        document.getElementById('mapETA').textContent = etaStr;
+        document.getElementById('mapActionArea').style.display = 'block';
+        document.getElementById('copySuccessMsg').style.display = 'none';
+        document.getElementById('summaryAddr').textContent = fullAddr;
+        document.getElementById('summaryDist').textContent = leg.distance.text;
+        document.getElementById('summaryDur').textContent = leg.duration.text;
+        document.getElementById('summaryETA').textContent = etaStr + '（現在時刻から）';
+
+        var naviUrl = 'https://www.google.com/maps/dir/?api=1'
+          + '&origin=' + encodeURIComponent(FORUM_AUTO_ADDR)
+          + '&destination=' + encodeURIComponent(fullAddr)
+          + '&travelmode=driving';
+        document.getElementById('googleNaviBtn').href = naviUrl;
+
+        var currentNaviUrl = 'https://www.google.com/maps/dir/?api=1'
+          + '&destination=' + encodeURIComponent(fullAddr)
+          + '&travelmode=driving';
+        document.getElementById('currentNaviBtn').href = currentNaviUrl;
+
+        showToast('現場まで ' + leg.distance.text + ' / ' + leg.duration.text, 'success');
+      }
+    });
+  });
+}
+
+function copyAddressToReception() {
+  if (!_mapCurrentAddr) { showToast('先に住所を検索してください', 'error'); return; }
+  var locationInput = document.getElementById('locationInput');
+  if (locationInput) {
+    locationInput.value = _mapCurrentAddr;
+    if (geocoder) {
+      geocoder.geocode({address: _mapCurrentAddr}, function(results, status) {
+        if (status==='OK'&&results[0]) {
+          var loc = results[0].geometry.location;
+          if (map) { map.setCenter(loc); map.setZoom(15); }
+        }
+      });
+    }
+  }
+  document.getElementById('copySuccessMsg').style.display = 'block';
+  setTimeout(function(){document.getElementById('copySuccessMsg').style.display='none';}, 3000);
+  showToast('受付票の現場住所に転記しました', 'success');
+  if (confirm('受付タブに移動しますか？')) switchTab('reception', document.querySelector('.tab-btn'));
+}
+
+function showView(view, btn) {
+  currentView = view;
+  document.querySelectorAll('.diagram-tab').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  ['front','rear','left','right','top'].forEach(function(v){
+    var el = document.getElementById('svg-'+v);
+    if (el) el.style.display = v===view?'block':'none';
+  });
+  renderDamageMarkers();
+}
+
+function selectDamageType(type, btn) {
+  currentDamageType = type;
+  document.querySelectorAll('.damage-type-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+}
+
+function addDamageMark(e) {
+  var wrapper = document.getElementById('carDiagramWrapper');
+  var rect = wrapper.getBoundingClientRect();
+  var x = ((e.clientX-rect.left)/rect.width*100).toFixed(1);
+  var y = ((e.clientY-rect.top)/rect.height*100).toFixed(1);
+  var labels = {scratch:'キズ',dent:'へこみ',crack:'割れ'};
+  damages.push({id:Date.now(),view:currentView,type:currentDamageType,label:labels[currentDamageType],x:parseFloat(x),y:parseFloat(y)});
+  renderDamageMarkers();
+  renderDamageList();
+}
+
+function renderDamageMarkers() {
+  var container = document.getElementById('damageMarkers');
+  container.innerHTML = '';
+  var colors = {scratch:'#e74c3c',dent:'#e67e22',crack:'#9b59b6'};
+  var icons = {scratch:'×',dent:'○',crack:'△'};
+  damages.filter(function(d){return d.view===currentView;}).forEach(function(d) {
+    var el = document.createElement('div');
+    el.className = 'damage-mark';
+    el.style.cssText = 'left:'+d.x+'%;top:'+d.y+'%;background:'+colors[d.type]+';position:absolute;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;transform:translate(-50%,-50%);cursor:pointer;border:2px solid white;z-index:10;';
+    el.textContent = icons[d.type];
+    el.onclick = (function(did){return function(ev){ev.stopPropagation();damages=damages.filter(function(dm){return dm.id!==did;});renderDamageMarkers();renderDamageList();};})(d.id);
+    container.appendChild(el);
+  });
+}
+
+function renderDamageList() {
+  var el = document.getElementById('damageList');
+  if (damages.length === 0) { el.innerHTML = '<div style="font-size:12px;color:var(--text-light);">傷をタップして記録してください</div>'; return; }
+  var colors = {scratch:'#fde8e8',dent:'#fef0e8',crack:'#f0e8fe'};
+  var textColors = {scratch:'#e74c3c',dent:'#e67e22',crack:'#9b59b6'};
+  var viewLabels = {front:'前',rear:'後',left:'左',right:'右',top:'上'};
+  el.innerHTML = damages.map(function(d){
+    return '<div class="damage-tag" style="background:'+colors[d.type]+';color:'+textColors[d.type]+'" onclick="removeDamage('+d.id+')">'+viewLabels[d.view]+'/'+d.label+' <span class="remove">✕</span></div>';
+  }).join('');
+}
+
+function removeDamage(id) { damages=damages.filter(function(d){return d.id!==id;}); renderDamageMarkers(); renderDamageList(); }
+function clearDamages() { damages=[]; renderDamageMarkers(); renderDamageList(); }
+
+function initSign() {
+  var canvas = document.getElementById('signCanvas');
+  if (!canvas) return;
+  canvas.width = canvas.offsetWidth*2; canvas.height = 360;
+  canvas.style.width = '100%'; canvas.style.height = '180px';
+  signCtx = canvas.getContext('2d');
+  signCtx.scale(2,2);
+  signCtx.strokeStyle='#1a2744'; signCtx.lineWidth=2; signCtx.lineCap='round'; signCtx.lineJoin='round';
+  var drawing = false;
+  var getPos = function(e) {
+    var r = canvas.getBoundingClientRect();
+    var clientX = e.touches?e.touches[0].clientX:e.clientX;
+    var clientY = e.touches?e.touches[0].clientY:e.clientY;
+    return {x:clientX-r.left, y:clientY-r.top};
+  };
+  canvas.addEventListener('mousedown',function(e){drawing=true;var p=getPos(e);signCtx.beginPath();signCtx.moveTo(p.x,p.y);});
+  canvas.addEventListener('mousemove',function(e){if(!drawing)return;var p=getPos(e);signCtx.lineTo(p.x,p.y);signCtx.stroke();});
+  canvas.addEventListener('mouseup',function(){drawing=false;});
+  canvas.addEventListener('mouseleave',function(){drawing=false;});
+  canvas.addEventListener('touchstart',function(e){e.preventDefault();drawing=true;var p=getPos(e);signCtx.beginPath();signCtx.moveTo(p.x,p.y);},{passive:false});
+  canvas.addEventListener('touchmove',function(e){e.preventDefault();if(!drawing)return;var p=getPos(e);signCtx.lineTo(p.x,p.y);signCtx.stroke();},{passive:false});
+  canvas.addEventListener('touchend',function(){drawing=false;});
+}
+
+function clearSign() { if(!signCtx)return; var c=document.getElementById('signCanvas'); signCtx.clearRect(0,0,c.width,c.height); }
+function getSignDataURL() { return document.getElementById('signCanvas').toDataURL('image/png'); }
+
+function generateCaseNum() {
+  var now=new Date();
+  return 'FA-'+now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0')+'-'+String(Math.floor(Math.random()*9000)+1000);
+}
+
+async function saveReception() {
+  var name = document.getElementById('customerName').value;
+  var phone = document.getElementById('phone').value;
+  if (!name) { showToast('顧客名は必須です','error'); return; }
+  showLoading('案件を登録中...');
+  var caseNum = generateCaseNum();
+  var payload = {
+    type: selectedType, customer_name: name, phone: phone,
+    plate: document.getElementById('carNum').value||'',
+    car_model: document.getElementById('carName').value||'',
+    staff: document.getElementById('staff').value||'',
+    note: document.getElementById('symptoms').value||'',
+    rental_needed: rentalNeeded,
+    rental_type: selectedRentalCar?(selectedRentalCar['め']||selectedRentalCar['車種']||''):'',
+    location_address: document.getElementById('locationInput').value||'',
+    checklist: JSON.stringify(Array.from(document.querySelectorAll('.check-item.checked')).map(function(el){return el.querySelector('label').textContent;})),
+    damage_marks: JSON.stringify(damages),
+    signature: getSignDataURL()||'',
+    reception_datetime: new Date().toISOString()
+  };
+  try {
+    await supabaseQuery('receptions','POST',payload);
+    try {
+      var existing = await supabaseQuery('customers','GET',null,'?name=eq.'+encodeURIComponent(name)+'&limit=1');
+      if (!existing||existing.length===0) {
+        var newNo = 'C'+String(Date.now()).slice(-6);
+        await supabaseQuery('customers','POST',{name:name,tel:phone||'',customer_no:newNo});
+        var carName=document.getElementById('carName').value||'';
+        var carNum=document.getElementById('carNum').value||'';
+        var carColor=document.getElementById('carColor').value||'';
+        if(carName||carNum) await supabaseQuery('vehicles','POST',{name:carName,plate:carNum,color_name:carColor,customer_id:newNo,vehicle_no:'V'+String(Date.now()).slice(-6)});
+      }
+    } catch(ce){ console.warn('顧客自動登録エラー:',ce); }
+    hideLoading();
+    afterReceptionSaved(caseNum, name, rentalNeeded, selectedRentalCar);
+  } catch(e) {
+    hideLoading();
+    showToast('登録に失敗しました: '+e.message,'error');
+  }
+}
+
+function afterReceptionSaved(caseNum, name, needRental, rentalCar) {
+  if (needRental) {
+    var phone=(document.getElementById('phone')||{}).value||'';
+    var carName=(document.getElementById('carName')||{}).value||'';
+    var carNum=(document.getElementById('carNum')||{}).value||'';
+    showRentalDialog(caseNum,name,phone,carName,carNum,rentalCar);
+  } else {
+    showToast('案件 '+caseNum+' を登録しました ✅','success');
+    clearForm();
+  }
+}
+
+function showRentalDialog(caseNum,name,phone,carName,carNum,rentalCar) {
+  window._rentalTransfer={caseNum,name,phone,carName,carNum};
+  var overlay=document.createElement('div');
+  overlay.id='rentalDialog';
+  overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(26,39,68,0.6);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;';
+  var box=document.createElement('div');
+  box.style.cssText='background:white;border-radius:16px;padding:28px;max-width:360px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);text-align:center;';
+  box.innerHTML='<div style="font-size:48px;margin-bottom:12px;">🚗</div>'
+    +'<div style="font-size:18px;font-weight:700;color:#1a2744;margin-bottom:8px;">案件登録完了！</div>'
+    +'<div style="font-size:14px;color:#6b7a99;margin-bottom:4px;">案件番号: <strong style="color:#1a2744;">'+caseNum+'</strong></div>'
+    +'<div style="font-size:14px;color:#6b7a99;margin-bottom:16px;">'+name+' 様</div>'
+    +'<div style="background:#fff0ee;border-radius:10px;padding:14px;margin-bottom:20px;">'
+    +'<div style="font-size:13px;font-weight:700;color:#e8392a;margin-bottom:4px;">🚗 レンタカー貸出が必要です</div>'
+    +'<div style="font-size:12px;color:#6b7a99;">続けて貸出手続きを行いますか？</div></div>'
+    +'<div style="display:flex;gap:10px;">'
+    +'<button onclick="closeRentalDialog()" style="flex:1;padding:12px;border:2px solid #d8dde8;border-radius:8px;background:white;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;color:#6b7a99;">後で行う</button>'
+    +'<button onclick="goToRentalTab()" style="flex:2;padding:12px;border:none;border-radius:8px;background:#e8392a;color:white;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;">🚗 貸出手続きへ</button>'
+    +'</div>';
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+}
+
+function closeRentalDialog() { var el=document.getElementById('rentalDialog'); if(el)el.remove(); showToast('案件を登録しました ✅','success'); clearForm(); }
+function goToRentalTab() {
+  var d=window._rentalTransfer||{};
+  var el=document.getElementById('rentalDialog'); if(el)el.remove();
+  clearForm(); switchTab('rental');
+  setTimeout(function(){
+    var set=function(id,val){var e=document.getElementById(id);if(e)e.value=val||'';};
+    set('rentalCaseNum',d.caseNum||''); set('rentalCustomer',d.name||''); set('driverName',d.name||''); set('driverPhone',d.phone||'');
+    window.scrollTo({top:0,behavior:'smooth'});
+    showToast('受付データを引き継ぎました（'+(d.name||'')+' 様）✅','success');
+    window._rentalTransfer=null;
+  },200);
+}
+
+async function saveRental() {
+  if (!selectedRentalCar) { showToast('貸出車両を選択してください','error'); return; }
+  var driver=document.getElementById('driverName').value;
+  var license=document.getElementById('licenseNum').value;
+  if (!driver||!license) { showToast('運転者名と免許証番号は必須です','error'); return; }
+  var startKm=document.getElementById('rentalStartKm').value;
+  if (!startKm||parseInt(startKm)<=0) { showToast('貸出時キロ数を入力してください','error'); return; }
+  var rentalStart=document.getElementById('rentalStart').value;
+  if (!rentalStart) { showToast('貸出日を入力してください','error'); return; }
+  var confirmCheck=document.getElementById('confirmCheck');
+  if (!confirmCheck.classList.contains('checked')) { showToast('規約への同意が必要です','error'); return; }
+  showLoading('貸出情報を登録中...');
+  var payload = {
+    type:'レンタカー貸出',
+    customer_name:document.getElementById('rentalCustomer').value||'',
+    phone:document.getElementById('driverPhone').value||'',
+    plate:document.getElementById('licenseNum').value||'',
+    car_model:selectedRentalCar?(selectedRentalCar['め']||selectedRentalCar['車種']||''):'',
+    staff:document.getElementById('driverName').value||'',
+    note:document.getElementById('rentalCaseNum').value||'',
+    rental_needed:true,
+    rental_type:selectedRentalCar?(selectedRentalCar['め']||selectedRentalCar['車種']||''):'',
+    damage_marks:JSON.stringify(damages),
+    signature:getSignDataURL()||'',
+    reception_datetime:new Date().toISOString()
+  };
+  try {
+    await supabaseQuery('receptions','POST',payload);
+    try { await patchRentalStatus(selectedRentalCar,'貸出中'); await loadRentalCars(); } catch(ue){console.warn('ステータス更新エラー:',ue);}
+    hideLoading(); selectedRentalCar=null;
+    showToast('レンタカー貸出を登録しました ✅','success');
+  } catch(e) { hideLoading(); showToast('登録に失敗しました: '+e.message,'error'); }
+}
+
+var allCasesCache = [];
+async function loadCases() {
+  try {
+    var dateEl=document.getElementById('caseSearchDate');
+    var searchDate=dateEl?dateEl.value:'';
+    var today=searchDate||new Date().toISOString().split('T')[0];
+    var titleEl=document.getElementById('caseListTitle');
+    if(titleEl) titleEl.textContent=searchDate?searchDate+' の案件':'本日の案件';
+    var data=await supabaseQuery('receptions','GET',null,'?reception_datetime=gte.'+today+'T00:00:00&reception_datetime=lt.'+today+'T23:59:59&order=reception_datetime.desc&limit=100');
+    allCasesCache=data||[];
+    filterCaseList();
+    var allRentals=await supabaseQuery('receptions','GET',null,'?type=eq.'+encodeURIComponent('レンタカー貸出')+'&order=reception_datetime.desc&limit=100');
+    var allReturns=await supabaseQuery('receptions','GET',null,'?type=eq.'+encodeURIComponent('レンタカー返却')+'&select=rental_type&limit=100');
+    var rentalsByCar={};
+    (allRentals||[]).forEach(function(r){var k=r.rental_type||'';if(!k)return;if(!rentalsByCar[k])rentalsByCar[k]=[];rentalsByCar[k].push(r);});
+    var returnsByCar={};
+    (allReturns||[]).forEach(function(r){var k=r.rental_type||'';if(!k)return;returnsByCar[k]=(returnsByCar[k]||0)+1;});
+    var activeRentals=[];
+    Object.keys(rentalsByCar).forEach(function(key){
+      var rentals=rentalsByCar[key];
+      var activeCount=rentals.length-(returnsByCar[key]||0);
+      if(activeCount>0) activeRentals.push.apply(activeRentals,rentals.slice(0,activeCount));
+    });
+    renderRentalCases(activeRentals);
+  } catch(e) { renderCases([]); renderRentalCases([]); }
+}
+
+function filterCaseList() {
+  var q=(document.getElementById('caseSearchName')||{}).value||'';
+  var filtered=q?allCasesCache.filter(function(c){return(c.customer_name||'').includes(q)||(c.car_model||'').includes(q)||(c.plate||'').includes(q);}):allCasesCache;
+  var countEl=document.getElementById('caseListCount');
+  if(countEl) countEl.textContent='（'+filtered.length+'件）';
+  renderCases(filtered);
+}
+
+function caseSearchClear() {
+  var d=document.getElementById('caseSearchDate'); var n=document.getElementById('caseSearchName');
+  if(d)d.value=''; if(n)n.value=''; loadCases();
+}
+
+function renderCases(cases) {
+  var el=document.getElementById('caseList');
+  if(!cases.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--text-light);">本日の案件はありません</div>';return;}
+  var typeIcons={'レッカー':'🚛','修理入庫':'🔧','板金塗装':'🎨','車検':'📋','その他':'📝'};
+  var statusBadge={'受付':'badge-new','作業中':'badge-progress','完了':'badge-done'};
+  el.innerHTML=cases.map(function(c){
+    var icon=typeIcons[c.type]||'📋';
+    var time=c.reception_datetime?new Date(c.reception_datetime).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}):'--:--';
+    var status=c.status||'受付';
+    var statusCls=statusBadge[status]||'badge-new';
+    var cJson=JSON.stringify(c).replace(/"/g,'&quot;');
+    return '<div class="case-item" onclick="showCaseDetail('+cJson+')" style="cursor:pointer;">'
+      +'<div class="case-item-icon icon-bg-'+(c.type==='レッカー'?'red':status==='完了'?'green':'blue')+'">'+icon+'</div>'
+      +'<div class="case-item-body"><div class="case-item-name">'+(c.customer_name||'')+' <span class="badge '+statusCls+'">'+status+'</span></div>'
+      +'<div class="case-item-sub">'+(c.car_model||'')+' / '+(c.type||'')+'</div></div>'
+      +'<div class="case-item-right"><div class="case-item-num">'+(c.note||'')+'</div><div class="case-item-time">'+time+'</div></div></div>';
+  }).join('');
+}
+
+function renderRentalCases(cases) {
+  var el=document.getElementById('rentalCaseList');
+  if(!cases.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-light);">貸出中のレンタカーはありません</div>';return;}
+  el.innerHTML=cases.map(function(c){
+    var dt=c.reception_datetime?new Date(c.reception_datetime).toLocaleDateString('ja-JP',{month:'2-digit',day:'2-digit'}):'--';
+    var tm=c.reception_datetime?new Date(c.reception_datetime).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}):'--';
+    var days=c.reception_datetime?Math.floor((new Date()-new Date(c.reception_datetime))/86400000):0;
+    var daysStr=days>0?days+'日経過':'本日';
+    var daysColor=days>14?'#e8392a':days>7?'#e65100':'#2e7d32';
+    var caseId=JSON.stringify(c).replace(/"/g,'&quot;');
+    return '<div class="case-item" style="border-left:4px solid #e8392a;margin-bottom:8px;">'
+      +'<div class="case-item-icon icon-bg-red">🚗</div>'
+      +'<div class="case-item-body">'
+      +'<div class="case-item-name" style="color:#1a2744;font-weight:700;">'+(c.customer_name||'不明')+' 様</div>'
+      +'<div class="case-item-sub">貸出車両: <b>'+(c.rental_type||c.car_model||'-')+'</b></div>'
+      +'<div class="case-item-sub">貸出日: '+dt+' '+tm+' <span style="color:'+daysColor+';font-weight:700;">('+daysStr+')</span></div>'
+      +'</div>'
+      +'<div class="case-item-right">'
+      +'<div class="case-item-num" style="color:#e8392a;font-weight:700;margin-bottom:8px;">貸出中</div>'
+      +'<button onclick="showReturnDialog('+caseId+')" style="background:#1565c0;color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">🔄 返却登録</button>'
+      +'</div></div>';
+  }).join('');
+}
+
+function showReturnDialog(c) {
+  var overlay=document.createElement('div');
+  overlay.id='returnDialog';
+  overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(26,39,68,0.6);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;';
+  var box=document.createElement('div');
+  box.style.cssText='background:white;border-radius:16px;padding:28px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+  var returnVal=new Date(new Date().getTime()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+  box.innerHTML='<div style="font-size:20px;font-weight:700;color:#1a2744;margin-bottom:16px;">🔄 返却登録</div>'
+    +'<div style="background:#f5f7ff;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;">'
+    +'<div style="font-weight:700;margin-bottom:4px;">'+(c.customer_name||'')+' 様</div>'
+    +'<div style="color:#6b7a99;">貸出車両: '+(c.rental_type||c.car_model||'-')+'</div></div>'
+    +'<div style="margin-bottom:12px;"><label style="font-size:12px;font-weight:700;color:#1a2744;display:block;margin-bottom:4px;">返却時キロ数</label>'
+    +'<input id="returnKm" type="number" placeholder="例：12500" style="width:100%;padding:10px;border:1px solid #d8dde8;border-radius:8px;font-size:14px;box-sizing:border-box;"></div>'
+    +'<div style="margin-bottom:20px;"><label style="font-size:12px;font-weight:700;color:#1a2744;display:block;margin-bottom:4px;">返却日時</label>'
+    +'<input id="returnDate" type="datetime-local" style="width:100%;padding:10px;border:1px solid #d8dde8;border-radius:8px;font-size:14px;box-sizing:border-box;" value="'+returnVal+'"></div>'
+    +'<div style="margin-bottom:20px;"><label style="font-size:12px;font-weight:700;color:#1a2744;display:block;margin-bottom:4px;">備考</label>'
+    +'<input id="returnNote" type="text" placeholder="特記事項があれば入力" style="width:100%;padding:10px;border:1px solid #d8dde8;border-radius:8px;font-size:14px;box-sizing:border-box;"></div>'
+    +'<div style="display:flex;gap:10px;">'
+    +'<button onclick="closeReturnDialog()" style="flex:1;padding:12px;border:2px solid #d8dde8;border-radius:8px;background:white;cursor:pointer;font-size:13px;font-weight:700;color:#6b7a99;">キャンセル</button>'
+    +'<button onclick="saveReturn('+JSON.stringify(c).replace(/"/g,'&quot;')+')" style="flex:2;padding:12px;border:none;border-radius:8px;background:#1565c0;color:white;cursor:pointer;font-size:13px;font-weight:700;">✅ 返却確定</button>'
+    +'</div>';
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+}
+
+function showCaseDetail(c) {
+  var overlay=document.createElement('div');
+  overlay.id='caseDetailDialog';
+  overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(26,39,68,0.6);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
+  var dt=c.reception_datetime?new Date(c.reception_datetime).toLocaleString('ja-JP'):'-';
+  var box=document.createElement('div');
+  box.style.cssText='background:white;border-radius:16px;padding:24px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+  var estUrl='index.html?name='+encodeURIComponent(c.customer_name||'')+'&car='+encodeURIComponent(c.car_model||'')+'&plate='+encodeURIComponent(c.plate||'')+'&phone='+encodeURIComponent(c.phone||'')+'&note='+encodeURIComponent(c.note||'')+'&type='+encodeURIComponent(c.type||'');
+  box.innerHTML='<div style="font-size:16px;font-weight:700;color:#1a2744;margin-bottom:4px;">📋 案件詳細</div>'
+    +'<div style="font-size:11px;color:#aaa;margin-bottom:14px;">受付日時: '+dt+'</div>'
+    +'<table style="width:100%;font-size:13px;border-collapse:collapse;">'
+    +'<tr><td style="padding:5px 0;color:#888;width:80px;">顧客名</td><td style="padding:5px 0;font-weight:600;">'+(c.customer_name||'-')+' 様</td></tr>'
+    +'<tr><td style="padding:5px 0;color:#888;">電話番号</td><td style="padding:5px 0;"><a href="tel:'+(c.phone||'')+'" style="color:#1565c0;">'+(c.phone||'-')+'</a></td></tr>'
+    +'<tr><td style="padding:5px 0;color:#888;">車名</td><td style="padding:5px 0;">'+(c.car_model||'-')+'</td></tr>'
+    +'<tr><td style="padding:5px 0;color:#888;">ナンバー</td><td style="padding:5px 0;">'+(c.plate||'-')+'</td></tr>'
+    +'<tr><td style="padding:5px 0;color:#888;">受付種別</td><td style="padding:5px 0;">'+(c.type||'-')+'</td></tr>'
+    +'<tr><td style="padding:5px 0;color:#888;">担当者</td><td style="padding:5px 0;">'+(c.staff||'-')+'</td></tr>'
+    +'<tr><td style="padding:5px 0;color:#888;">問診内容</td><td style="padding:5px 0;font-size:12px;color:#555;">'+(c.note||'-')+'</td></tr>'
+    +'</table>'
+    +'<div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;">'
+    +'<a href="'+estUrl+'" style="display:block;text-align:center;padding:12px;border-radius:8px;background:linear-gradient(135deg,#6a1b9a,#8e24aa);color:white;font-size:13px;font-weight:700;text-decoration:none;">💰 見積ソフトで開く</a>'
+    +'<button onclick="editCaseStatus(&quot;'+(c.id||'')+'&quot;)" style="padding:10px;border:1.5px solid #1a2744;border-radius:8px;background:white;color:#1a2744;font-size:13px;font-weight:700;cursor:pointer;">✏️ ステータス変更</button>'
+    +'<button onclick="closeCaseDetail()" style="padding:10px;border:none;border-radius:8px;background:#f0f2f5;color:#666;font-size:13px;cursor:pointer;">閉じる</button>'
+    +'</div>';
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+}
+
+function addSymptom(text) {
+  var el=document.getElementById('symptoms'); if(!el)return;
+  if(el.value&&!el.value.endsWith('\n')) el.value+='\n';
+  el.value+=text; el.focus();
+}
+
+function closeCaseDetail() { var el=document.getElementById('caseDetailDialog'); if(el)el.remove(); }
+
+async function editCaseStatus(id) {
+  if(!id){alert('IDがありません');return;}
+  var newStatus=prompt('新しいステータスを入力してください：\n受付 / 作業中 / 完了','作業中');
+  if(!newStatus)return;
+  try {
+    var res=await fetch(SUPABASE_URL+'/rest/v1/receptions?id=eq.'+id,{
+      method:'PATCH',
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body:JSON.stringify({status:newStatus})
+    });
+    if(res.ok){alert('✅ ステータスを「'+newStatus+'」に変更しました');closeCaseDetail();loadCases();}
+    else alert('⚠ 更新失敗 HTTP:'+res.status);
+  }catch(e){alert('エラー: '+e.message);}
+}
+
+function closeReturnDialog() { var el=document.getElementById('returnDialog'); if(el)el.remove(); }
+
+var returnProcessing = false;
+
+async function patchRentalStatus(car, status) {
+  var carId=car.id;
+  var plate=car['登録番号']||'';
+  var tbl=encodeURIComponent('レンタカーマスタ');
+  var body={};
+  body['現在の状況']=status;
+  var bodyStr=JSON.stringify(body);
+  var headers={'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
+  var url1=SUPABASE_URL+'/rest/v1/'+tbl+'?id=eq.'+carId;
+  var res1=await fetch(url1,{method:'PATCH',headers:headers,body:bodyStr});
+  var text1=await res1.text();
+  var updated=false;
+  try{updated=JSON.parse(text1).length>0;}catch(e){}
+  if(!updated&&plate){
+    var url2=SUPABASE_URL+'/rest/v1/'+tbl+'?'+encodeURIComponent('登録番号')+'=eq.'+encodeURIComponent(plate);
+    var res2=await fetch(url2,{method:'PATCH',headers:headers,body:bodyStr});
+    var text2=await res2.text();
+    try{updated=JSON.parse(text2).length>0;}catch(e){}
+  }
+  return updated;
+}
+
+async function saveReturn(c) {
+  if(returnProcessing)return;
+  returnProcessing=true;
+  var km=document.getElementById('returnKm').value;
+  var returnDate=document.getElementById('returnDate').value;
+  var note=document.getElementById('returnNote').value;
+  showLoading('返却処理中...');
+  try {
+    await supabaseQuery('receptions','POST',{
+      type:'レンタカー返却',
+      customer_name:c.customer_name||'',phone:c.phone||'',
+      car_model:c.rental_type||c.car_model||'',rental_type:c.rental_type||'',
+      staff:c.staff||'',
+      note:(c.note||'')+(km?' 返却時'+km+'km':'')+(note?' '+note:''),
+      rental_needed:false,
+      reception_datetime:returnDate?new Date(returnDate).toISOString():new Date().toISOString()
+    });
+    var carName=c.rental_type||c.car_model||'';
+    var matchCar=rentalCars.find(function(rc){return rc['め']===carName||rc['車種']===carName;});
+    if(!matchCar){
+      var allCars=await supabaseQuery('レンタカーマスタ');
+      var found=(allCars||[]).find(function(rc){return rc['め']===carName||rc['車種']===carName;});
+      if(found) await patchRentalStatus(found,'空き');
+    } else {
+      await patchRentalStatus(matchCar,'空き');
+      matchCar['現在の状況']='空き';
+    }
+    hideLoading(); closeReturnDialog();
+    showToast('返却登録が完了しました ✅','success');
+    await loadRentalCars(); loadCases();
+  } catch(e) {
+    hideLoading();
+    showToast('返却登録に失敗しました: '+e.message,'error');
+  } finally { returnProcessing=false; }
+}
+
+var searchTimer = null;
+async function searchCustomer(val) {
+  var dd=document.getElementById('customerDropdown');
+  if(!val||val.length<2){if(dd)dd.style.display='none';return;}
+  clearTimeout(searchTimer);
+  searchTimer=setTimeout(async function(){
+    try {
+      var qurl='?name=ilike.%25'+encodeURIComponent(val)+'%25&select=name,tel,customer_no&limit=8';
+      var data=await supabaseQuery('customers','GET',null,qurl);
+      if(!dd)return;
+      if(!data||data.length===0){dd.style.display='none';return;}
+      dd.innerHTML=data.map(function(c){
+        var cJson=JSON.stringify(c).replace(/"/g,'&quot;');
+        return '<div onclick="fillCustomer(this)" data-cjson="'+cJson+'" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:13px;">'
+          +'<div style="font-weight:700;color:#1a2744">'+(c.name||'')+' 様</div>'
+          +'<div style="font-size:11px;color:#6b7a99;">'+(c.tel||'')+'　'+(c.customer_no||'')+'</div></div>';
+      }).join('');
+      dd.style.display='block';
+    } catch(e){if(dd)dd.style.display='none';}
+  },300);
+}
+
+async function fillCustomer(el) {
+  var cJson=el.getAttribute('data-cjson');
+  if(!cJson)return;
+  try {
+    var c=JSON.parse(cJson.replace(/&quot;/g,'"'));
+    var set=function(id,val){var e=document.getElementById(id);if(e)e.value=val||'';};
+    set('customerName',c.name||''); set('phone',c.tel||'');
+    var dd=document.getElementById('customerDropdown'); if(dd)dd.style.display='none';
+    if(c.customer_no){
+      try {
+        var vdata=await supabaseQuery('vehicles','GET',null,'?customer_id=eq.'+encodeURIComponent(c.customer_no)+'&select=name,plate,color_name&limit=1');
+        if(vdata&&vdata.length>0){
+          set('carName',vdata[0].name||''); set('carNum',vdata[0].plate||''); set('carColor',vdata[0].color_name||'');
+          showToast(c.name+' 様の情報を読み込みました ✅','success');
+        } else { showToast(c.name+' 様（車両情報なし）✅','success'); }
+      } catch(ve){ showToast(c.name+' 様を入力しました ✅','success'); }
+    } else { showToast(c.name+' 様を入力しました ✅','success'); }
+  } catch(e){console.warn('fillCustomerエラー',e);}
+}
+
+document.addEventListener('click',function(e){
+  var dd=document.getElementById('customerDropdown');
+  var inp=document.getElementById('customerName');
+  if(dd&&inp&&!inp.contains(e.target)&&!dd.contains(e.target))dd.style.display='none';
+});
+
+function clearForm() {
+  ['customerName','phone','carName','carNum','carColor','insurance','symptoms','locationInput','destAddr','remarks'].forEach(function(id){
+    var el=document.getElementById(id); if(el)el.value='';
+  });
+  document.getElementById('arrivalDisplay').classList.remove('show');
+  document.getElementById('mapPlaceholder').style.display='flex';
+  document.getElementById('map').style.display='none';
+  selectedRentalCar=null; rentalNeeded=false;
+  document.getElementById('rentalQuick').style.display='none';
+  document.getElementById('rental-no').classList.add('active');
+  document.getElementById('rental-yes').classList.remove('active');
+}
+
+function printContract() { showToast('印刷プレビューを準備中...','success'); setTimeout(function(){window.print();},500); }
+
+function showToast(msg, type) {
+  var el=document.getElementById('toast');
+  el.textContent=msg;
+  el.className='toast'+(type?' '+type:'')+' show';
+  setTimeout(function(){el.classList.remove('show');},3000);
+}
+function showLoading(msg) { document.getElementById('loadingText').textContent=msg||'処理中...'; document.getElementById('loadingOverlay').classList.add('show'); }
+function hideLoading() { document.getElementById('loadingOverlay').classList.remove('show'); }
+
+function shareToLINE() {
+  if(!_mapCurrentAddr){showToast('先に住所を検索してください','error');return;}
+  var leg=document.getElementById('summaryDur').textContent;
+  var eta=document.getElementById('summaryETA').textContent;
+  var msg='【現場共有】\n📍 '+_mapCurrentAddr+'\n🚗 所要時間: '+leg+'\n⏰ 到着予定: '+eta
+    +'\nhttps://www.google.com/maps/search/?api=1&query='+encodeURIComponent(_mapCurrentAddr);
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(msg).then(function(){
+      showToast('住所をコピーしました。LINEに貼り付けてください','success');
+      window.open('https://line.me/ti/g/dUCBJhxCE-','_blank');
+    });
+  } else {
+    window.open('https://line.me/ti/g/dUCBJhxCE-','_blank');
+  }
+}
+</script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7EOjNdQp0YdyQ9TxbYkuAJjxxyRrabnQ&callback=initMap&language=ja"></script>
+</body>
+</html>
