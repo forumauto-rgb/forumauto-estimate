@@ -1665,9 +1665,7 @@ function searchMapTab() {
         document.getElementById('googleNaviBtn').href = naviUrl;
 
         // 現在地からのナビリンク（スマホ用）
-        const currentNaviUrl = 'https://www.google.com/maps/dir/?api=1'
-          + '&destination=' + encodeURIComponent(fullAddr)
-          + '&travelmode=driving';
+        center: {lat: 34.7268, lng: 137.9195},
         document.getElementById('currentNaviBtn').href = currentNaviUrl;
 
         showToast('現場まで ' + leg.distance.text + ' / ' + leg.duration.text, 'success');
