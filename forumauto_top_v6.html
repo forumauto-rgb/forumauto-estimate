@@ -1,0 +1,571 @@
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@300;400;700;900&display=swap');
+
+.fa-wrap * { box-sizing: border-box; margin: 0; padding: 0; }
+.fa-wrap { font-family: 'Noto Sans JP', sans-serif; color: #1a1a1a; overflow-x: hidden; }
+
+/* ========================================
+   ヒーロー：ビフォーアフター左右分割
+======================================== */
+.fa-hero {
+  position: relative;
+  width: 100%;
+  height: 88vh;
+  min-height: 540px;
+  overflow: hidden;
+  display: flex;
+}
+
+/* 左：BEFORE（フリー素材・事故車・暗） */
+.fa-hero-left {
+  position: absolute; inset: 0; right: 50%;
+  background: url('https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=1400&q=85') center center / cover no-repeat;
+  filter: brightness(0.42) saturate(0.25);
+}
+
+/* 右：AFTER（フリー素材・ピカピカ・明） */
+.fa-hero-right {
+  position: absolute; inset: 0; left: 50%;
+  background: url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1400&q=85') center 40% / cover no-repeat;
+  filter: brightness(1.08) saturate(1.15);
+}
+
+/* 中央ワープライン */
+.fa-hero-line {
+  position: absolute; top: 0; bottom: 0;
+  left: calc(50% - 3px); width: 6px; z-index: 20;
+  background: linear-gradient(to bottom,
+    transparent 0%, #4db8ff 15%, #ffffff 45%,
+    #4db8ff 55%, #ffffff 75%, transparent 100%);
+  box-shadow: 0 0 24px 8px rgba(77,184,255,0.5);
+}
+
+/* 下部グラデ */
+.fa-hero-grad {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 220px; z-index: 10;
+  background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 60%, transparent 100%);
+}
+
+/* BEFORE / AFTER 大きなラベル */
+.fa-hero-label {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  z-index: 25; font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(48px, 7vw, 96px);
+  letter-spacing: 6px; opacity: 0.18; pointer-events: none;
+}
+.fa-hero-label-before { left: 4%; color: #fff; }
+.fa-hero-label-after  { right: 4%; color: #4db8ff; text-align: right; }
+
+/* BEFORE / AFTER タグ（上部） */
+.fa-hero-tag {
+  position: absolute; top: 24px; z-index: 30;
+  font-size: clamp(11px, 1.2vw, 14px); font-weight: 900;
+  padding: 7px 22px; border-radius: 2px; letter-spacing: 3px;
+}
+.fa-hero-tag-b { left: 24px;  background: #cc2200; color: #fff; }
+.fa-hero-tag-a { right: 24px; background: #0099ee; color: #fff; }
+
+/* サブラベル（写真説明） */
+.fa-hero-sublabel {
+  position: absolute; bottom: 130px; z-index: 25;
+  font-size: clamp(11px, 1.1vw, 13px); font-weight: 700;
+  letter-spacing: 2px; color: rgba(255,255,255,0.9);
+  text-shadow: 0 1px 6px rgba(0,0,0,1);
+}
+.fa-hero-sublabel-b { left: 28px; }
+.fa-hero-sublabel-a { right: 28px; }
+
+/* 中央コンテンツ */
+.fa-hero-center {
+  position: absolute; bottom: 36px; left: 0; right: 0;
+  z-index: 30; display: flex; align-items: flex-end;
+  padding: 0 5%;
+  gap: 20px;
+}
+
+/* ロゴリング */
+.fa-hero-ring {
+  width: clamp(76px, 9vw, 110px);
+  height: clamp(76px, 9vw, 110px);
+  border-radius: 50%;
+  border: 3px solid #4db8ff;
+  background: rgba(0,15,40,0.92);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; flex-shrink: 0;
+  box-shadow: 0 0 28px rgba(77,184,255,0.5);
+}
+.fa-hero-ring span { font-weight: 900; letter-spacing: 1px; line-height: 1.5; }
+
+/* キャッチ */
+.fa-hero-catch { flex: 1; }
+.fa-hero-catch h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(30px, 5vw, 68px);
+  letter-spacing: 4px; color: #fff; line-height: 1.1;
+  text-shadow: 0 3px 16px rgba(0,0,0,0.8);
+}
+.fa-hero-catch h1 em { color: #4db8ff; font-style: normal; }
+.fa-hero-catch-badge {
+  display: inline-block; margin-top: 10px;
+  background: #fff; color: #111;
+  font-size: clamp(13px, 1.6vw, 18px); font-weight: 900;
+  padding: 5px 20px; border-radius: 2px; letter-spacing: 2px;
+}
+.fa-hero-catch-area {
+  display: block; margin-top: 7px;
+  color: rgba(255,255,255,0.85);
+  font-size: clamp(11px, 1.1vw, 13px); font-weight: 700;
+  letter-spacing: 4px; text-shadow: 0 1px 6px rgba(0,0,0,0.9);
+}
+
+/* ========================================
+   お知らせバー
+======================================== */
+.fa-notice {
+  background: #003366; color: #fff;
+  text-align: center; padding: 13px 20px;
+  font-size: 14px; letter-spacing: 1px;
+}
+.fa-notice a { color: #4db8ff; text-decoration: none; }
+
+/* ========================================
+   セクション共通
+======================================== */
+.fa-section { padding: 72px 20px; }
+.fa-section-title { text-align: center; margin-bottom: 52px; }
+.fa-section-title h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(30px, 5vw, 54px);
+  letter-spacing: 5px; color: #003366; line-height: 1;
+}
+.fa-section-title p {
+  font-size: 12px; color: #888;
+  letter-spacing: 4px; margin-top: 8px; text-transform: uppercase;
+}
+
+/* ========================================
+   ビフォーアフター施工事例（旧サイト風・明るい）
+======================================== */
+.fa-ba { background: #f0f6ff; }
+.fa-ba-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 28px; max-width: 1100px; margin: 0 auto;
+}
+.fa-ba-card {
+  background: #fff; border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,51,102,0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.fa-ba-card:hover { transform: translateY(-6px); box-shadow: 0 10px 32px rgba(0,51,102,0.18); }
+.fa-ba-photos {
+  display: grid; grid-template-columns: 1fr 1fr;
+  position: relative; height: 200px;
+}
+.fa-ba-photo {
+  overflow: hidden; position: relative;
+}
+.fa-ba-photo img { width: 100%; height: 200px; object-fit: cover; display: block; }
+.fa-ba-photo-tag {
+  position: absolute; top: 10px; left: 10px;
+  font-size: 11px; font-weight: 900; padding: 3px 10px;
+  border-radius: 2px; letter-spacing: 2px;
+}
+.tag-before-card { background: #cc2200; color: #fff; }
+.tag-after-card  { background: #0099ee; color: #fff; }
+.fa-ba-arrow {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 36px; height: 36px; background: #fff; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  z-index: 5;
+}
+.fa-ba-body { padding: 18px 20px; }
+.fa-ba-body h3 { font-size: 15px; font-weight: 700; color: #003366; margin-bottom: 6px; }
+.fa-ba-body p { font-size: 13px; color: #555; line-height: 1.6; }
+
+/* ========================================
+   サービス
+======================================== */
+.fa-services { background: #fff; }
+.fa-service-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px; max-width: 1100px; margin: 0 auto;
+}
+.fa-service-card {
+  background: #f0f6ff; border-radius: 10px;
+  padding: 28px 16px; text-align: center;
+  border-top: 4px solid #0099ee;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.fa-service-card:hover { transform: translateY(-5px); box-shadow: 0 8px 24px rgba(0,51,102,0.12); }
+.fa-service-icon { font-size: 38px; margin-bottom: 14px; }
+.fa-service-card h3 { font-size: 15px; font-weight: 700; color: #003366; margin-bottom: 8px; }
+.fa-service-card p { font-size: 12px; color: #555; line-height: 1.6; }
+
+/* ========================================
+   スタッフ紹介
+======================================== */
+.fa-staff { background: #1a2a4a; }
+.fa-staff .fa-section-title h2 { color: #fff; }
+.fa-staff .fa-section-title p { color: #7aa0cc; }
+.fa-staff-intro {
+  max-width: 720px; margin: 0 auto 48px;
+  text-align: center; color: rgba(255,255,255,0.85);
+  font-size: 15px; line-height: 1.9; letter-spacing: 0.5px;
+}
+.fa-staff-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px; max-width: 1000px; margin: 0 auto;
+}
+.fa-staff-card {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(77,184,255,0.2);
+  border-radius: 12px; overflow: hidden;
+  text-align: center;
+  transition: transform 0.3s, background 0.3s;
+}
+.fa-staff-card:hover { transform: translateY(-4px); background: rgba(255,255,255,0.1); }
+.fa-staff-photo {
+  width: 100%; height: 200px; object-fit: cover;
+  object-position: center top; display: block;
+}
+.fa-staff-photo-placeholder {
+  width: 100%; height: 200px;
+  background: linear-gradient(135deg, #1e3a6e, #2a5298);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 64px;
+}
+.fa-staff-body { padding: 20px 16px; }
+.fa-staff-role {
+  font-size: 11px; font-weight: 700; color: #4db8ff;
+  letter-spacing: 2px; margin-bottom: 6px;
+}
+.fa-staff-name {
+  font-size: 20px; font-weight: 900; color: #fff;
+  margin-bottom: 10px;
+}
+.fa-staff-desc { font-size: 12px; color: rgba(255,255,255,0.7); line-height: 1.7; }
+
+/* ========================================
+   施工写真ギャラリー
+======================================== */
+.fa-gallery { background: #f5f7fa; }
+.fa-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px; max-width: 1100px; margin: 0 auto;
+}
+.fa-gallery-item {
+  position: relative; overflow: hidden;
+  border-radius: 8px; aspect-ratio: 4/3;
+}
+.fa-gallery-item img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform 0.4s;
+  display: block;
+}
+.fa-gallery-item:hover img { transform: scale(1.07); }
+.fa-gallery-label {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: linear-gradient(transparent, rgba(0,20,60,0.8));
+  color: #fff; padding: 20px 12px 10px;
+  font-size: 12px; font-weight: 700; letter-spacing: 1px;
+}
+
+/* ========================================
+   アクセス
+======================================== */
+.fa-access { background: #fff; }
+.fa-access-inner {
+  max-width: 1000px; margin: 0 auto;
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 40px; align-items: start;
+}
+.fa-access-info h3 { font-size: 18px; font-weight: 700; color: #003366; margin-bottom: 16px; }
+.fa-access-info table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.fa-access-info td { padding: 10px 0; border-bottom: 1px solid #e8eef5; vertical-align: top; }
+.fa-access-info td:first-child { color: #0099ee; width: 80px; font-size: 12px; font-weight: 700; letter-spacing: 1px; }
+.fa-map-wrap { border-radius: 10px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+
+/* ========================================
+   お問い合わせ
+======================================== */
+.fa-contact { background: #0055aa; color: #fff; text-align: center; }
+.fa-contact .fa-section-title h2 { color: #fff; }
+.fa-contact .fa-section-title p { color: #aaccee; }
+.fa-contact-btns {
+  display: flex; gap: 20px; justify-content: center;
+  flex-wrap: wrap; margin-top: 8px;
+}
+.fa-contact-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 18px 36px; border-radius: 6px;
+  text-decoration: none; font-weight: 700; font-size: 16px;
+  transition: all 0.3s; min-width: 220px; justify-content: center;
+}
+.fa-contact-btn-line  { background: #06c755; color: #fff; }
+.fa-contact-btn-line:hover { background: #05a847; }
+.fa-contact-btn-tel   { background: #fff; color: #003366; }
+.fa-contact-btn-tel:hover { background: #e0eeff; }
+.fa-contact-btn-mail  { background: transparent; color: #fff; border: 2px solid #fff; }
+.fa-contact-btn-mail:hover { background: #fff; color: #003366; }
+.fa-contact-hours { margin-top: 24px; font-size: 13px; color: #aaccee; letter-spacing: 1px; }
+
+/* ========================================
+   レスポンシブ
+======================================== */
+@media (max-width: 680px) {
+  .fa-hero { height: 75vh; }
+  .fa-access-inner { grid-template-columns: 1fr; }
+  .fa-hero-label { display: none; }
+}
+</style>
+
+<div class="fa-wrap">
+
+  <!-- ===== ヒーロー ===== -->
+  <div class="fa-hero">
+    <div class="fa-hero-left"></div>
+    <div class="fa-hero-right"></div>
+    <div class="fa-hero-line"></div>
+    <div class="fa-hero-grad"></div>
+
+    <!-- 大きな透過ラベル -->
+    <div class="fa-hero-label fa-hero-label-before">BEFORE</div>
+    <div class="fa-hero-label fa-hero-label-after">AFTER</div>
+
+    <!-- 上部タグ -->
+    <div class="fa-hero-tag fa-hero-tag-b">💥 BEFORE　修理前</div>
+    <div class="fa-hero-tag fa-hero-tag-a">✨ AFTER　修理後</div>
+
+    <!-- 写真説明 -->
+    <div class="fa-hero-sublabel fa-hero-sublabel-b">事故・凹み・傷</div>
+    <div class="fa-hero-sublabel fa-hero-sublabel-a">きれいに直ります</div>
+
+    <!-- 中央コンテンツ -->
+    <div class="fa-hero-center">
+      <div class="fa-hero-ring">
+        <span style="font-size:clamp(9px,1vw,11px);color:#4db8ff;">FORUM</span>
+        <span style="font-size:clamp(9px,1vw,11px);color:#fff;">AUTO</span>
+        <span style="font-size:8px;color:#aaa;margin-top:2px;">袋井市</span>
+      </div>
+      <div class="fa-hero-catch">
+        <h1>FORUM <em>AUTO</em></h1>
+        <div class="fa-hero-catch-badge">頼れるカーショップ</div>
+        <span class="fa-hero-catch-area">遠州・袋井　磐田　掛川</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== お知らせバー ===== -->
+  <div class="fa-notice">
+    📌 保険修理・事故対応は <strong>0538-49-0632</strong> まで。<a href="#contact">LINEでも受付中</a>
+  </div>
+
+  <!-- ===== ビフォーアフター施工事例 ===== -->
+  <div class="fa-section fa-ba" id="works">
+    <div class="fa-section-title">
+      <h2>BEFORE / AFTER</h2>
+      <p>施工事例　修理前・修理後</p>
+    </div>
+    <div class="fa-ba-grid">
+
+      <div class="fa-ba-card">
+        <div class="fa-ba-photos">
+          <div class="fa-ba-photo">
+            <img src="https://forumauto.jp/wp-content/uploads/2026/04/IMG_5080.jpg" alt="外車修理前">
+            <div class="fa-ba-photo-tag tag-before-card">BEFORE</div>
+          </div>
+          <div class="fa-ba-photo">
+            <img src="https://forumauto.jp/wp-content/uploads/2026/04/IMG_4924.jpg" alt="塗装後">
+            <div class="fa-ba-photo-tag tag-after-card">AFTER</div>
+          </div>
+          <div class="fa-ba-arrow">→</div>
+        </div>
+        <div class="fa-ba-body">
+          <h3>🚗 外車（BMW）鈑金塗装</h3>
+          <p>側面の大きな凹み・傷を完全修復。色合わせも完璧に仕上げました。</p>
+        </div>
+      </div>
+
+      <div class="fa-ba-card">
+        <div class="fa-ba-photos">
+          <div class="fa-ba-photo">
+            <img src="https://forumauto.jp/wp-content/uploads/2026/04/IMG_1932.jpg" alt="フレーム修正前">
+            <div class="fa-ba-photo-tag tag-before-card">BEFORE</div>
+          </div>
+          <div class="fa-ba-photo">
+            <img src="https://forumauto.jp/wp-content/uploads/2026/04/IMG_2764.jpg" alt="鈑金後">
+            <div class="fa-ba-photo-tag tag-after-card">AFTER</div>
+          </div>
+          <div class="fa-ba-arrow">→</div>
+        </div>
+        <div class="fa-ba-body">
+          <h3>⚙️ フレーム修正・鈑金</h3>
+          <p>事故によるフレーム変形をCar-O-Linerで精密修正。走行安全性を回復。</p>
+        </div>
+      </div>
+
+      <div class="fa-ba-card">
+        <div class="fa-ba-photos">
+          <div class="fa-ba-photo">
+            <img src="https://forumauto.jp/wp-content/uploads/2026/04/IMG_5365.jpg" alt="ヘッドライト前">
+            <div class="fa-ba-photo-tag tag-before-card">BEFORE</div>
+          </div>
+          <div class="fa-ba-photo">
+            <img src="https://forumauto.jp/wp-content/uploads/2026/04/IMG_5232.jpg" alt="全塗装後">
+            <div class="fa-ba-photo-tag tag-after-card">AFTER</div>
+          </div>
+          <div class="fa-ba-arrow">→</div>
+        </div>
+        <div class="fa-ba-body">
+          <h3>🎨 全塗装・ヘッドライト</h3>
+          <p>くすんだボディ・黄ばんだヘッドライトを新車同様に仕上げます。</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== サービス ===== -->
+  <div class="fa-section fa-services" id="services">
+    <div class="fa-section-title">
+      <h2>SERVICES</h2>
+      <p>フォーラムオートのサービス</p>
+    </div>
+    <div class="fa-service-grid">
+      <div class="fa-service-card">
+        <div class="fa-service-icon">🔧</div>
+        <h3>鈑金塗装</h3>
+        <p>外車・国産車問わず対応。色合わせも完璧に。</p>
+      </div>
+      <div class="fa-service-card">
+        <div class="fa-service-icon">🚗</div>
+        <h3>事故修理<br>保険修理</h3>
+        <p>保険手続きもサポート。適正な修理で安心を。</p>
+      </div>
+      <div class="fa-service-card">
+        <div class="fa-service-icon">⚙️</div>
+        <h3>フレーム修正</h3>
+        <p>Car-O-Linerで精密修正。走行安全性を回復。</p>
+      </div>
+      <div class="fa-service-card">
+        <div class="fa-service-icon">🔩</div>
+        <h3>車検・整備</h3>
+        <p>車検から定期整備まで。国産・外車対応。</p>
+      </div>
+      <div class="fa-service-card">
+        <div class="fa-service-icon">🚛</div>
+        <h3>レッカー・牽引</h3>
+        <p>24時間対応。事故・故障車をすぐに搬送。</p>
+      </div>
+      <div class="fa-service-card">
+        <div class="fa-service-icon">🛢️</div>
+        <h3>トルコン太郎<br>ATF交換</h3>
+        <p>圧送式ATF交換機完備。ミッション徹底洗浄。</p>
+      </div>
+      <div class="fa-service-card">
+        <div class="fa-service-icon">🚙</div>
+        <h3>レンタカー</h3>
+        <p>修理中の代車も完備。お気軽にご利用を。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== スタッフ紹介 ===== -->
+  <div class="fa-section fa-staff" id="staff">
+    <div class="fa-section-title">
+      <h2>OUR TEAM</h2>
+      <p>家族スタッフ紹介</p>
+    </div>
+    <p class="fa-staff-intro">
+      フォーラムオートは家族経営の自動車修理店です。<br>
+      オーナー自らが修理にあたり、保険の手続きから修理内容まで丁寧にご説明します。<br>
+      遠州・袋井エリアのお客様に長年ご愛顧いただいています。
+    </p>
+    <div class="fa-staff-grid">
+
+      <div class="fa-staff-card">
+        <div class="fa-staff-photo-placeholder">👨‍🔧</div>
+        <div class="fa-staff-body">
+          <div class="fa-staff-role">代表・鈑金塗装</div>
+          <div class="fa-staff-name">親父</div>
+          <div class="fa-staff-desc">創業以来40年以上の経験を持つ鈑金塗装のプロ。外車・国産車問わず対応します。</div>
+        </div>
+      </div>
+
+      <div class="fa-staff-card">
+        <div class="fa-staff-photo-placeholder">👨‍🔩</div>
+        <div class="fa-staff-body">
+          <div class="fa-staff-role">フロント・整備</div>
+          <div class="fa-staff-name">息子</div>
+          <div class="fa-staff-desc">お客様の窓口担当。車検・整備・お見積りはお気軽にご相談ください。</div>
+        </div>
+      </div>
+
+      <div class="fa-staff-card">
+        <div class="fa-staff-photo-placeholder">👩‍💼</div>
+        <div class="fa-staff-body">
+          <div class="fa-staff-role">事務・受付</div>
+          <div class="fa-staff-name">妻</div>
+          <div class="fa-staff-desc">お電話・来店のご対応はお任せください。いつでもお気軽にご来店を。</div>
+        </div>
+      </div>
+
+      <div class="fa-staff-card">
+        <div class="fa-staff-photo-placeholder">👩‍🎨</div>
+        <div class="fa-staff-body">
+          <div class="fa-staff-role">保険・塗装</div>
+          <div class="fa-staff-name">娘</div>
+          <div class="fa-staff-desc">保険手続きのサポートと塗装を担当。細かいご要望にも丁寧に対応します。</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== アクセス ===== -->
+  <div class="fa-section fa-access" id="access">
+    <div class="fa-section-title">
+      <h2>ACCESS</h2>
+      <p>アクセス・営業情報</p>
+    </div>
+    <div class="fa-access-inner">
+      <div class="fa-access-info">
+        <h3>有限会社 フォーラムオート</h3>
+        <table>
+          <tr><td>住所</td><td>静岡県袋井市下山梨545</td></tr>
+          <tr><td>電話</td><td><a href="tel:0538490632">0538-49-0632</a></td></tr>
+          <tr><td>営業時間</td><td>9:00〜18:00</td></tr>
+          <tr><td>定休日</td><td>日曜日・祝日</td></tr>
+          <tr><td>対応車種</td><td>外車・国産車すべて</td></tr>
+        </table>
+      </div>
+      <div class="fa-map-wrap">
+        <iframe
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3272.5!2d137.9195!3d34.7268!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2z5pyJ6ZmQ5Lya56S-44OV44Kp44O844Op44Og44Kq44O844OI!5e0!3m2!1sja!2sjp!4v1"
+          width="100%" height="280" style="border:0;display:block;" allowfullscreen loading="lazy">
+        </iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== お問い合わせ ===== -->
+  <div class="fa-section fa-contact" id="contact">
+    <div class="fa-section-title">
+      <h2>CONTACT</h2>
+      <p>お気軽にご連絡ください</p>
+    </div>
+    <div class="fa-contact-btns">
+      <a href="https://line.me/ti/g/dUCBJhxCE-" class="fa-contact-btn fa-contact-btn-line">💬 LINEで相談する</a>
+      <a href="tel:0538490632" class="fa-contact-btn fa-contact-btn-tel">📞 0538-49-0632</a>
+      <a href="/contact" class="fa-contact-btn fa-contact-btn-mail">✉️ メールで問い合わせ</a>
+    </div>
+    <p class="fa-contact-hours">営業時間 9:00〜18:00　日曜・祝日定休</p>
+  </div>
+
+</div>
