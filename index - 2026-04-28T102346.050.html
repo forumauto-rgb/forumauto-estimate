@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>フォーラムオート｜袋井市の鈑金・修理・レッカー</title>
+<meta name="description" content="静岡県袋井市の自動車鈑金修理専門店。修理の透明性を追求し、作業動画・3Dスキャンデータで安心をご提供。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --white: #ffffff;
+  --off-white: #f8f8f6;
+  --light-gray: #efefed;
+  --mid-gray: #999;
+  --dark: #1a1a1a;
+  --darker: #0d0d0d;
+  --accent: #c8392b;
+  --accent-light: #e84c3d;
+  --steel: #2c3e50;
+  --gold: #b8960c;
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-body: 'Noto Sans JP', sans-serif;
+  --font-en: 'DM Sans', sans-serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { font-family:var(--font-body); color:var(--dark); background:var(--white); overflow-x:hidden; }
+
+/* ─── HEADER ─── */
+header {
+  position:fixed; top:0; left:0; right:0; z-index:100;
+  background:rgba(255,255,255,0.95); backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--light-gray);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 5vw; height:64px;
+}
+.logo-wrap { display:flex; align-items:center; gap:10px; text-decoration:none; }
+.logo-mark {
+  width:36px; height:36px; background:var(--accent);
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-display); color:#fff; font-size:18px; letter-spacing:1px;
+  clip-path:polygon(10% 0,100% 0,90% 100%,0 100%);
+}
+.logo-text { font-family:var(--font-body); font-weight:700; font-size:15px; color:var(--dark); line-height:1.2; }
+.logo-text span { display:block; font-size:10px; font-weight:300; color:var(--mid-gray); letter-spacing:2px; }
+nav { display:flex; align-items:center; gap:8px; }
+nav a {
+  font-size:13px; color:var(--dark); text-decoration:none; padding:6px 12px;
+  border-radius:4px; transition:background 0.2s;
+}
+nav a:hover { background:var(--light-gray); }
+.btn-estimate {
+  background:var(--accent); color:#fff !important; border-radius:6px !important;
+  font-weight:500; padding:8px 16px !important;
+  transition:background 0.2s !important;
+}
+.btn-estimate:hover { background:var(--accent-light) !important; }
+.btn-status {
+  border:1.5px solid var(--dark); color:var(--dark) !important;
+  border-radius:6px !important; font-weight:500; padding:7px 14px !important;
+}
+.hamburger { display:none; flex-direction:column; gap:5px; cursor:pointer; background:none; border:none; padding:4px; }
+.hamburger span { display:block; width:22px; height:2px; background:var(--dark); transition:all 0.3s; }
+
+/* ─── HERO ─── */
+.hero {
+  min-height:100vh; background:var(--darker);
+  display:flex; flex-direction:column; justify-content:center;
+  padding:120px 5vw 80px; position:relative; overflow:hidden;
+}
+.hero-bg-grid {
+  position:absolute; inset:0; opacity:0.04;
+  background-image:linear-gradient(var(--white) 1px,transparent 1px),linear-gradient(90deg,var(--white) 1px,transparent 1px);
+  background-size:60px 60px;
+}
+.hero-accent-line {
+  position:absolute; top:0; left:0; width:4px; height:100%; background:var(--accent);
+}
+.hero-label {
+  font-family:var(--font-en); font-size:11px; letter-spacing:4px;
+  color:var(--accent); text-transform:uppercase; margin-bottom:20px;
+  animation:fadeUp 0.8s ease both;
+}
+.hero-title {
+  font-family:var(--font-body); font-weight:700; color:var(--white);
+  font-size:clamp(2.2rem, 5.5vw, 4rem); line-height:1.25;
+  margin-bottom:20px; animation:fadeUp 0.8s 0.1s ease both;
+}
+.hero-title em { font-style:normal; color:var(--accent); }
+.hero-sub {
+  color:#d8d8d8; font-size:clamp(1.05rem, 1.8vw, 1.2rem); font-weight:500;
+  max-width:560px; line-height:1.9; margin-bottom:48px;
+  animation:fadeUp 0.8s 0.2s ease both; letter-spacing:0.02em;
+}
+
+/* 検索窓 */
+.search-box {
+  background:rgba(255,255,255,0.06); border:1.5px solid rgba(255,255,255,0.15);
+  border-radius:12px; padding:24px 28px; max-width:560px;
+  animation:fadeUp 0.8s 0.3s ease both; backdrop-filter:blur(8px);
+}
+.search-box-label {
+  font-size:12px; letter-spacing:2px; color:#ddd; text-transform:uppercase;
+  font-family:var(--font-en); margin-bottom:14px; font-weight:600;
+}
+.search-row { display:flex; gap:8px; }
+.search-input {
+  flex:1; background:rgba(255,255,255,0.1); border:1.5px solid rgba(255,255,255,0.2);
+  border-radius:8px; padding:12px 16px; color:#fff; font-size:15px;
+  font-family:var(--font-body); outline:none; transition:border 0.2s;
+  placeholder-color:#999;
+}
+.search-input::placeholder { color:#999; }
+.search-input:focus { border-color:var(--accent); background:rgba(255,255,255,0.12); }
+.search-btn {
+  background:var(--accent); color:#fff; border:none; border-radius:8px;
+  padding:12px 22px; font-size:14px; font-family:var(--font-body); font-weight:500;
+  cursor:pointer; transition:background 0.2s; white-space:nowrap;
+}
+.search-btn:hover { background:var(--accent-light); }
+.search-hint { font-size:12px; color:#bbb; margin-top:10px; font-weight:400; }
+
+.hero-stats {
+  display:flex; gap:32px; margin-top:52px;
+  animation:fadeUp 0.8s 0.4s ease both; flex-wrap:wrap;
+}
+.stat {
+  border-left:3px solid var(--accent); padding-left:18px;
+  background:rgba(255,255,255,0.06); padding:14px 20px 14px 18px;
+  border-radius:0 8px 8px 0; border-left:3px solid var(--accent);
+}
+.stat-num { font-family:var(--font-display); font-size:2.4rem; color:#fff; letter-spacing:2px; font-weight:400; text-shadow:0 2px 12px rgba(200,57,43,0.3); }
+.stat-label { font-size:12px; color:#ccc; margin-top:3px; font-weight:500; letter-spacing:0.5px; }
+
+/* ─── SECTION BASE ─── */
+section { padding:80px 5vw; }
+.section-label {
+  font-family:var(--font-en); font-size:10px; letter-spacing:4px;
+  color:var(--accent); text-transform:uppercase; margin-bottom:8px;
+}
+.section-title {
+  font-family:var(--font-body); font-weight:700;
+  font-size:clamp(1.5rem, 3vw, 2.2rem); color:var(--dark); margin-bottom:12px;
+}
+.section-sub { font-size:15px; color:#555; line-height:1.85; max-width:600px; font-weight:400; }
+
+/* ───実績タイル ─── */
+#works { background:var(--off-white); }
+.works-header { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:40px; flex-wrap:wrap; gap:16px; }
+.works-link { font-size:13px; color:var(--accent); text-decoration:none; display:flex; align-items:center; gap:4px; }
+.works-link:hover { text-decoration:underline; }
+.cards-grid {
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:24px;
+}
+.card {
+  background:#fff; border-radius:12px; overflow:hidden;
+  box-shadow:0 2px 8px rgba(0,0,0,0.06); transition:transform 0.3s, box-shadow 0.3s;
+  cursor:pointer; position:relative;
+}
+.card:hover { transform:translateY(-4px); box-shadow:0 12px 32px rgba(0,0,0,0.12); }
+.card-thumb {
+  position:relative; height:200px; background:var(--light-gray); overflow:hidden;
+}
+.card-thumb video, .card-thumb img {
+  width:100%; height:100%; object-fit:cover; display:block; transition:transform 0.4s;
+}
+.card:hover .card-thumb img { transform:scale(1.05); }
+.card-play-icon {
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,0.3); opacity:0; transition:opacity 0.3s;
+}
+.card:hover .card-play-icon { opacity:1; }
+.card-play-icon svg { width:48px; height:48px; fill:#fff; }
+.card-thumb video { display:none; }
+.card.playing .card-thumb video { display:block; }
+.card.playing .card-thumb img { display:none; }
+.card.playing .card-play-icon { opacity:0; }
+.card-badge {
+  position:absolute; top:12px; left:12px; background:var(--accent);
+  color:#fff; font-size:10px; font-weight:700; padding:3px 8px; border-radius:4px;
+  letter-spacing:1px; font-family:var(--font-en); text-transform:uppercase;
+}
+.card-body { padding:20px; }
+.card-title { font-weight:700; font-size:15px; margin-bottom:6px; }
+.card-meta { font-size:12px; color:var(--mid-gray); display:flex; gap:12px; }
+.card-meta span { display:flex; align-items:center; gap:4px; }
+.card-tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+.tag {
+  font-size:11px; background:var(--light-gray); color:var(--dark);
+  padding:3px 8px; border-radius:20px;
+}
+.skeleton {
+  background:linear-gradient(90deg, #eee 25%, #f5f5f5 50%, #eee 75%);
+  background-size:200% 100%; animation:shimmer 1.5s infinite;
+  border-radius:4px; height:16px; width:100%; margin-bottom:8px;
+}
+.skeleton.tall { height:200px; border-radius:0; }
+.skeleton.short { width:60%; }
+
+/* ─── FEATURES ─── */
+#features { background:#fff; }
+.features-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:32px; margin-top:48px; }
+.feature { display:flex; flex-direction:column; gap:14px; }
+.feature-icon {
+  width:48px; height:48px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center; font-size:22px;
+}
+.feature-icon.red { background:#fdf0ef; }
+.feature-icon.blue { background:#eef4fd; }
+.feature-icon.green { background:#edfaf4; }
+.feature-icon.gold { background:#fdf9e7; }
+.feature h3 { font-weight:700; font-size:17px; }
+.feature p { font-size:14px; color:#555; line-height:1.85; font-weight:400; }
+
+/* ─── CTA ─── */
+#cta {
+  background:var(--darker); padding:80px 5vw; text-align:center;
+  position:relative; overflow:hidden;
+}
+#cta::before {
+  content:''; position:absolute; top:-40px; left:50%; transform:translateX(-50%);
+  width:600px; height:600px; border-radius:50%;
+  background:radial-gradient(circle, rgba(200,57,43,0.12) 0%, transparent 70%);
+  pointer-events:none;
+}
+#cta .section-title { color:#fff; }
+#cta .section-sub { color:#ccc; margin:0 auto 40px; font-weight:500; font-size:15px; }
+.cta-buttons { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
+.btn-primary {
+  background:var(--accent); color:#fff; border:none; border-radius:8px;
+  padding:14px 32px; font-size:15px; font-family:var(--font-body); font-weight:500;
+  cursor:pointer; text-decoration:none; display:inline-block;
+  transition:background 0.2s, transform 0.2s;
+}
+.btn-primary:hover { background:var(--accent-light); transform:translateY(-2px); }
+.btn-outline {
+  background:transparent; color:#fff; border:1.5px solid rgba(255,255,255,0.3);
+  border-radius:8px; padding:13px 32px; font-size:15px; font-family:var(--font-body);
+  cursor:pointer; text-decoration:none; display:inline-block;
+  transition:border-color 0.2s, transform 0.2s;
+}
+.btn-outline:hover { border-color:#fff; transform:translateY(-2px); }
+
+/* ─── FOOTER ─── */
+footer {
+  background:var(--dark); color:#888; padding:48px 5vw 32px;
+}
+.footer-grid { display:grid; grid-template-columns:2fr 1fr 1fr; gap:40px; margin-bottom:40px; }
+.footer-brand .logo-text { color:#fff; }
+.footer-brand .logo-text span { color:#666; }
+.footer-desc { font-size:13px; color:#666; line-height:1.8; margin-top:12px; }
+.footer-col h4 { font-size:12px; letter-spacing:2px; color:#aaa; text-transform:uppercase; margin-bottom:16px; font-family:var(--font-en); }
+.footer-col a { display:block; font-size:13px; color:#666; text-decoration:none; margin-bottom:10px; transition:color 0.2s; }
+.footer-col a:hover { color:#fff; }
+.footer-bottom {
+  border-top:1px solid rgba(255,255,255,0.08); padding-top:24px;
+  display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;
+}
+.footer-bottom p { font-size:12px; color:#555; }
+
+/* ─── MODAL ─── */
+.modal-overlay {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8);
+  z-index:200; align-items:center; justify-content:center; padding:20px;
+}
+.modal-overlay.open { display:flex; }
+.modal {
+  background:#fff; border-radius:16px; max-width:720px; width:100%;
+  max-height:90vh; overflow-y:auto; position:relative;
+}
+.modal-close {
+  position:absolute; top:16px; right:16px; background:var(--light-gray);
+  border:none; border-radius:50%; width:36px; height:36px;
+  font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  z-index:10;
+}
+.modal-video-wrap { position:relative; padding-bottom:56.25%; background:#000; border-radius:16px 16px 0 0; overflow:hidden; }
+.modal-video-wrap iframe, .modal-video-wrap video {
+  position:absolute; inset:0; width:100%; height:100%; border:none;
+}
+.modal-body { padding:28px; }
+.modal-title { font-weight:700; font-size:20px; margin-bottom:8px; }
+.modal-meta { font-size:13px; color:var(--mid-gray); }
+
+/* ─── TOAST ─── */
+.toast {
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+  background:var(--dark); color:#fff; padding:12px 24px; border-radius:8px;
+  font-size:14px; z-index:300; opacity:0; transition:opacity 0.3s;
+  pointer-events:none;
+}
+.toast.show { opacity:1; }
+
+/* ─── ANIMATIONS ─── */
+@keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:none; } }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:768px) {
+  nav { display:none; }
+  nav.open { display:flex; flex-direction:column; position:fixed; top:64px; inset:0; background:#fff; padding:24px; gap:4px; z-index:99; }
+  nav.open a { padding:14px 12px; border-bottom:1px solid var(--light-gray); font-size:15px; }
+  .hamburger { display:flex; }
+  .hero-stats { gap:24px; }
+  .stat-num { font-size:1.8rem; }
+  .footer-grid { grid-template-columns:1fr; gap:28px; }
+  .footer-col { display:flex; flex-wrap:wrap; gap:12px; flex-direction:column; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <a href="/" class="logo-wrap">
+    <div class="logo-mark">FA</div>
+    <div class="logo-text">フォーラムオート<span>FORUM AUTO CO., LTD.</span></div>
+  </a>
+  <nav id="main-nav">
+    <a href="#works">修理実績</a>
+    <a href="#features">選ばれる理由</a>
+    <a href="tel:0538-23-0000">📞 0538-23-0000</a>
+    <a href="status.html" class="btn-status">🔍 進捗確認</a>
+    <a href="status.html" class="btn-estimate">見積・受付</a>
+  </nav>
+  <button class="hamburger" id="hamburger" aria-label="メニュー">
+    <span></span><span></span><span></span>
+  </button>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg-grid"></div>
+  <div class="hero-accent-line"></div>
+  <div class="hero-label">Transparent Auto Repair — Fukuroi, Shizuoka</div>
+  <h1 class="hero-title">
+    修理の全工程を、<br>
+    <em>映像と数値</em>で証明する。
+  </h1>
+  <p class="hero-sub">
+    静岡県袋井市の自動車鈑金修理専門店。作業動画・3Dスキャンデータで修理の透明性をお届けします。保険対応から自費修理まで、安心の見積・施工をご提供します。
+  </p>
+
+  <!-- 検索窓 -->
+  <div class="search-box">
+    <div class="search-box-label">🔍 修理進捗・見積確認</div>
+    <div class="search-row">
+      <input type="text" class="search-input" id="estimate-search" placeholder="見積番号を入力（例：FA-2024-001）" maxlength="30">
+      <button class="search-btn" onclick="goToStatus()">確認する</button>
+    </div>
+    <p class="search-hint">見積番号はお渡しした書類またはメールに記載されています</p>
+  </div>
+
+  <div class="hero-stats">
+    <div class="stat">
+      <div class="stat-num">2,400+</div>
+      <div class="stat-label">修理実績 台数</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">98%</div>
+      <div class="stat-label">顧客満足度</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">3D</div>
+      <div class="stat-label">スキャン計測対応</div>
+    </div>
+  </div>
+</section>
+
+<!-- 修理実績 -->
+<section id="works">
+  <div class="works-header">
+    <div>
+      <div class="section-label">Recent Works</div>
+      <h2 class="section-title">最新の修理実績</h2>
+      <p class="section-sub">施工完了した修理実績を公開しています。カードをホバーすると作業動画が再生されます。</p>
+    </div>
+    <a href="#" class="works-link">すべての実績を見る →</a>
+  </div>
+  <div class="cards-grid" id="works-grid">
+    <!-- スケルトンローダー -->
+    <div class="card"><div class="card-thumb skeleton tall"></div><div class="card-body"><div class="skeleton"></div><div class="skeleton short"></div></div></div>
+    <div class="card"><div class="card-thumb skeleton tall"></div><div class="card-body"><div class="skeleton"></div><div class="skeleton short"></div></div></div>
+    <div class="card"><div class="card-thumb skeleton tall"></div><div class="card-body"><div class="skeleton"></div><div class="skeleton short"></div></div></div>
+  </div>
+</section>
+
+<!-- 選ばれる理由 -->
+<section id="features">
+  <div class="section-label">Why Forum Auto</div>
+  <h2 class="section-title">選ばれる4つの理由</h2>
+  <div class="features-grid">
+    <div class="feature">
+      <div class="feature-icon red">🎬</div>
+      <h3>作業動画の全公開</h3>
+      <p>鈑金・塗装・組み付けの全工程を動画で記録。修理後に専用ページで確認できます。</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon blue">📐</div>
+      <h3>3Dスキャン計測</h3>
+      <p>Creality CR-Scan Ferret Proによる精密計測で、フレーム変形を数値で証明します。</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon green">📋</div>
+      <h3>透明な見積</h3>
+      <p>工程ごとの詳細な見積書を作成。保険会社との交渉にも対応できる明細を提供します。</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon gold">🚚</div>
+      <h3>レッカー・代車手配</h3>
+      <p>24時間レッカーサービスと代車10台完備。突然のトラブルにもすぐ対応します。</p>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="section-label">Get Started</div>
+  <h2 class="section-title">まずはご相談ください</h2>
+  <p class="section-sub">無料見積・現地確認から対応します。お気軽にお問い合わせください。</p>
+  <div class="cta-buttons">
+    <a href="status.html" class="btn-primary">オンライン受付・見積</a>
+    <a href="tel:0538-23-0000" class="btn-outline">📞 電話で相談する</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div class="logo-wrap" style="gap:10px;">
+        <div class="logo-mark">FA</div>
+        <div class="logo-text" style="color:#fff;">フォーラムオート<span style="color:#666;">FORUM AUTO CO., LTD.</span></div>
+      </div>
+      <p class="footer-desc">静岡県袋井市下山梨545<br>TEL: 0538-23-0000<br>営業時間：8:00〜18:00（日祝定休）</p>
+    </div>
+    <div class="footer-col">
+      <h4>サービス</h4>
+      <a href="#">鈑金・塗装修理</a>
+      <a href="#">レッカー・搬送</a>
+      <a href="#">レンタカー</a>
+      <a href="#">3Dスキャン計測</a>
+    </div>
+    <div class="footer-col">
+      <h4>お客様向け</h4>
+      <a href="status.html">修理進捗確認</a>
+      <a href="status.html">オンライン見積・受付</a>
+      <a href="#">よくある質問</a>
+      <a href="#">プライバシーポリシー</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2025 有限会社フォーラムオート. All Rights Reserved.</p>
+    <p style="font-size:11px;">静岡県袋井市下山梨545　Tel: 0538-23-0000</p>
+  </div>
+</footer>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-video-wrap" id="modal-video-wrap"></div>
+    <div class="modal-body">
+      <div class="modal-title" id="modal-title"></div>
+      <div class="modal-meta" id="modal-meta"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://uhppgdwbyrijnqpvusxw.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVocHBnZHdieXJpam5xcHZ1c3h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NDEyMDksImV4cCI6MjA4OTExNzIwOX0.mJ2GXQUsRZAZ-VL6XTVTz3gfG3MTNtfnWxsIPU_DK60';
+
+document.getElementById('hamburger').addEventListener('click', function() {
+  document.getElementById('main-nav').classList.toggle('open');
+});
+
+function goToStatus() {
+  var val = document.getElementById('estimate-search').value.trim();
+  if (!val) { showToast('見積番号を入力してください'); return; }
+  window.location.href = 'status.html?id=' + encodeURIComponent(val);
+}
+document.getElementById('estimate-search').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') goToStatus();
+});
+
+async function loadWorks() {
+  try {
+    var res = await fetch(
+      SUPABASE_URL + '/rest/v1/estimates?select=id,vehicle_name,work_description,video_url,thumbnail_url,status,created_at&is_public=eq.true&order=created_at.desc&limit=3',
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
+    );
+    var data = await res.json();
+    renderCards(Array.isArray(data) ? data : []);
+  } catch(e) {
+    renderCards(getDemoData());
+  }
+}
+
+function getDemoData() {
+  return [
+    { id:'demo1', vehicle_name:'トヨタ アルファード', work_description:'フロントバンパー・ボンネット鈑金塗装', video_url:'', thumbnail_url:'', status:'完成', created_at:'2024-03-15' },
+    { id:'demo2', vehicle_name:'ホンダ ステップワゴン', work_description:'右リアドア・クォーターパネル修理', video_url:'', thumbnail_url:'', status:'作業中', created_at:'2024-03-18' },
+    { id:'demo3', vehicle_name:'日産 エクストレイル', work_description:'フロントバンパー交換・ヘッドライト調整', video_url:'', thumbnail_url:'', status:'見積中', created_at:'2024-03-20' }
+  ];
+}
+
+function renderCards(items) {
+  var grid = document.getElementById('works-grid');
+  if (!items.length) { grid.innerHTML = '<p style="color:#999;font-size:14px;">現在公開中の実績はありません。</p>'; return; }
+  var html = '';
+  items.forEach(function(item) {
+    var statusColor = item.status === '完成' ? '#27ae60' : item.status === '作業中' ? '#e67e22' : '#3498db';
+    var thumb = item.thumbnail_url || 'https://placehold.co/400x200/1a1a1a/ffffff?text=' + encodeURIComponent(item.vehicle_name || '修理実績');
+    var videoUrl = item.video_url || '';
+    var hasVideo = videoUrl.length > 0;
+    html += '<div class="card" onclick="openModal(\'' + encodeURIComponent(JSON.stringify(item)) + '\')"';
+    if (hasVideo) {
+      html += ' onmouseenter="previewVideo(this,\'' + escAttr(videoUrl) + '\')" onmouseleave="stopPreview(this)"';
+    }
+    html += '>';
+    html += '<div class="card-thumb">';
+    html += '<img src="' + escAttr(thumb) + '" alt="' + escAttr(item.vehicle_name || '') + '" loading="lazy">';
+    if (hasVideo) {
+      html += '<video src="" muted loop playsinline preload="none"></video>';
+      html += '<div class="card-play-icon"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>';
+    }
+    html += '<span class="card-badge" style="background:' + statusColor + '">' + escAttr(item.status || '確認中') + '</span>';
+    html += '</div>';
+    html += '<div class="card-body">';
+    html += '<div class="card-title">' + escHtml(item.vehicle_name || '車両情報なし') + '</div>';
+    html += '<div class="card-meta"><span>📅 ' + (item.created_at || '').slice(0,10) + '</span></div>';
+    html += '<div class="card-tags"><span class="tag">' + escHtml((item.work_description || '').slice(0,20)) + '</span>';
+    if (hasVideo) html += '<span class="tag">🎬 動画あり</span>';
+    html += '</div></div></div>';
+  });
+  grid.innerHTML = html;
+}
+
+function extractDriveId(url) {
+  if (!url) return '';
+  var m = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : '';
+}
+function driveEmbedUrl(url) {
+  var id = extractDriveId(url);
+  return id ? 'https://drive.google.com/file/d/' + id + '/preview' : '';
+}
+function driveDirectUrl(url) {
+  var id = extractDriveId(url);
+  return id ? 'https://drive.google.com/uc?export=download&id=' + id : url;
+}
+
+function previewVideo(card, url) {
+  if (!url) return;
+  var direct = driveDirectUrl(url);
+  var vid = card.querySelector('video');
+  if (!vid) return;
+  vid.src = direct;
+  vid.play().catch(function(){});
+  card.classList.add('playing');
+}
+function stopPreview(card) {
+  var vid = card.querySelector('video');
+  if (vid) { vid.pause(); vid.src = ''; }
+  card.classList.remove('playing');
+}
+
+function openModal(encoded) {
+  var item = JSON.parse(decodeURIComponent(encoded));
+  var wrap = document.getElementById('modal-video-wrap');
+  var embedUrl = driveEmbedUrl(item.video_url || '');
+  if (embedUrl) {
+    wrap.innerHTML = '<iframe src="' + embedUrl + '" allowfullscreen allow="autoplay"></iframe>';
+    wrap.style.display = 'block';
+  } else {
+    wrap.innerHTML = '<div style="height:200px;display:flex;align-items:center;justify-content:center;background:#111;color:#666;font-size:13px;">動画は登録されていません</div>';
+  }
+  document.getElementById('modal-title').textContent = (item.vehicle_name || '') + ' — ' + (item.work_description || '');
+  document.getElementById('modal-meta').textContent = '施工日：' + (item.created_at || '').slice(0,10);
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modal-video-wrap').innerHTML = '';
+  document.getElementById('modal').classList.remove('open');
+}
+document.getElementById('modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 3000);
+}
+
+function escHtml(s) { return String(s).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);}); }
+function escAttr(s) { return String(s).replace(/"/g,'&quot;'); }
+
+loadWorks();
+</script>
+</body>
+</html>
