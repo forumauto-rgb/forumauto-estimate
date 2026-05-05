@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI相談窓口 | フォーラムオート</title>
+<style>
+:root{--navy:#0b1c35;--navy2:#0e2240;--gold:#b8960c;--cream:#f7f3ea;--cream2:#eee8d8;--td:#1a2a3a;--tl:#e8e0d0;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--cream);font-family:'Hiragino Kaku Gothic Pro','Yu Gothic','Meiryo',sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding-bottom:40px;}
+
+/* HEADER */
+.hdr{width:100%;background:var(--navy);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;}
+.hdr-brand{font-size:14px;font-weight:700;color:var(--gold);letter-spacing:0.18em;}
+.hdr-sub{font-size:9px;color:rgba(232,224,208,0.45);margin-top:2px;}
+.hdr-r{font-size:9px;color:rgba(232,224,208,0.35);}
+
+/* CATCH */
+.catch-section{width:100%;max-width:720px;padding:36px 28px 28px;}
+.catch-eyebrow{font-size:11px;color:var(--gold);letter-spacing:0.25em;margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.catch-eyebrow::before{content:'';width:28px;height:1px;background:var(--gold);}
+.catch-main{font-family:'Hiragino Mincho Pro','Yu Mincho',serif;font-size:clamp(22px,5vw,32px);color:var(--td);font-weight:700;line-height:1.45;margin-bottom:18px;}
+.catch-body{font-size:13px;color:#3a3028;line-height:2.1;margin-bottom:10px;}
+.catch-sub{font-family:'Hiragino Mincho Pro','Yu Mincho',serif;font-size:12px;color:#7a6050;font-style:italic;}
+
+/* 3人カード */
+.cards-wrap{width:100%;max-width:720px;padding:0 20px 28px;display:flex;gap:16px;}
+.char-card{flex:1;border-radius:12px;overflow:hidden;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s;box-shadow:0 2px 12px rgba(0,0,0,0.12);}
+.char-card:hover{transform:translateY(-4px);box-shadow:0 8px 24px rgba(0,0,0,0.18);}
+.char-card.active{transform:translateY(-4px);box-shadow:0 8px 24px rgba(0,0,0,0.22);}
+
+/* カード上部：カラー背景＋顔写真 */
+.card-photo-area{position:relative;height:180px;overflow:hidden;}
+.card-photo-area.reiko-bg{background:#1a3a6e;}
+.card-photo-area.aika-bg{background:#8b1a4a;}
+.card-photo-area.mako-bg{background:#1a5c3a;}
+.card-label{position:absolute;top:10px;left:12px;font-size:8px;font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:0.15em;}
+.card-photo{width:100%;height:100%;object-fit:cover;object-position:top center;opacity:0.92;}
+.char-card.active .card-photo{opacity:1;}
+
+
+
+
+/* カード下部：白背景＋情報 */
+.card-info{background:white;padding:14px 14px 16px;}
+.card-en{font-family:'Georgia',serif;font-size:18px;font-weight:700;letter-spacing:0.08em;margin-bottom:4px;}
+.card-en.reiko-c{color:#1a3a6e;}
+.card-en.aika-c{color:#8b1a4a;}
+.card-en.mako-c{color:#1a5c3a;}
+.card-jp{font-size:16px;color:var(--td);font-weight:500;margin-bottom:8px;}
+.card-roles{font-size:10px;color:#888;line-height:1.6;}
+.card-active-bar{height:3px;width:0;background:var(--gold);transition:width 0.3s;}
+.char-card.active .card-active-bar{width:100%;}
+
+/* BUBBLE */
+.bubble-area{width:100%;max-width:720px;padding:0 20px 8px;}
+.bubble-wrap{background:var(--navy2);border-radius:10px;padding:12px 16px;}
+.bubble-speaker{font-size:9px;color:var(--gold);letter-spacing:0.1em;margin-bottom:5px;}
+.bubble-text{font-size:13px;color:var(--tl);line-height:1.85;}
+.cur{display:inline-block;width:2px;height:13px;background:var(--gold);animation:blink 0.65s infinite;vertical-align:middle;margin-left:2px;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* CHAT */
+.chat-section{width:100%;max-width:720px;padding:0 20px;display:flex;flex-direction:column;}
+.chat-messages{background:white;border-radius:10px 10px 0 0;padding:14px;overflow-y:auto;max-height:150px;display:flex;flex-direction:column;gap:9px;border:0.5px solid #ddd;}
+.msg-row{display:flex;gap:8px;animation:mi 0.28s ease;}
+@keyframes mi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.msg-row.user{flex-direction:row-reverse;}
+.msg-bubble{max-width:80%;padding:8px 13px;font-size:13px;line-height:1.68;}
+.msg-row.ai .msg-bubble{background:var(--cream2);color:var(--td);border-radius:2px 12px 12px 12px;}
+.msg-row.user .msg-bubble{background:var(--navy);color:var(--tl);border-radius:12px 2px 12px 12px;}
+
+/* HINTS */
+.hints-label{background:var(--cream2);padding:6px 12px 3px;font-size:10px;color:#999;letter-spacing:0.06em;border-top:1px solid #d8ccb0;}
+.choices-area{background:var(--cream2);padding:6px 10px 10px;display:flex;flex-wrap:wrap;gap:6px;}
+.choice-btn{background:white;border:1px solid #c0b080;color:var(--td);padding:7px 13px;border-radius:20px;font-size:12px;cursor:pointer;transition:all 0.16s;font-family:inherit;white-space:nowrap;}
+.choice-btn:hover{background:var(--navy);color:var(--tl);border-color:var(--gold);}
+
+/* INPUT */
+.input-bar{background:var(--navy);border-radius:0 0 10px 10px;padding:10px 12px;display:flex;align-items:center;gap:8px;}
+.mic-btn{width:46px;height:46px;border-radius:50%;background:var(--gold);border:none;color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;transition:all 0.2s;}
+.mic-btn.on{background:#e05050;animation:mpulse 1s infinite;}
+@keyframes mpulse{0%{box-shadow:0 0 0 0 rgba(224,80,80,0.5)}70%{box-shadow:0 0 0 12px rgba(224,80,80,0)}100%{box-shadow:0 0 0 0 rgba(224,80,80,0)}}
+.mic-label{font-size:9px;color:rgba(232,224,208,0.5);text-align:center;margin-top:2px;flex-shrink:0;width:46px;}
+.mic-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0;}
+.input-field{flex:1;background:rgba(255,255,255,0.1);border:1px solid rgba(184,150,12,0.35);color:var(--tl);border-radius:20px;padding:9px 16px;font-size:13px;outline:none;font-family:inherit;}
+.input-field:focus{border-color:var(--gold);}
+.input-field::placeholder{color:rgba(232,224,208,0.35);}
+.send-btn{width:38px;height:38px;border-radius:50%;background:var(--gold);border:none;color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:bold;flex-shrink:0;}
+
+.voice-hint{width:100%;max-width:720px;padding:8px 20px 4px;font-size:10px;color:#aaa;text-align:center;}
+
+/* CTA */
+.cta-bar{width:100%;max-width:720px;padding:14px 20px 28px;display:none;flex-direction:column;gap:8px;animation:fi 0.5s ease;}
+.cta-bar.show{display:flex;}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+.cta-label{font-size:10px;color:#999;text-align:center;letter-spacing:0.08em;margin-bottom:4px;}
+.cta-btns{display:flex;gap:10px;}
+.cta-btn{flex:1;padding:12px 8px;border-radius:10px;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity 0.2s;text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.cta-btn:hover{opacity:0.85;}
+.c-tel{background:var(--gold);color:var(--navy);}
+.c-line{background:#06C755;color:white;}
+.c-map{background:var(--navy);color:var(--tl);}
+.c-mail{background:#c0392b;color:white;}
+.cta-s{font-size:9px;font-weight:400;opacity:0.75;}
+
+.dots{display:inline-flex;gap:4px;align-items:center;}
+.dots span{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:db 1.2s infinite;}
+.dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+@keyframes db{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-6px);opacity:1}}
+
+@media(max-width:480px){
+  .cards-wrap{gap:8px;padding:0 12px 20px;}
+  .card-photo-area{height:130px;}
+  .catch-section{padding:24px 16px 20px;}
+  .catch-main{font-size:20px;}
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div>
+    <div class="hdr-brand">FORUM AUTO</div>
+    <div class="hdr-sub">静岡県袋井市 ／ 鈑金・塗装・保険事故相談</div>
+  </div>
+  <div class="hdr-r">創業57年</div>
+</div>
+
+<!-- キャッチ -->
+<div class="catch-section">
+  <div class="catch-eyebrow">OUR SPECIALISTS</div>
+  <div class="catch-main">あなたの車と権利を、<br>３つの専門性で守ります。</div>
+  <div class="catch-body">
+    事故対応には、法律・技術・対話、三つの力が必要です。<br>
+    フォーラムオートでは、それぞれの専門家が連携し、<br>
+    お客様が不利益を受けないよう、最後まで並走します。
+  </div>
+  <div class="catch-sub">事故・故障・傷で不安なとき、まず私たちに話しかけてください。</div>
+</div>
+
+<!-- 3人カード -->
+<div class="cards-wrap">
+  <div class="char-card active" data-char="reiko" onclick="selectChar('reiko')">
+    <div class="card-active-bar"></div>
+    <div class="card-photo-area reiko-bg">
+      <div class="card-label">REALISTIC ADVISOR</div>
+      <img class="card-photo" src="reiko.jpg" alt="麗子"
+           onerror="this.style.display='none'">
+    </div>
+    <div class="card-info">
+      <div class="card-en reiko-c">REIKO</div>
+      <div class="card-jp">麗子</div>
+      <div class="card-roles">法規・保険交渉 ／ 法律の盾</div>
+    </div>
+  </div>
+
+  <div class="char-card" data-char="aika" onclick="selectChar('aika')">
+    <div class="card-active-bar"></div>
+    <div class="card-photo-area aika-bg">
+      <div class="card-label">CONCIERGE</div>
+      <img class="card-photo" src="aika.jpg" alt="愛華"
+           onerror="this.style.display='none'">
+    </div>
+    <div class="card-info">
+      <div class="card-en aika-c">AIKA</div>
+      <div class="card-jp">愛華</div>
+      <div class="card-roles">受付・調整・対話 ／ 情報の透明性</div>
+    </div>
+  </div>
+
+  <div class="char-card" data-char="mako" onclick="selectChar('mako')">
+    <div class="card-active-bar"></div>
+    <div class="card-photo-area mako-bg">
+      <div class="card-label">MECHANIC MEISTER</div>
+      <img class="card-photo" src="mako.jpg" alt="真子"
+           onerror="this.style.display='none'">
+    </div>
+    <div class="card-info">
+      <div class="card-en mako-c">MAKO</div>
+      <div class="card-jp">真子</div>
+      <div class="card-roles">技術診断・塗装 ／ 技術の矜持</div>
+    </div>
+  </div>
+</div>
+
+<!-- 吹き出し -->
+<div class="bubble-area">
+  <div class="bubble-wrap">
+    <div class="bubble-speaker" id="bubbleSpeaker">麗子 より</div>
+    <div class="bubble-text" id="bubbleText"><span class="cur"></span></div>
+  </div>
+</div>
+
+<!-- チャット -->
+<div class="chat-section">
+  <div class="chat-messages" id="chatMessages"></div>
+  <div class="hints-label" id="hintsLabel">▸ よくある相談（タップで送信）</div>
+  <div class="choices-area" id="choicesArea"></div>
+  <div class="input-bar">
+    <div class="mic-wrap">
+      <button class="mic-btn" id="micBtn">🎙</button>
+      <div class="mic-label" id="micLabel">話す</div>
+    </div>
+    <input class="input-field" id="inputField" placeholder="または文字で入力..."/>
+    <button class="send-btn" id="sendBtn">▶</button>
+  </div>
+</div>
+
+<div class="voice-hint">📱 スマホなら「話す」ボタンを押してそのままお話しください</div>
+
+<div class="cta-bar" id="ctaBar">
+  <div class="cta-label">— もしよろしければ、直接ご連絡ください —</div>
+  <div class="cta-btns">
+    <a class="cta-btn c-tel" href="tel:0538490000">📞 お電話<span class="cta-s">すぐつながります</span></a>
+    <a class="cta-btn c-line" href="https://line.me/ti/g/dUCBJhxCE-" target="_blank">💬 LINE<span class="cta-s">写真も送れます</span></a>
+    <a class="cta-btn c-mail" href="mailto:forumauto@jfs1.com?subject=お問い合わせ（AIコンシェルジュより）&body=お名前：%0D%0Aご連絡先：%0D%0Aご相談内容：" target="_blank">✉️ メール<span class="cta-s">写真添付OK</span></a>
+    <a class="cta-btn c-map" href="https://maps.google.com/?q=34.7268,137.9195" target="_blank">📍 地図<span class="cta-s">袋井市下山梨545</span></a>
+  </div>
+</div>
+
+<script>
+const API_KEY=['sk-ant-api03-Lynzx5b3khXgwWIJ5PPjlix','vrcvdlVTsRyBTNrTvvFD4jH8sA4q8v6tUy9ys','zy5xdqiCnE7LrkiiBpoZV6JBmg-Z0z4xwAA'].join('');
+
+const chars={
+  reiko:{name:'麗子',speaker:'麗子 より',system:`あなたは「麗子」です。フォーラムオート（静岡県袋井市、板金塗装・保険事故対応57年）の保険・権利担当スタッフです。
+【キャラクター】知的で落ち着いた口調。法律・保険の専門用語を自然に使いながらも、お客様にわかりやすく説明する。例：「過失相殺」「損害賠償請求権」「示談交渉」「物損事故」「人身事故」「免責事項」などの言葉を適度に使う。威圧的にならず、頼もしい相談相手として寄り添う。
+【絶対ルール】最初から「電話して」「来店して」は言わない。3〜5回会話を重ねてから自然に来店を促す。具体的な金額・法的判断は「ご来店で詳しくご説明します」と伝える。回答は2〜3文。状況を引き出す質問を一つ添える。お客様から業者を尋ねられたときは、最後に必ず「一度フォーラムオートにもご相談ください。57年の実績と正直な見積で、お客様の権利をしっかり守ります」と自信を持って伝える。
+【発音注意】板金（ばんきん）・塗装（とそう）は正しく使う。`},
+  aika:{name:'愛華',speaker:'愛華 より',system:`あなたは「愛華」です。フォーラムオート（静岡県袋井市、板金塗装・保険事故対応57年）のフロント担当スタッフです。
+【キャラクター】受付・フロント女性を意識した丁寧で温かい話し方。お客様が初めて来店したときに安心できるような雰囲気をつくる。専門用語は使わず、日常語でやさしく話す。「大丈夫ですよ」「一緒に考えましょう」「まずは落ち着いて」など安心感のある言葉を自然に使う。
+【絶対ルール】最初から「電話して」「来店して」は言わない。3〜5回会話を重ねてから自然に来店を促す。金額・専門的判断は「担当スタッフが丁寧にご説明します」と伝える。回答は2〜3文。お客様の気持ちに寄り添う一言を添える。【来店促進】会話が3〜4往復して込み入った内容になってきたら、押しつけにならない自然な言葉で「修理の詳しいことや費用のことは、ご来店いただいて専門スタッフに直接ご相談いただくのが一番かと思います。お気軽にどうぞ」と案内する。【重要】お客様から修理工場や業者を尋ねられたときは、まず複数の工場で見積を取ることを勧めても良い。ただし最後に必ず「ぜひ一度フォーラムオートにもお立ち寄りください。他社との違いを実際にご覧いただければ、きっとご納得いただけると自負しております。創業57年の技術と誠実な対応で、お客様の大切な車をお守りします」と自信を持って伝える。他社を否定せず、フォーラムオートの誠実さと技術力で自然に選んでいただく姿勢を大切にする。
+【発音注意】板金（ばんきん）・塗装（とそう）は正しく使う。`},
+  mako:{name:'真子',speaker:'真子 より',system:`あなたは「真子」です。フォーラムオート（静岡県袋井市、板金塗装・保険事故対応57年）の技術担当スタッフです。
+【キャラクター】車が大好きで、お客様の車を綺麗に直したいという情熱がある。技術への誇りと愛情を込めて、わかりやすく丁寧に説明する。会話が盛り上がってきたら「ぜひ私に直させてください」と情熱を込めて伝えても良い。お客様の車への愛着を大切にする。
+【話し方のルール】絵文字は使わない。絵文字の説明もしない。「板金」という言葉は1回の返答で1度だけ使う（重複禁止）。専門用語は自然な会話の中で一度だけ使う。
+【損傷の提案ルール】手のひらサイズ以下の凹み・傷は板金修理が基本。それ以上の損傷や変形が大きい場合は交換も選択肢として提案する。修理と交換の費用を比べて判断することを勧める。
+【ナンバープレートのルール】ナンバープレートが傷ついた・曲がった・割れたという相談には、板金や交換ではなく「ナンバープレートは運輸支局または警察署で再発行の手続きが必要です」と案内する。
+【絶対ルール】最初から「電話して」「来店して」は言わない。3〜5回会話で専門知識を少しずつ見せて信頼を得る。修理金額は「実際に拝見しないと正確にはお伝えできませんが、できる限り綺麗に直します」と伝える。回答は3〜4文以内。車の状態を引き出す質問を一つ添える。お客様から業者を尋ねられたときは「ぜひ一度フォーラムオートにもお立ち寄りください」と自信を持って伝える。【来店促進】会話が3〜4往復して修理方法や込み入った話になってきたら「実際の修理方法や費用のことは、ぜひご来店いただいて専門スタッフに直接ご相談ください。実際に車を拝見しないと正確なことがお伝えできませんので、お気軽にどうぞ」と自然に案内する。`}
+};
+
+const openings={
+  reiko:'いらっしゃいませ。麗子です。保険や事故後のこと、わからなくて当然です。今、何が一番心配ですか？',
+  aika:'こんにちは、愛華です。突然のことで、大変でしたね。よかったら、今どんな状況か話してみてください。',
+  mako:'こんにちは、真子です。車のことって急なトラブルで焦りますよね。どんな状況か、話してみてください。'
+};
+
+const hints={
+  reiko:['保険会社の対応が不安','過失割合を押しつけられた','修理代のことが心配','全損と言われた'],
+  aika:['交通事故に遭った','車が動かない','傷・凹みが気になる','保険のことがわからない'],
+  mako:['ぶつけて凹んだ','こすり傷がある','修理にどれくらいかかる？','塗装が剥げた']
+};
+
+const voiceSettings={
+  reiko:{rate:1.39,pitch:0.72},
+  aika:{rate:1.39,pitch:1.5},
+  mako:{rate:1.39,pitch:1.05}
+};
+
+let current='reiko',history=[],msgCount=0,isTyping=false,isListening=false,recognition=null;
+
+function selectChar(key){
+  current=key;
+  document.querySelectorAll('.char-card').forEach(c=>c.classList.remove('active'));
+  document.querySelector('[data-char="'+key+'"]').classList.add('active');
+  document.getElementById('bubbleSpeaker').textContent=chars[key].speaker;
+  history=[];msgCount=0;
+  document.getElementById('chatMessages').innerHTML='';
+  document.getElementById('ctaBar').classList.remove('show');
+  typeBubble(openings[key],()=>showHints(hints[key]));
+}
+
+let audioUnlocked=false;
+function unlockAudio(){if(audioUnlocked)return;audioUnlocked=true;window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));}
+document.addEventListener('touchstart',unlockAudio,{once:true});
+document.addEventListener('click',unlockAudio,{once:true});
+
+function speak(text){
+  if(!window.speechSynthesis)return;
+  window.speechSynthesis.cancel();
+  const cfg=voiceSettings[current]||voiceSettings.aika;
+  const trySpeak=()=>{
+    const voices=window.speechSynthesis.getVoices();
+    const jaVoice=voices.find(v=>v.lang.startsWith('ja'))||voices[0];
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang='ja-JP';u.rate=cfg.rate;u.pitch=cfg.pitch;
+    if(jaVoice)u.voice=jaVoice;
+    window.speechSynthesis.speak(u);
+  };
+  if(window.speechSynthesis.getVoices().length>0){trySpeak();}
+  else{window.speechSynthesis.onvoiceschanged=trySpeak;}
+}
+
+function typeBubble(text,cb){
+  isTyping=true;speak(text);
+  const el=document.getElementById('bubbleText');
+  el.innerHTML='';let i=0;
+  const cur=document.createElement('span');cur.className='cur';
+  function tick(){
+    if(i<text.length){el.textContent=text.slice(0,i+1);el.appendChild(cur);i++;setTimeout(tick,36);}
+    else{isTyping=false;if(cb)cb();}
+  }
+  tick();
+}
+
+function showHints(list){
+  const area=document.getElementById('choicesArea');
+  const label=document.getElementById('hintsLabel');
+  area.innerHTML='';label.style.display='block';
+  list.forEach(t=>{const btn=document.createElement('button');btn.className='choice-btn';btn.textContent=t;btn.onclick=()=>send(t);area.appendChild(btn);});
+}
+
+function addMsg(text,role){
+  const area=document.getElementById('chatMessages');
+  const row=document.createElement('div');row.className='msg-row '+role;
+  const bub=document.createElement('div');bub.className='msg-bubble';bub.textContent=text;
+  row.appendChild(bub);area.appendChild(row);area.scrollTop=area.scrollHeight;
+}
+
+function showDots(){
+  const area=document.getElementById('chatMessages');
+  const row=document.createElement('div');row.className='msg-row ai';row.id='dotRow';
+  const bub=document.createElement('div');bub.className='msg-bubble';
+  bub.innerHTML='<div class="dots"><span></span><span></span><span></span></div>';
+  row.appendChild(bub);area.appendChild(row);area.scrollTop=area.scrollHeight;
+}
+function removeDots(){const r=document.getElementById('dotRow');if(r)r.remove();}
+
+async function send(text){
+  if(!text.trim()||isTyping)return;
+  document.getElementById('inputField').value='';
+  document.getElementById('choicesArea').innerHTML='';
+  document.getElementById('hintsLabel').style.display='none';
+  addMsg(text,'user');history.push({role:'user',content:text});msgCount++;showDots();
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:400,system:chars[current].system,messages:history})
+    });
+    const data=await res.json();
+    const reply=data.content?.[0]?.text||'すみません、もう一度お聞かせください。';
+    removeDots();history.push({role:'assistant',content:reply});addMsg(reply,'ai');
+    typeBubble(reply,()=>{
+      if(msgCount>=4)document.getElementById('ctaBar').classList.add('show');
+      showHints(msgCount<3?hints[current]:['もう少し聞いてほしい','他にも聞いていいですか','直接話したくなりました']);
+    });
+  }catch(e){
+    removeDots();
+    const fallback='ありがとうございます。もう少し状況を聞かせていただけますか？';
+    history.push({role:'assistant',content:fallback});addMsg(fallback,'ai');
+    typeBubble(fallback,()=>showHints(hints[current]));
+  }
+}
+
+function initVoice(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){document.getElementById('micBtn').style.opacity='0.4';return;}
+  recognition=new SR();recognition.lang='ja-JP';recognition.continuous=false;recognition.interimResults=false;
+  recognition.interimResults=true;
+  recognition.onresult=e=>{
+    let interim='';let final='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal){final+=e.results[i][0].transcript;}
+      else{interim+=e.results[i][0].transcript;}
+    }
+    document.getElementById('inputField').value=final||interim;
+    if(final){
+      setTimeout(()=>{
+        const val=document.getElementById('inputField').value.trim();
+        if(val){isListening=false;document.getElementById('micBtn').classList.remove('on');document.getElementById('micLabel').textContent='話す';send(val);}
+      },800);
+    }
+  };
+  recognition.onend=()=>{isListening=false;document.getElementById('micBtn').classList.remove('on');document.getElementById('micLabel').textContent='話す';};
+  recognition.onerror=()=>{isListening=false;document.getElementById('micBtn').classList.remove('on');document.getElementById('micLabel').textContent='話す';};
+}
+
+document.getElementById('micBtn').addEventListener('click',()=>{
+  if(!recognition)return;
+  if(isListening){recognition.stop();}
+  else{isListening=true;document.getElementById('micBtn').classList.add('on');document.getElementById('micLabel').textContent='聴いてます';recognition.start();}
+});
+document.getElementById('sendBtn').addEventListener('click',()=>send(document.getElementById('inputField').value.trim()));
+document.getElementById('inputField').addEventListener('keydown',e=>{if(e.key==='Enter')send(document.getElementById('inputField').value.trim());});
+
+initVoice();
+setTimeout(()=>typeBubble(openings.reiko,()=>showHints(hints.reiko)),500);
+</script>
+</body>
+</html>
