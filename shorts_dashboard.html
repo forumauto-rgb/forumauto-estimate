@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shorts生成ダッシュボード | FORUM AUTO</title>
+<style>
+:root{
+  --navy:#0b1c35;--navy2:#0e2240;--navy3:#071526;
+  --gold:#b8960c;--gold2:#d4a914;
+  --cream:#f7f3ea;--cream2:#eee8d8;
+  --td:#1a2a3a;--tl:#e8e0d0;--tl2:rgba(232,224,208,0.55);
+  --border:rgba(184,150,12,0.22);
+  --green:#1a7a3c;--red:#c0392b;--blue:#1a4a8a;--amber:#a06010;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0a1525;font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',sans-serif;color:var(--tl);min-height:100vh;}
+
+.hdr{background:var(--navy3);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);}
+.hdr-brand{font-size:14px;font-weight:700;color:var(--gold);letter-spacing:0.2em;}
+.hdr-sub{font-size:9px;color:var(--tl2);margin-top:2px;}
+.hdr-r{display:flex;gap:10px;align-items:center;}
+.badge{font-size:9px;padding:3px 10px;border-radius:10px;border:1px solid var(--border);color:var(--gold);}
+
+.main{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 48px);}
+
+/* サイドバー */
+.sidebar{background:var(--navy2);border-right:1px solid var(--border);padding:20px 0;}
+.nav-section{padding:0 16px;margin-bottom:6px;}
+.nav-label{font-size:9px;color:var(--tl2);letter-spacing:0.15em;margin-bottom:8px;margin-top:18px;padding:0 4px;}
+.nav-btn{width:100%;padding:9px 12px;border-radius:8px;border:none;background:transparent;color:var(--tl2);font-size:12px;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all 0.18s;text-align:left;}
+.nav-btn:hover{background:rgba(184,150,12,0.1);color:var(--tl);}
+.nav-btn.active{background:rgba(184,150,12,0.15);color:var(--gold);border:1px solid var(--border);}
+.nav-icon{font-size:14px;width:20px;text-align:center;}
+
+/* コンテンツ */
+.content{padding:24px;overflow-y:auto;}
+
+/* ステータスカード群 */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
+.stat-card{background:var(--navy2);border-radius:10px;padding:16px;border:1px solid var(--border);}
+.stat-value{font-size:28px;font-weight:700;color:var(--gold);margin-bottom:4px;}
+.stat-label{font-size:10px;color:var(--tl2);}
+.stat-sub{font-size:10px;color:rgba(184,150,12,0.6);margin-top:4px;}
+
+/* パイプライン状態 */
+.pipeline-section{background:var(--navy2);border-radius:12px;padding:20px;margin-bottom:24px;border:1px solid var(--border);}
+.section-title{font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.1em;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.section-title::before{content:'';width:3px;height:14px;background:var(--gold);border-radius:2px;}
+
+.pipeline-steps{display:flex;gap:0;align-items:center;}
+.pipe-step{flex:1;text-align:center;position:relative;}
+.pipe-step::after{content:'→';position:absolute;right:-8px;top:50%;transform:translateY(-50%);color:var(--tl2);font-size:14px;}
+.pipe-step:last-child::after{display:none;}
+.pipe-icon{font-size:22px;margin-bottom:6px;}
+.pipe-name{font-size:10px;color:var(--tl2);margin-bottom:4px;}
+.pipe-count{font-size:18px;font-weight:700;}
+.pipe-count.active{color:var(--gold2);}
+.pipe-count.done{color:#2ecc71;}
+.pipe-count.wait{color:#95a5a6;}
+
+/* 動画キュー */
+.queue-section{background:var(--navy2);border-radius:12px;padding:20px;margin-bottom:24px;border:1px solid var(--border);}
+.queue-item{display:grid;grid-template-columns:80px 1fr auto;gap:14px;align-items:center;padding:12px;border-radius:8px;border:1px solid rgba(184,150,12,0.1);margin-bottom:10px;background:rgba(255,255,255,0.02);transition:border-color 0.2s;}
+.queue-item:hover{border-color:var(--border);}
+.thumb-placeholder{width:80px;height:50px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.thumb-placeholder.before{background:rgba(139,26,74,0.3);}
+.thumb-placeholder.working{background:rgba(184,150,12,0.2);}
+.thumb-placeholder.done{background:rgba(26,92,58,0.3);}
+.queue-info{}
+.queue-title{font-size:12px;font-weight:600;color:var(--tl);margin-bottom:3px;}
+.queue-meta{font-size:10px;color:var(--tl2);line-height:1.6;}
+.queue-actions{display:flex;flex-direction:column;gap:6px;flex-shrink:0;}
+
+/* ステータスバッジ */
+.status{font-size:9px;padding:2px 8px;border-radius:8px;font-weight:600;white-space:nowrap;}
+.status.analyzing{background:rgba(184,150,12,0.2);color:var(--gold2);border:1px solid rgba(184,150,12,0.3);}
+.status.protecting{background:rgba(192,57,43,0.2);color:#e74c3c;border:1px solid rgba(192,57,43,0.3);}
+.status.generating{background:rgba(26,74,138,0.3);color:#5dade2;border:1px solid rgba(26,74,138,0.3);}
+.status.review{background:rgba(26,92,58,0.3);color:#2ecc71;border:1px solid rgba(26,92,58,0.3);}
+.status.published{background:rgba(26,92,58,0.5);color:#2ecc71;border:1px solid rgba(26,92,58,0.5);}
+.status.queued{background:rgba(100,100,100,0.2);color:#95a5a6;border:1px solid rgba(100,100,100,0.3);}
+
+/* ボタン */
+.btn{padding:6px 14px;border-radius:7px;border:none;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.18s;}
+.btn-gold{background:var(--gold);color:var(--navy);}
+.btn-gold:hover{background:var(--gold2);}
+.btn-outline{background:transparent;color:var(--tl);border:1px solid var(--border);}
+.btn-outline:hover{background:rgba(184,150,12,0.1);border-color:var(--gold);}
+.btn-green{background:var(--green);color:white;}
+.btn-green:hover{background:#1e9446;}
+.btn-red{background:var(--red);color:white;}
+.btn-red:hover{background:#e74c3c;}
+.btn-sm{padding:4px 10px;font-size:10px;}
+
+/* 設定セクション */
+.setting-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.setting-card{background:var(--navy2);border-radius:10px;padding:16px;border:1px solid var(--border);}
+.setting-title{font-size:11px;font-weight:700;color:var(--gold);margin-bottom:12px;}
+.setting-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);}
+.setting-row:last-child{border-bottom:none;}
+.setting-label{font-size:11px;color:var(--tl2);}
+.setting-value{font-size:11px;color:var(--tl);}
+.toggle{position:relative;width:34px;height:18px;background:rgba(100,100,100,0.3);border-radius:9px;cursor:pointer;transition:background 0.2s;border:none;}
+.toggle.on{background:var(--gold);}
+.toggle::after{content:'';position:absolute;width:14px;height:14px;background:white;border-radius:50%;top:2px;left:2px;transition:transform 0.2s;}
+.toggle.on::after{transform:translateX(16px);}
+
+/* ログ */
+.log-box{background:#050d1a;border-radius:8px;padding:12px;font-family:'Courier New',monospace;font-size:10px;line-height:1.8;max-height:160px;overflow-y:auto;border:1px solid rgba(184,150,12,0.1);}
+.log-info{color:#5dade2;}
+.log-warn{color:var(--gold2);}
+.log-ok{color:#2ecc71;}
+.log-err{color:#e74c3c;}
+
+/* プログレスバー */
+.progress-wrap{margin:8px 0;}
+.progress-label{font-size:10px;color:var(--tl2);margin-bottom:4px;display:flex;justify-content:space-between;}
+.progress-bar{height:4px;background:rgba(255,255,255,0.1);border-radius:2px;}
+.progress-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--gold),var(--gold2));transition:width 0.5s;}
+
+/* YouTube連携設定 */
+.yt-card{background:rgba(255,0,0,0.06);border:1px solid rgba(255,0,0,0.2);border-radius:10px;padding:16px;}
+
+/* タブ */
+.tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:0;}
+.tab{padding:8px 18px;font-size:11px;font-weight:600;background:transparent;border:none;color:var(--tl2);cursor:pointer;font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.18s;}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+
+/* レスポンシブ */
+@media(max-width:768px){
+  .main{grid-template-columns:1fr;}
+  .sidebar{display:none;}
+  .stat-grid{grid-template-columns:repeat(2,1fr);}
+  .setting-grid{grid-template-columns:1fr;}
+  .pipeline-steps{flex-wrap:wrap;gap:12px;}
+  .pipe-step::after{display:none;}
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div>
+    <div class="hdr-brand">FORUM AUTO — Shorts生成ダッシュボード</div>
+    <div class="hdr-sub">NAS動画 → YouTube Shorts 自動パイプライン</div>
+  </div>
+  <div class="hdr-r">
+    <div class="badge" id="pipeStatus">● パイプライン: 監視中</div>
+    <button class="btn btn-gold btn-sm" onclick="triggerScan()">🔍 今すぐスキャン</button>
+  </div>
+</div>
+
+<div class="main">
+  <!-- サイドバー -->
+  <nav class="sidebar">
+    <div class="nav-section">
+      <div class="nav-label">メイン</div>
+      <button class="nav-btn active" onclick="showTab('dashboard')">
+        <span class="nav-icon">📊</span>ダッシュボード
+      </button>
+      <button class="nav-btn" onclick="showTab('queue')">
+        <span class="nav-icon">🎬</span>動画キュー
+        <span style="margin-left:auto;background:rgba(184,150,12,0.3);padding:1px 7px;border-radius:8px;font-size:9px;" id="queueCount">3</span>
+      </button>
+      <button class="nav-btn" onclick="showTab('review')">
+        <span class="nav-icon">✅</span>承認待ち
+        <span style="margin-left:auto;background:rgba(46,204,113,0.3);padding:1px 7px;border-radius:8px;font-size:9px;" id="reviewCount">1</span>
+      </button>
+      <button class="nav-btn" onclick="showTab('published')">
+        <span class="nav-icon">▶️</span>投稿済み
+      </button>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">設定</div>
+      <button class="nav-btn" onclick="showTab('settings')">
+        <span class="nav-icon">⚙️</span>パイプライン設定
+      </button>
+      <button class="nav-btn" onclick="showTab('youtube')">
+        <span class="nav-icon">📺</span>YouTube連携
+      </button>
+      <button class="nav-btn" onclick="showTab('brand')">
+        <span class="nav-icon">🏷️</span>ブランド設定
+      </button>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">ツール</div>
+      <button class="nav-btn" onclick="showTab('log')">
+        <span class="nav-icon">📋</span>処理ログ
+      </button>
+      <button class="nav-btn" onclick="window.open('https://forumauto-rgb.github.io/forumauto-estimate/dashboard.html')">
+        <span class="nav-icon">🏠</span>ダッシュボードへ
+      </button>
+    </div>
+  </nav>
+
+  <!-- メインコンテンツ -->
+  <main class="content">
+
+    <!-- ダッシュボードタブ -->
+    <div class="tab-content active" id="tab-dashboard">
+
+      <!-- ステータスカード -->
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="statTotal">0</div>
+          <div class="stat-label">今月の生成本数</div>
+          <div class="stat-sub">目標: 30本/月</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:#2ecc71;" id="statPublished">0</div>
+          <div class="stat-label">投稿済み</div>
+          <div class="stat-sub">YouTube Shorts</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:#e74c3c;" id="statReview">0</div>
+          <div class="stat-label">承認待ち</div>
+          <div class="stat-sub">要確認</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:#5dade2;" id="statProcessing">0</div>
+          <div class="stat-label">処理中</div>
+          <div class="stat-sub">自動生成</div>
+        </div>
+      </div>
+
+      <!-- パイプライン状態 -->
+      <div class="pipeline-section">
+        <div class="section-title">パイプライン状態</div>
+        <div class="pipeline-steps">
+          <div class="pipe-step">
+            <div class="pipe-icon">📁</div>
+            <div class="pipe-name">NAS監視</div>
+            <div class="pipe-count active" id="pipeNAS">監視中</div>
+          </div>
+          <div class="pipe-step">
+            <div class="pipe-icon">🔒</div>
+            <div class="pipe-name">個人情報保護</div>
+            <div class="pipe-count" id="pipePri">待機</div>
+          </div>
+          <div class="pipe-step">
+            <div class="pipe-icon">🤖</div>
+            <div class="pipe-name">AI解析</div>
+            <div class="pipe-count" id="pipeAI">待機</div>
+          </div>
+          <div class="pipe-step">
+            <div class="pipe-icon">🎬</div>
+            <div class="pipe-name">動画生成</div>
+            <div class="pipe-count" id="pipeGen">待機</div>
+          </div>
+          <div class="pipe-step">
+            <div class="pipe-icon">✅</div>
+            <div class="pipe-name">承認</div>
+            <div class="pipe-count" id="pipeApprove">待機</div>
+          </div>
+          <div class="pipe-step">
+            <div class="pipe-icon">▶️</div>
+            <div class="pipe-name">YouTube投稿</div>
+            <div class="pipe-count done" id="pipeYT">0本</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 最近の動画 -->
+      <div class="queue-section">
+        <div class="section-title">最近の処理動画</div>
+        <div id="recentQueue">
+          <!-- 動的に生成 -->
+        </div>
+      </div>
+
+      <!-- ログ -->
+      <div class="pipeline-section">
+        <div class="section-title">最新ログ</div>
+        <div class="log-box" id="mainLog">
+          <div class="log-info">[起動] ForumAuto Shorts Pipeline 初期化中...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- キュータブ -->
+    <div class="tab-content" id="tab-queue">
+      <div class="queue-section">
+        <div class="section-title">処理キュー</div>
+        <div style="display:flex;gap:10px;margin-bottom:16px;">
+          <button class="btn btn-gold" onclick="triggerScan()">🔍 NASスキャン</button>
+          <button class="btn btn-outline" onclick="clearCompleted()">✓ 完了済みを消去</button>
+        </div>
+        <div id="fullQueue"></div>
+      </div>
+    </div>
+
+    <!-- 承認待ちタブ -->
+    <div class="tab-content" id="tab-review">
+      <div class="queue-section">
+        <div class="section-title">承認待ち動画（公開前の最終確認）</div>
+        <p style="font-size:11px;color:var(--tl2);margin-bottom:16px;">動画を確認してから「承認→投稿」または「却下→削除」を選択してください。個人情報の残存がないかご確認をお願いします。</p>
+        <div id="reviewQueue"></div>
+      </div>
+    </div>
+
+    <!-- 投稿済みタブ -->
+    <div class="tab-content" id="tab-published">
+      <div class="queue-section">
+        <div class="section-title">YouTube投稿済み</div>
+        <div id="publishedList"></div>
+      </div>
+    </div>
+
+    <!-- 設定タブ -->
+    <div class="tab-content" id="tab-settings">
+      <div class="setting-grid">
+        <div class="setting-card">
+          <div class="setting-title">📁 NAS設定</div>
+          <div class="setting-row">
+            <span class="setting-label">監視フォルダ</span>
+            <span class="setting-value" style="font-size:10px;">forumauto/03_YouTube/</span>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">スキャン間隔</span>
+            <span class="setting-value">30分</span>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">対象拡張子</span>
+            <span class="setting-value" style="font-size:10px;">mp4 / mov / avi</span>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">最小ファイルサイズ</span>
+            <span class="setting-value">10MB</span>
+          </div>
+        </div>
+        <div class="setting-card">
+          <div class="setting-title">🔒 個人情報保護</div>
+          <div class="setting-row">
+            <span class="setting-label">ナンバーぼかし</span>
+            <button class="toggle on" id="tg-plate" onclick="toggleSetting(this)"></button>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">顔ぼかし</span>
+            <button class="toggle on" id="tg-face" onclick="toggleSetting(this)"></button>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">音声除去（会話）</span>
+            <button class="toggle on" id="tg-voice" onclick="toggleSetting(this)"></button>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">固有名詞削除</span>
+            <button class="toggle on" id="tg-names" onclick="toggleSetting(this)"></button>
+          </div>
+        </div>
+        <div class="setting-card">
+          <div class="setting-title">🎬 Shorts設定</div>
+          <div class="setting-row">
+            <span class="setting-label">動画長さ</span>
+            <span class="setting-value">15〜45秒</span>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">縦動画比率</span>
+            <span class="setting-value">9:16</span>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">解像度</span>
+            <span class="setting-value">1080×1920</span>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">BGM自動追加</span>
+            <button class="toggle on" id="tg-bgm" onclick="toggleSetting(this)"></button>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">AIナレーション</span>
+            <button class="toggle on" id="tg-narr" onclick="toggleSetting(this)"></button>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">字幕自動生成</span>
+            <button class="toggle on" id="tg-sub" onclick="toggleSetting(this)"></button>
+          </div>
+        </div>
+        <div class="setting-card">
+          <div class="setting-title">🤖 AIエンジン設定</div>
+          <div class="setting-row">
+            <span class="setting-label">解析AI</span>
+            <span class="setting-value">Claude (ai-proxy)</span>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">音声AI</span>
+            <span class="setting-value">ElevenLabs (voice-proxy)</span>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">字幕AI</span>
+            <span class="setting-value">Whisper (Edge Function)</span>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">自動承認</span>
+            <button class="toggle" id="tg-auto" onclick="toggleSetting(this)"></button>
+          </div>
+        </div>
+      </div>
+      <div class="setting-card" style="margin-top:14px;">
+        <div class="setting-title">🏷️ ブランドオーバーレイ設定</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:8px;">
+          <div>
+            <div class="setting-label" style="margin-bottom:6px;">オープニング文字</div>
+            <input type="text" value="FORUM AUTO" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--tl);border-radius:6px;padding:6px 10px;font-size:11px;font-family:inherit;">
+          </div>
+          <div>
+            <div class="setting-label" style="margin-bottom:6px;">クロージング文字</div>
+            <input type="text" value="静岡県袋井市 ☎ 0538-49-0632" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--tl);border-radius:6px;padding:6px 10px;font-size:11px;font-family:inherit;">
+          </div>
+          <div>
+            <div class="setting-label" style="margin-bottom:6px;">ハッシュタグ</div>
+            <input type="text" value="#外車修理 #鈑金塗装 #BMW修理" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--tl);border-radius:6px;padding:6px 10px;font-size:11px;font-family:inherit;">
+          </div>
+        </div>
+        <button class="btn btn-gold" style="margin-top:14px;" onclick="saveSettings()">⚙️ 設定を保存</button>
+      </div>
+    </div>
+
+    <!-- YouTube連携タブ -->
+    <div class="tab-content" id="tab-youtube">
+      <div class="yt-card" style="margin-bottom:20px;">
+        <div class="setting-title" style="color:#ff4444;">📺 YouTube Data API 連携</div>
+        <p style="font-size:11px;color:var(--tl2);margin-bottom:14px;line-height:1.8;">
+          YouTube投稿にはGoogle Cloud ConsoleでData API v3を有効にし、OAuth2.0認証が必要です。<br>
+          APIキーはSupabase Secretsで管理します（フロントには出ません）。
+        </p>
+        <div class="setting-row" style="margin-bottom:10px;">
+          <span class="setting-label">接続状態</span>
+          <span class="status queued" id="ytStatus">未接続</span>
+        </div>
+        <div class="setting-row" style="margin-bottom:10px;">
+          <span class="setting-label">チャンネル</span>
+          <span class="setting-value" id="ytChannel">—</span>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:14px;">
+          <button class="btn btn-gold" onclick="connectYouTube()">🔑 YouTube認証</button>
+          <button class="btn btn-outline" onclick="testYouTube()">📡 接続テスト</button>
+        </div>
+      </div>
+
+      <div class="setting-card">
+        <div class="setting-title">投稿設定</div>
+        <div class="setting-row">
+          <span class="setting-label">プライバシー設定</span>
+          <select style="background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--tl);border-radius:6px;padding:4px 8px;font-size:11px;font-family:inherit;">
+            <option>unlisted（限定公開）</option>
+            <option>public（公開）</option>
+            <option>private（非公開）</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">自動タグ</span>
+          <span class="setting-value" style="font-size:10px;">外車修理, 鈑金塗装, 袋井市, BMW, Mercedes</span>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">投稿スケジュール</span>
+          <span class="setting-value">承認後即時</span>
+        </div>
+        <p style="font-size:10px;color:var(--tl2);margin-top:12px;line-height:1.7;">
+          ⚠️ YouTube投稿はSupabase Edge Function (youtube-proxy) が担当します。<br>
+          OAuth2.0トークンはSupabase SecretsのYOUTUBE_OAUTH_TOKENに保存してください。
+        </p>
+      </div>
+    </div>
+
+    <!-- ログタブ -->
+    <div class="tab-content" id="tab-log">
+      <div class="pipeline-section">
+        <div class="section-title">処理ログ</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <button class="btn btn-outline btn-sm" onclick="clearLog()">クリア</button>
+          <button class="btn btn-outline btn-sm" onclick="addDemoLogs()">デモログ追加</button>
+        </div>
+        <div class="log-box" id="fullLog" style="max-height:400px;">
+          <div class="log-info">[起動] ForumAuto Shorts Pipeline 初期化中...</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+'use strict';
+
+/* ============================================================
+   設定（Supabase anon keyのみ。課金APIキーはEdge Function側）
+   ============================================================ */
+const CONFIG = {
+  SUPABASE_URL: 'https://uhppgdwbyrijnqpvusxw.supabase.co',
+  SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVocHBnZHdieXJpam5xcHZ1c3h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTY0MDg5NzMsImV4cCI6MjAxMTk4NDk3M30.rEIEPBGMBTMwXQFCQJJ4wKPDC5oNmu_DK60',
+  // Edge Function エンドポイント
+  PIPELINE_PROXY: '/functions/v1/shorts-pipeline',
+  YOUTUBE_PROXY:  '/functions/v1/youtube-proxy',
+};
+
+/* ============================================================
+   状態管理
+   ============================================================ */
+let state = {
+  videos: [],     // 動画キュー
+  stats: { total: 0, published: 0, review: 0, processing: 0 },
+  logs: [],
+};
+
+/* ============================================================
+   デモ動画データ（Supabase実装前のUI確認用）
+   本番はSupabase DBから取得
+   ============================================================ */
+const DEMO_VIDEOS = [
+  {
+    id: 'v001',
+    file: 'BMW_5series_repair_20260501.mp4',
+    title: 'BMW 5シリーズ フロントバンパー修理',
+    car: 'BMW 5シリーズ (G30)',
+    phase: 'before→after',
+    duration: 28,
+    status: 'review',
+    nasPath: 'forumauto/03_YouTube/2026-05/',
+    createdAt: '2026-05-05 14:32',
+    tags: '#BMW修理 #外車鈑金 #袋井市',
+    thumbnail: 'before',
+  },
+  {
+    id: 'v002',
+    file: 'Mercedes_CLA_scratch_20260503.mp4',
+    title: 'Mercedes-Benz CLA サイドパネル塗装',
+    car: 'Mercedes CLA250',
+    phase: '作業中',
+    duration: 35,
+    status: 'generating',
+    nasPath: 'forumauto/03_YouTube/2026-05/',
+    createdAt: '2026-05-05 16:10',
+    tags: '#メルセデス #PPG塗装 #鈑金塗装',
+    thumbnail: 'working',
+  },
+  {
+    id: 'v003',
+    file: 'Lexus_RX_door_20260504.mp4',
+    title: 'Lexus RX ドアパネル板金',
+    car: 'Lexus RX450h',
+    phase: 'before→after',
+    duration: 22,
+    status: 'analyzing',
+    nasPath: 'forumauto/03_YouTube/2026-05/',
+    createdAt: '2026-05-05 18:45',
+    tags: '#レクサス #ドア板金 #保険修理',
+    thumbnail: 'done',
+  },
+  {
+    id: 'v004',
+    file: 'Porsche_911_hood_20260501.mp4',
+    title: 'Porsche 911 ボンネット修理',
+    car: 'Porsche 911 (992)',
+    phase: 'before→after',
+    duration: 40,
+    status: 'published',
+    nasPath: 'forumauto/03_YouTube/2026-04/',
+    createdAt: '2026-04-28 10:20',
+    youtubeId: 'xxxxxxxxxxxx',
+    tags: '#ポルシェ修理 #外車専門 #PPG',
+    thumbnail: 'done',
+  },
+];
+
+const STATUS_LABELS = {
+  analyzing:  { label: '解析中', cls: 'analyzing' },
+  protecting: { label: '個人情報除去中', cls: 'protecting' },
+  generating: { label: 'Shorts生成中', cls: 'generating' },
+  review:     { label: '承認待ち', cls: 'review' },
+  published:  { label: '投稿済み', cls: 'published' },
+  queued:     { label: 'キュー待機', cls: 'queued' },
+};
+
+const THUMB_ICONS = { before: '📷', working: '🔧', done: '✨' };
+
+/* ============================================================
+   UI 関数群
+   ============================================================ */
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('tab-' + name);
+  if (el) el.classList.add('active');
+  const btn = document.querySelector('.nav-btn[onclick*="' + name + '"]');
+  if (btn) btn.classList.add('active');
+}
+
+function renderVideo(v, mode) {
+  const st = STATUS_LABELS[v.status] || STATUS_LABELS.queued;
+  const icon = THUMB_ICONS[v.thumbnail] || '🎬';
+
+  if (mode === 'review') {
+    return '<div class="queue-item" id="item-' + v.id + '">' +
+      '<div class="thumb-placeholder ' + (v.thumbnail || '') + '">' + icon + '</div>' +
+      '<div class="queue-info">' +
+        '<div class="queue-title">' + v.title + '</div>' +
+        '<div class="queue-meta">' +
+          v.car + ' ／ ' + v.phase + ' ／ ' + v.duration + '秒<br>' +
+          v.createdAt + ' ／ ' + v.tags +
+        '</div>' +
+        '<div class="progress-wrap">' +
+          '<div class="progress-label"><span>プレビュー確認</span><span>個人情報保護済み</span></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="queue-actions">' +
+        '<button class="btn btn-green btn-sm" onclick="approveVideo(\'' + v.id + '\')">✅ 承認・投稿</button>' +
+        '<button class="btn btn-outline btn-sm" onclick="previewVideo(\'' + v.id + '\')">▶ プレビュー</button>' +
+        '<button class="btn btn-red btn-sm" onclick="rejectVideo(\'' + v.id + '\')">✗ 却下</button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  if (mode === 'published') {
+    return '<div class="queue-item" id="item-' + v.id + '">' +
+      '<div class="thumb-placeholder done">' + icon + '</div>' +
+      '<div class="queue-info">' +
+        '<div class="queue-title">' + v.title + '</div>' +
+        '<div class="queue-meta">' +
+          v.car + ' ／ ' + v.duration + '秒 ／ ' + v.createdAt +
+          (v.youtubeId ? '<br><span style="color:var(--gold)">▶ YouTube: ' + v.youtubeId + '</span>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div class="queue-actions">' +
+        '<span class="status published">投稿済み</span>' +
+        (v.youtubeId ? '<a href="https://youtube.com/shorts/' + v.youtubeId + '" target="_blank" class="btn btn-outline btn-sm" style="text-decoration:none;display:block;text-align:center;">▶ 再生</a>' : '') +
+      '</div>' +
+    '</div>';
+  }
+
+  // 通常キュー
+  return '<div class="queue-item" id="item-' + v.id + '">' +
+    '<div class="thumb-placeholder ' + (v.thumbnail || '') + '">' + icon + '</div>' +
+    '<div class="queue-info">' +
+      '<div class="queue-title">' + v.title + '</div>' +
+      '<div class="queue-meta">' +
+        v.car + ' ／ ' + v.phase + ' ／ ' + v.createdAt + '<br>' + v.nasPath +
+      '</div>' +
+    '</div>' +
+    '<div class="queue-actions">' +
+      '<span class="status ' + st.cls + '">' + st.label + '</span>' +
+      '<button class="btn btn-outline btn-sm" onclick="retryVideo(\'' + v.id + '\')">↺ 再試行</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function renderAll() {
+  const videos = DEMO_VIDEOS;
+
+  // 統計
+  const stats = {
+    total: videos.length,
+    published: videos.filter(v => v.status === 'published').length,
+    review: videos.filter(v => v.status === 'review').length,
+    processing: videos.filter(v => ['analyzing','protecting','generating'].includes(v.status)).length,
+  };
+  document.getElementById('statTotal').textContent = stats.total;
+  document.getElementById('statPublished').textContent = stats.published;
+  document.getElementById('statReview').textContent = stats.review;
+  document.getElementById('statProcessing').textContent = stats.processing;
+  document.getElementById('reviewCount').textContent = stats.review;
+  document.getElementById('queueCount').textContent = videos.filter(v => v.status !== 'published').length;
+  document.getElementById('pipeYT').textContent = stats.published + '本';
+
+  // 最近の動画（ダッシュボード）
+  const rq = document.getElementById('recentQueue');
+  if (rq) rq.innerHTML = videos.slice(0,3).map(v => renderVideo(v, 'default')).join('');
+
+  // フルキュー
+  const fq = document.getElementById('fullQueue');
+  if (fq) fq.innerHTML = videos.filter(v => v.status !== 'published').map(v => renderVideo(v, 'default')).join('');
+
+  // 承認待ち
+  const rv = document.getElementById('reviewQueue');
+  if (rv) {
+    const reviewList = videos.filter(v => v.status === 'review');
+    rv.innerHTML = reviewList.length > 0
+      ? reviewList.map(v => renderVideo(v, 'review')).join('')
+      : '<p style="color:var(--tl2);font-size:12px;padding:20px 0;">承認待ちの動画はありません。</p>';
+  }
+
+  // 投稿済み
+  const pl = document.getElementById('publishedList');
+  if (pl) pl.innerHTML = videos.filter(v => v.status === 'published').map(v => renderVideo(v, 'published')).join('');
+}
+
+/* ============================================================
+   アクション
+   ============================================================ */
+function approveVideo(id) {
+  addLog('ok', '動画 ' + id + ' を承認。YouTube投稿キューに追加します...');
+  addLog('info', 'youtube-proxy Edge Functionを呼び出し中...');
+  addLog('warn', '⚠️ YouTube OAuth未接続。接続設定を完了してください。');
+  showNotify('✅ 承認しました。YouTube連携設定完了後に投稿されます。');
+}
+
+function rejectVideo(id) {
+  if (confirm('この動画を却下しますか？（生成データは削除されます）')) {
+    addLog('warn', '動画 ' + id + ' を却下・削除しました。');
+    showNotify('✗ 却下しました。');
+  }
+}
+
+function previewVideo(id) {
+  addLog('info', '動画 ' + id + ' のプレビューを要求中...');
+  alert('プレビュー機能: Supabase Storageに保存されたShortsファイルを再生します（実装後に有効化）');
+}
+
+function retryVideo(id) {
+  addLog('info', '動画 ' + id + ' を再処理キューに追加しました。');
+  showNotify('再処理をキューに追加しました。');
+}
+
+function triggerScan() {
+  addLog('info', 'NAS手動スキャン開始: forumauto/03_YouTube/...');
+  addLog('info', 'Edge Function: shorts-pipeline/scan を呼び出し中...');
+  setTimeout(() => addLog('ok', 'スキャン完了。新規ファイル: 0件'), 1500);
+  showNotify('🔍 NASスキャンを開始しました');
+}
+
+function connectYouTube() {
+  addLog('info', 'YouTube OAuth2.0認証フロー開始...');
+  addLog('warn', '実装手順: Supabase Secretsに YOUTUBE_OAUTH_TOKEN を設定してください');
+  alert('YouTube連携手順:\n1. Google Cloud Console でYouTube Data API v3を有効化\n2. OAuth2.0クライアントIDを作成\n3. 取得したトークンをSupabase Secretsに登録\n4. Edge Function youtube-proxyをデプロイ');
+}
+
+function testYouTube() {
+  addLog('info', 'YouTube API接続テスト中...');
+  addLog('warn', 'YOUTUBE_OAUTH_TOKEN未設定のため接続失敗');
+}
+
+function clearCompleted() {
+  addLog('info', '完了済みアイテムをクリアしました');
+  renderAll();
+}
+
+function saveSettings() {
+  addLog('ok', '設定を保存しました');
+  showNotify('⚙️ 設定を保存しました');
+}
+
+function toggleSetting(el) {
+  el.classList.toggle('on');
+  addLog('info', el.id + ' を ' + (el.classList.contains('on') ? '有効' : '無効') + ' に変更');
+}
+
+function addLog(type, msg) {
+  const box = document.getElementById('mainLog');
+  const full = document.getElementById('fullLog');
+  const time = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  const line = '<div class="log-' + type + '">[' + time + '] ' + msg + '</div>';
+  if (box) { box.innerHTML += line; box.scrollTop = box.scrollHeight; }
+  if (full) { full.innerHTML += line; full.scrollTop = full.scrollHeight; }
+}
+
+function clearLog() {
+  const full = document.getElementById('fullLog');
+  if (full) full.innerHTML = '';
+}
+
+function addDemoLogs() {
+  const demoLogs = [
+    ['info', 'NAS監視: forumauto/03_YouTube/ — 新規ファイル検出: BMW_5series_repair.mp4'],
+    ['info', 'FFprobe解析: 解像度 4K, 長さ 3分42秒, コーデック H.264'],
+    ['info', 'AI解析開始: Claude (ai-proxy) にシーン分類を要求...'],
+    ['ok', 'シーン分類完了: 損傷前(0:00-0:45) 作業中(0:45-2:30) 完成(2:30-3:42)'],
+    ['info', 'ナンバープレート検出: 2箇所 → モザイク処理適用中...'],
+    ['ok', 'ナンバーぼかし完了 (YOLO v8検出精度: 98.3%)'],
+    ['info', '音声解析: 会話音声検出 → 除去処理中...'],
+    ['ok', '音声クリーニング完了 (FFmpeg noise reduction)'],
+    ['info', 'AIナレーション生成: Claude → ElevenLabs voice-proxy...'],
+    ['ok', 'ナレーション生成完了 (28秒, 麗子ボイス)'],
+    ['info', 'BGM追加: Premium_Luxury_02.mp3 (音量 -18dB)'],
+    ['info', 'テロップ生成: FORUM AUTO オープニング ＋ 連絡先クロージング'],
+    ['info', '縦動画変換: 1920x1080 → 1080x1920 (FFmpeg crop/scale)'],
+    ['ok', 'Shorts生成完了: BMW_5series_repair_short.mp4 (28秒, 9:16)'],
+    ['ok', '承認待ちキューに追加 → レビュー画面で確認してください'],
+  ];
+  demoLogs.forEach(([t,m]) => addLog(t, m));
+}
+
+function showNotify(msg) {
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;top:60px;right:20px;background:var(--navy2);color:var(--tl);padding:10px 18px;border-radius:8px;border:1px solid var(--border);font-size:12px;z-index:9999;animation:ctaFade 0.3s ease;';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+/* ============================================================
+   Supabase からデータ取得（実装後に有効化）
+   ============================================================ */
+async function fetchVideosFromSupabase() {
+  try {
+    const res = await fetch(CONFIG.SUPABASE_URL + '/rest/v1/shorts_queue?order=created_at.desc&limit=50', {
+      headers: {
+        'apikey': CONFIG.SUPABASE_KEY,
+        'Authorization': 'Bearer ' + CONFIG.SUPABASE_KEY,
+      },
+    });
+    if (!res.ok) throw new Error(res.status);
+    return await res.json();
+  } catch (e) {
+    addLog('warn', 'Supabase未接続 (shorts_queue テーブル未作成) - デモデータで表示中');
+    return null;
+  }
+}
+
+/* ============================================================
+   初期化
+   ============================================================ */
+(async function init() {
+  addLog('info', 'ダッシュボード初期化中...');
+  addLog('info', 'Supabase: shorts_queue テーブルを確認中...');
+
+  const dbData = await fetchVideosFromSupabase();
+  if (dbData) {
+    addLog('ok', 'Supabaseから ' + dbData.length + '件の動画データを取得');
+  }
+
+  renderAll();
+  addLog('ok', 'ダッシュボード初期化完了');
+  addLog('info', 'NAS監視: 次回スキャンまで 28分');
+
+  // 定期更新（30秒ごと）
+  setInterval(async () => {
+    const data = await fetchVideosFromSupabase();
+    if (data) renderAll();
+  }, 30000);
+})();
+</script>
+</body>
+</html>
