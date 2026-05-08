@@ -381,7 +381,7 @@ async function speakEl(text,key){
   try{
     const r=await fetch(CONFIG.SUPABASE_URL+'/functions/v1/voice-proxy',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+CONFIG.SUPABASE_KEY},
+     headers:{'Content-Type':'application/json'},
      body:JSON.stringify({text:text.slice(0,400),voice_id:vid,model_id:'eleven_multilingual_v2',voice_settings:CHARS[key].elevenSettings}),
     });
     if(!r.ok)throw new Error('voice-proxy '+r.status);
