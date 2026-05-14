@@ -3306,7 +3306,7 @@ function sumHTML(labor,pt,mt,sub,tax){
     <div class="sum-row" style="cursor:pointer;" onclick="matAutoMode=!matAutoMode;rIP()">
       <span>材料合計
         <span style="font-size:10px;color:#888;margin-left:4px;">
-          ${matAutoMode?'(塗装工数×30% 自動)':' (手入力)'}
+          ${matAutoMode?'(塗装工数×'+(Math.round((customer.matProfit||0.30)*100))+'% 自動)':' (手入力)'}
         </span>
       </span>
       <span style="display:flex;align-items:center;gap:6px;">
@@ -4460,7 +4460,8 @@ function calcPaintMatAuto(){
   var paintH = sel.filter(function(t){return t.tag==='paint';})
                   .reduce(function(s,t){return s+(t.h||parseFloat(t.hours)||0);},0);
   var paintLR = Math.round(RATE * getTotalPaintCoef());
-  var matRate = isPremiumClear() ? 0.35 : 0.30;
+  var _profit = customer.matProfit != null ? customer.matProfit : 0.40;
+  var matRate = isPremiumClear() ? Math.max(_profit, 0.50) : _profit;
   var base = Math.round(paintH * paintLR * matRate);
   // 高機能クリヤー材料費（手入力）を加算
   return base + (premClearMatCost || 0);
@@ -4469,6 +4470,10 @@ function calcTotals(){
   const labor=sel.reduce((s,t)=>s+(t.cost||t.price||parseFloat(t.editC)||0),0);
   const pt=partsItems.reduce((s,p)=>s+(parseFloat(p.cost)||0)*(parseFloat(p.qty)||1)*((100+(parseFloat(p.profit)||0))/100),0);
   var mt;
+  // 画面の粗利率入力欄の値を使用
+  var matProfitRate = customer.matProfit != null ? customer.matProfit : 0.40;
+  var matProfitPct = Math.round(matProfitRate * 100);
+
   if(matAutoMode){
     mt = calcPaintMatAuto();
   } else {
@@ -5030,7 +5035,7 @@ function partsMaterialHTML(){
     h+='<td><button class="del-btn" onclick="matItems.splice('+i+',1);render()">&times;</button></td></tr>';
   });
   h+='</tbody></table>';
-  h+='<button class="btn btn-xs" style="margin-top:4px" onclick="matItems.push({name:\'\',cost:\'\',profit:30});render()">&plus;\u8ffd\u52a0</button>';
+  h+='<button class="btn btn-xs" style="margin-top:4px" onclick="matItems.push({name:\'\',cost:\'\',profit:Math.round((customer.matProfit||0.40)*100)});render()">&plus;\u8ffd\u52a0</button>';
   h+='</div></div>';
   return h;
 }
@@ -5041,7 +5046,7 @@ function matUsedCount(){return matData.filter(function(m){return (m.useG||0)>0;}
 function renderMaterial(){
   var total=matCostTotal();
   var usedCnt=matUsedCount();
-  var profit=customer.matProfit!=null?customer.matProfit:0.3;
+  var profit=customer.matProfit!=null?customer.matProfit:0.40;
   var sellPrice=total>0?Math.ceil(total/(1-profit)/100)*100:0;
   var sortedData=matSortOrder==='bango'?matData.slice().sort(function(a,b){return a.bango.localeCompare(b.bango,'ja');}):matData;
   var sr=matKw?sortedData.filter(function(m){return m.bango.indexOf(matKw)>=0||m.name.indexOf(matKw)>=0;}):sortedData;
@@ -5126,7 +5131,7 @@ function clearMatUse(){
 async function applyMatToEst(){
   var total=matCostTotal();
   if(total<=0){alert("使用量が入力されていません");return;}
-  var profit=customer.matProfit!=null?customer.matProfit:0.3;
+  var profit=customer.matProfit!=null?customer.matProfit:0.40;
   var sell=Math.ceil(total/(1-profit)/100)*100;
 
   // 1. 見積書の材料合計に反映（手動モードに切り替えてセット）
