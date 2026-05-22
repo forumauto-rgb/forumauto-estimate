@@ -4258,7 +4258,8 @@ function renderPreview(){
     +headerBtns
     +'<span style="margin-left:8px;font-size:11px;color:#555;font-weight:bold;">書類：</span>'
     +'<button onclick="estMode=\'estimate\';render()" style="padding:4px 12px;font-size:12px;border-radius:6px;border:2px solid #1a3a6b;cursor:pointer;background:'+(estMode==='estimate'?'#1a3a6b':'white')+';color:'+(estMode==='estimate'?'white':'#1a3a6b')+';">見積書</button>'
-    +'<button onclick="estMode=\'invoice\';render()" style="padding:4px 12px;font-size:12px;border-radius:6px;border:2px solid #e65100;cursor:pointer;background:'+(estMode==='invoice'?'#e65100':'white')+';color:'+(estMode==='invoice'?'white':'#e65100')+';">請求書</button>'    +'<button onclick="openInsuranceAI()" style="margin-left:8px;padding:4px 12px;font-size:12px;border-radius:6px;border:2px solid #7b1fa2;cursor:pointer;background:#7b1fa2;color:white;font-weight:bold;">⚖️ 保険対応</button>'
+    +'<button onclick="estMode=\'invoice\';render()" style="padding:4px 12px;font-size:12px;border-radius:6px;border:2px solid #e65100;cursor:pointer;background:'+(estMode==='invoice'?'#e65100':'white')+';color:'+(estMode==='invoice'?'white':'#e65100')+';">請求書</button>'
+    +'<button onclick="openInsuranceAI()" style="margin-left:8px;padding:4px 12px;font-size:12px;border-radius:6px;border:2px solid #7b1fa2;cursor:pointer;background:#7b1fa2;color:white;font-weight:bold;">⚖️ 保険対応</button>'
     +'</div>'
     +'<div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;padding:8px 12px;background:#f3f6ff;border-radius:8px;border:1px solid #c5cae9;">'
     +'<span style="font-size:11px;font-weight:bold;color:#1a3a6b;">📋 工程管理：</span>'
@@ -5937,6 +5938,7 @@ async function loadEstimate(estId,estNo){
     // 写真を復元（Supabase優先、なければlocalStorage）
     customer.photoIncoming=[]; customer.photoWork=[]; customer.photoDone=[];
     await loadPhotosFromSupabase(estId, estNo);
+    estMode='estimate';
     render();
     showNotify('✅ 見積読込完了 '+estNo);
   }catch(e){showNotify('\u274c \u8aad\u8fbc\u5931\u6557:'+e.message);}
