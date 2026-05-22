@@ -307,6 +307,28 @@ if(location.protocol==='file:'){
 <script>
 
 
+// ===== 起動時localStorage写真データクリーンアップ =====
+(function(){
+  try {
+    var total = 0;
+    var photoKeys = [];
+    for(var i=0; i<localStorage.length; i++){
+      var k = localStorage.key(i);
+      if(k && k.startsWith('fa_photos_')){
+        photoKeys.push(k);
+        var v = localStorage.getItem(k);
+        total += v ? v.length : 0;
+      }
+    }
+    // 300KB超えたら古いものから削除
+    if(total > 300000){
+      console.log('localStorage写真容量超過(' + Math.round(total/1024) + 'KB)、クリーンアップ開始');
+      photoKeys.forEach(function(k){ localStorage.removeItem(k); });
+      console.log('localStorage写真データ削除完了');
+    }
+  } catch(e) {}
+})();
+
 // ===== 毎月1日バックアップ警告 =====
 function checkBackupReminder(){
   try{
@@ -1202,11 +1224,13 @@ function addPhotos(input, category){
           customer.photos.push(e.target.result);
         }
         savePhotosLocal();
+        autoSavePhotosToCloud();
         rIP();
       };
       img.onerror = function(){
         if(!customer[cat]) customer[cat] = [];
         customer[cat].push(e.target.result);
+        autoSavePhotosToCloud();
         rIP();
       };
       img.src = e.target.result;
@@ -1370,7 +1394,20 @@ function savePhotosLocal(){
     // tempキーも常に更新
     if(customer.no) localStorage.setItem('fa_photos_temp', JSON.stringify(data));
   } catch(e) {
-    console.warn('写真localStorage保存失敗（容量超過の可能性）:', e);
+    console.warn('写真localStorage保存失敗（容量超過）:', e);
+    // 古いfa_photosキーを全削除してリトライ
+    try {
+      var delKeys = [];
+      for(var i=0; i<localStorage.length; i++){
+        var k = localStorage.key(i);
+        if(k && k.startsWith('fa_photos_')) delKeys.push(k);
+      }
+      delKeys.forEach(function(k){ localStorage.removeItem(k); });
+      localStorage.setItem(key, JSON.stringify(data));
+      console.log('写真localStorage: 古いデータ削除後に保存成功');
+    } catch(e2) {
+      console.warn('写真localStorage: 完全に容量不足のためスキップ');
+    }
   }
 }
 
@@ -4249,7 +4286,7 @@ function renderPreview(){
   }
 
   // ========== コントロールバー ==========
-  var ctrlBar='<div class="no-print" style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 12px;background:#e8f5e9;border-radius:8px;border:1px solid #a5d6a7;flex-wrap:wrap">'
+  var ctrlBar='<div class="no-print" style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 12px;background:#e8f5e9;border-radius:8px;border:1px solid #a5d6a7;flex-wrap:wrap;position:relative;z-index:10;">'
     +'<span style="font-size:12px;font-weight:bold;'+(customer.no?'color:#1b5e20':'color:#e53935')+'">'+(customer.no?'☁ 保存済み：'+customer.no:'⚠ 未保存 → 保存ボタンを押してください')+'</span>'
     +'<button onclick="saveEstimate()" style="background:#2e7d32;color:white;border:none;border-radius:6px;padding:6px 16px;font-size:12px;font-weight:bold;cursor:pointer">&#9729; クラウドに保存</button>'
     +'<button onclick="showEstimateList()" style="background:#1565c0;color:white;border:none;border-radius:6px;padding:6px 16px;font-size:12px;cursor:pointer">&#128203; 過去見積</button>'
@@ -5717,6 +5754,7 @@ async function saveEstimate(){
         body:JSON.stringify(all)
       });
     }
+    customer._estId = estId; // 写真自動保存用にIDを記憶
     showNotify('✅ 見積保存完了 '+estNo);
     savePhotosLocal();
     await savePhotosToSupabase(estId, estNo);
@@ -5776,6 +5814,43 @@ function loadPhotoFromHistory(estNo){
     rIP();
   } else {
     alert('写真データが見つかりませんでした');
+  }
+}
+
+// ===== 写真取込後の自動クラウド保存 =====
+async function autoSavePhotosToCloud(){
+  // 見積番号がない場合はスキップ（保存後に自動紐付けされる）
+  if(!customer.no || !customer._estId){
+    showNotify('📷 写真を取込みました（見積保存後にクラウドへ自動送信されます）');
+    return;
+  }
+  try {
+    var cats = ['photoIncoming','photoWork','photoDone'];
+    var allPhotos = [];
+    cats.forEach(function(cat){
+      (customer[cat]||[]).forEach(function(src, idx){
+        allPhotos.push({estimate_id:customer._estId, estimate_no:customer.no, category:cat, sort_order:idx, data_url:src});
+      });
+    });
+    if(!allPhotos.length) return;
+    // 既存削除→全件再登録
+    await fetch(SUPABASE_URL+'/rest/v1/estimate_photos?estimate_id=eq.'+customer._estId,{
+      method:'DELETE', headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+    });
+    for(var i=0; i<allPhotos.length; i++){
+      await fetch(SUPABASE_URL+'/rest/v1/estimate_photos',{
+        method:'POST',
+        headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+        body:JSON.stringify(allPhotos[i])
+      });
+    }
+    // localStorage写真キャッシュをクリア（容量節約）
+    var delKeys=[];
+    for(var j=0;j<localStorage.length;j++){var k=localStorage.key(j);if(k&&k.startsWith('fa_photos_'))delKeys.push(k);}
+    delKeys.forEach(function(k){localStorage.removeItem(k);});
+    showNotify('📷 写真 '+allPhotos.length+'枚 クラウドに自動保存しました ✅');
+  } catch(e){
+    showNotify('⚠ 写真クラウド自動保存失敗: '+e.message);
   }
 }
 
@@ -5922,6 +5997,7 @@ async function loadEstimate(estId,estNo){
       if(h.film_type)pc4.film=h.film_type;if(h.paint_type)pc4.paint=h.paint_type;
       if(h.clear_type)pc4.clear=h.clear_type;if(h.special)pc4.special=h.special;
       customer.repairType=h.repair_type||'insurance';
+      customer._estId=h.id||'';
       customer.insCompany=h.ins_company||'';
       customer.ajCompany=h.aj_company||'';
       customer.ajStaff=h.aj_staff||'';
@@ -5940,6 +6016,9 @@ async function loadEstimate(estId,estNo){
     customer.photoIncoming=[]; customer.photoWork=[]; customer.photoDone=[];
     await loadPhotosFromSupabase(estId, estNo);
     estMode='estimate';
+    // 過去見積パネルを閉じる
+    var ep=document.getElementById('estListPanel');
+    if(ep) ep.innerHTML='';
     render();
     showNotify('✅ 見積読込完了 '+estNo);
   }catch(e){showNotify('\u274c \u8aad\u8fbc\u5931\u6557:'+e.message);}
