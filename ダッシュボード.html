@@ -350,7 +350,8 @@ tr:hover td { background:var(--bg3); }
   </div>
 
   <div class="sec-label">メイン業務</div>
-  <div class="main-grid">
+  <!-- ★ 3×2 グリッド（6ボタン2段） -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">
     <a href="forum_auto_reception.html" class="main-card mc-red">
       <div class="main-card-icon">📋</div>
       <div class="main-card-text">
@@ -385,6 +386,14 @@ tr:hover td { background:var(--bg3); }
         <div class="main-card-name">進捗URL送信</div>
         <div class="main-card-desc">LINE・メールで<br>お客様に進捗を通知</div>
       </div>
+    </div>
+    <div class="main-card mc-red" onclick="scrollToCases()" style="cursor:pointer;position:relative;">
+      <div class="main-card-icon">🔧</div>
+      <div class="main-card-text">
+        <div class="main-card-name">進行中の案件</div>
+        <div class="main-card-desc">案件一覧・ステータス<br>送信・取消操作</div>
+      </div>
+      <div id="caseBadge" style="position:absolute;top:12px;right:12px;background:var(--red);color:white;font-size:12px;font-weight:800;border-radius:20px;padding:3px 10px;display:none;">0件</div>
     </div>
   </div>
 
@@ -427,7 +436,7 @@ tr:hover td { background:var(--bg3); }
   </div>
 
   <div class="sec-label">進行中の案件</div>
-  <div class="cases-wrap">
+  <div class="cases-wrap" id="casesSection">
     <div class="cases-head">
       <div class="cases-head-title">🔧 現在の修理案件</div>
       <button class="refresh-btn" onclick="loadCases()">🔄 更新</button>
@@ -529,9 +538,29 @@ async function loadCases() {
     });
     tb.innerHTML = h;
     document.getElementById('last-update').textContent = new Date().toLocaleTimeString('ja-JP');
+    // ★ 案件数バッジを更新
+    var badge = document.getElementById('caseBadge');
+    if (badge) {
+      var count = data.length;
+      badge.textContent = count + '件';
+      badge.style.display = count > 0 ? 'block' : 'none';
+    }
   } catch(e) {
     tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--txt3);padding:20px;">読み込みエラー</td></tr>';
   }
+}
+
+// ★ 案件テーブルへスクロール
+function scrollToCases() {
+  var el = document.getElementById('casesSection');
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // ハイライト演出
+  el.style.transition = 'box-shadow 0.3s';
+  el.style.boxShadow = '0 0 0 3px rgba(200,37,27,0.4)';
+  setTimeout(function() {
+    el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.07)';
+  }, 1500);
 }
 
 function getBadgeClass(s) {
