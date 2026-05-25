@@ -238,11 +238,22 @@ async function loadAll(){
   var dot=document.getElementById('dot');
   dot.classList.add('blink');
   try{
-    // 見積データ
-    var r=await fetch(SB_URL+'/rest/v1/estimates?status=neq.deleted&order=estimate_date.desc&limit=100&select=id,estimate_no,customer_name,car_name,plate,repair_type,repair_status,staff_name,delivery_date,estimate_date,grand_total',{
+    // 見積データ（納車済みは直近30日以内のみ取得）
+    var r=await fetch(SB_URL+'/rest/v1/estimates?status=neq.deleted&order=estimate_date.desc&limit=200&select=id,estimate_no,customer_name,car_name,plate,repair_type,repair_status,staff_name,delivery_date,estimate_date,grand_total,updated_at',{
       headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
     });
-    var estimates=r.ok?await r.json():[];
+    var allEstimates=r.ok?await r.json():[];
+
+    // ★ 納車済み3日後自動非表示フィルタ
+    var now = new Date();
+    var estimates = allEstimates.filter(function(e){
+      if((e.repair_status||'受付') !== '納車済') return true; // 納車済み以外は全表示
+      // 納車済み → 納車予定日 or 更新日 or 見積日 から3日以内のみ表示
+      var baseDate = e.delivery_date || e.updated_at || e.estimate_date;
+      if(!baseDate) return false; // 日付不明は非表示
+      var diff = (now - new Date(baseDate)) / (1000*60*60*24); // 日数差
+      return diff <= 3; // 3日以内のみ表示
+    });
 
     // ★ レンタカーマスタ（正しいテーブル）
     var rentalCars = await loadRentalCars();
@@ -281,9 +292,13 @@ function renderAll(estimates, rentalCars, rentalActiveMap){
   var kanban=document.getElementById('kanban');
   kanban.innerHTML=STATUSES.map(function(status){
     var cards=estimates.filter(function(e){return (e.repair_status||'受付')===status;});
+    // ★ 納車済みカラムに注記を追加
+    var headerExtra = status==='納車済'
+      ? '<span style="font-size:9px;opacity:0.7;margin-left:4px;">3日後消去</span>'
+      : '';
     return '<div class="column">'
       +'<div class="col-header h-'+status+'">'
-      +'<span>'+status+'</span>'
+      +'<span>'+status+headerExtra+'</span>'
       +'<span class="col-count-badge">'+cards.length+'</span>'
       +'</div>'
       +'<div class="col-body">'
