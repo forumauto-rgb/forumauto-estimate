@@ -2166,7 +2166,17 @@ function selectParts(key){
   var fps=_bpCache[key];
   if(!fps||!fps.length){var b=getBP()[key];if(b)fps=b.p.filter(function(p){return PARTS_DATA[p];});}
   if(!fps||!fps.length) return;
-  curPart=fps[0]; curParts=fps; kw=''; rIP(); checkDamageSuggest(fps[0]);
+  // ★ キャッシュを確実に更新（sc_プレフィックス除去してPARTS_DATAに存在するものだけ）
+  var validFps=fps.filter(function(p){return PARTS_DATA[p];});
+  if(!validFps.length) return;
+  curPart=validFps[0]; curParts=validFps; kw='';
+  rIP();
+  checkDamageSuggest(validFps[0]);
+  // ★ 作業パネルへ自動スクロール
+  setTimeout(function(){
+    var tp=document.getElementById('tP');
+    if(tp){tp.scrollIntoView({behavior:'smooth',block:'nearest'});}
+  },80);
 }
 function ponclick(key){
   var b=getBP()[key];
@@ -2275,7 +2285,19 @@ function carSVG5face(){
   var hasSUV=(BODY_TYPE==='suv');
   var isTruck=(BODY_TYPE==='truck');
   var isSports=(BODY_TYPE==='sports');
-  var g='<svg viewBox="0 0 260 580" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-height:540px">';
+  // ★ 選択中部位インジケーター（図の上に表示）
+  var indicator='';
+  if(curPart){
+    var selCnt=sel.filter(function(s){return s._part===curPart;}).length;
+    var partTasks=PARTS_DATA[curPart]||[];
+    indicator='<div style="background:#1a3a6b;color:white;padding:4px 8px;border-radius:5px;margin-bottom:4px;font-size:11px;font-weight:bold;display:flex;align-items:center;gap:8px;">'
+      +'<span style="color:#ffd700;">▼ 選択中：</span>'
+      +'<span>'+curPart+'</span>'
+      +'<span style="background:rgba(255,255,255,0.2);border-radius:3px;padding:1px 5px;font-size:10px;">'+selCnt+' / '+partTasks.length+'件チェック済</span>'
+      +'<span style="margin-left:auto;font-size:10px;color:#aac4ff;">↓ 下の作業パネルでチェック</span>'
+      +'</div>';
+  }
+  var g=indicator+'<svg viewBox="0 0 260 580" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-height:540px">';
   if(isTruck){
     g+='<rect x="40" y="30" width="180" height="180" rx="15" fill="#e4e8f0" stroke="#b0b8c8" stroke-width="2"/>';
     g+='<rect x="50" y="215" width="160" height="320" rx="5" fill="#d8dce8" stroke="#b0b8c8" stroke-width="1.5"/>';
@@ -2637,20 +2659,11 @@ function carSVGWithOther(){
   else if(BODY_VIEW_TAB==='glass')       svg=glassSVG();
   else svg=carSVG5face();
   svg=svgTabBar+svg;
-  var cats=['塗装前 支度・養生','納車・引渡し作業','清掃・洗車','ブース使用','焼付乾燥','錆・腐食処理','最後に入れる物'];
-  var btns='<div class="shortcut-grid">';
-  cats.forEach(function(c){
-    if(!PARTS_DATA[c])return;
-    var active=curPart===c;
-    _bpCache['sc_'+c]=[c];
-    btns+='<button class="shortcut-btn'+(active?' active':'')+'" onclick="selectParts(\'sc_'+c+'\')" >'+c+'</button>';
-  });
-  btns+='</div>';
-
-  // ⚡ よく使う作業セットボタン
-  btns+='<div style="margin-top:8px;border:1px solid #c5cae9;border-radius:8px;overflow:hidden;">';
-  btns+='<div style="background:#1a3a6b;color:white;font-size:11px;font-weight:bold;padding:5px 10px;">⚡ よく使う作業セット（リフト・タイヤ・ライナー）</div>';
-  btns+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:3px;padding:6px;">';
+  // ===== STEP順に並べたパネル =====
+  // STEP2: 脱着セット
+  var step2='<div style="margin-top:0;border:2px solid #3949ab;border-radius:8px;overflow:hidden;">';
+  step2+='<div style="background:#3949ab;color:white;font-size:11px;font-weight:bold;padding:6px 10px;display:flex;align-items:center;gap:6px;"><span style="background:white;color:#3949ab;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;">2</span>脱着セット（リフト・タイヤ・ライナー）</div>';
+  step2+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:3px;padding:6px;background:#f3f4ff;">';
   var sets=[
     {label:'Fバンパー周り',key:'set_fbump'},
     {label:'Rバンパー周り',key:'set_rbump'},
@@ -2663,18 +2676,38 @@ function carSVGWithOther(){
     {label:'🔄 タイヤ交換',key:'set_tire_swap'},
   ];
   sets.forEach(function(s){
-    btns+='<button onclick="addWorkSet(\''+s.key+'\')" style="padding:5px 3px;border-radius:5px;font-size:10px;font-weight:bold;cursor:pointer;border:1px solid #7986cb;background:#e8eaf6;color:#1a3a6b;text-align:center;">'+s.label+'</button>';
+    step2+='<button onclick="addWorkSet(\''+s.key+'\')" style="padding:5px 3px;border-radius:5px;font-size:10px;font-weight:bold;cursor:pointer;border:1px solid #7986cb;background:#e8eaf6;color:#1a3a6b;text-align:center;">'+s.label+'</button>';
   });
-  btns+='</div></div>';
+  step2+='</div></div>';
 
-  // 🎨 塗装工数自動計算パネル
-  btns+='<div style="margin-top:8px;border:1px solid #a5d6a7;border-radius:8px;overflow:hidden;">';
-  btns+='<div style="background:#2e7d32;color:white;font-size:11px;font-weight:bold;padding:5px 10px;">🎨 塗装工数自動計算</div>';
-  btns+='<div id="paint-calc-panel" style="padding:8px;">';
-  btns+=renderPaintCalcPanel();
-  btns+='</div></div>';
+  // STEP3: 塗装工数自動計算
+  var step3='<div style="margin-top:6px;border:2px solid #2e7d32;border-radius:8px;overflow:hidden;">';
+  step3+='<div style="background:#2e7d32;color:white;font-size:11px;font-weight:bold;padding:6px 10px;display:flex;align-items:center;gap:6px;"><span style="background:white;color:#2e7d32;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;">3</span>塗装工数自動計算（部位ごと一括追加）</div>';
+  step3+='<div id="paint-calc-panel" style="padding:8px;background:#f1f8f2;">';
+  step3+=renderPaintCalcPanel();
+  step3+='</div></div>';
 
-  return tabs+btns+svg;
+  // STEP4: 仕上げ・その他
+  var cats=['塗装前 支度・養生','納車・引渡し作業','清掃・洗車','ブース使用','焼付乾燥','錆・腐食処理','最後に入れる物'];
+  var step4='<div style="margin-top:6px;border:2px solid #e65100;border-radius:8px;overflow:hidden;">';
+  step4+='<div style="background:#e65100;color:white;font-size:11px;font-weight:bold;padding:6px 10px;display:flex;align-items:center;gap:6px;"><span style="background:white;color:#e65100;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;">4</span>仕上げ・その他作業</div>';
+  step4+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:6px;background:#fff8f5;">';
+  cats.forEach(function(c){
+    if(!PARTS_DATA[c])return;
+    var active=curPart===c;
+    _bpCache['sc_'+c]=[c];
+    step4+='<button class="shortcut-btn'+(active?' active':'')+'" onclick="selectParts(\'sc_'+c+'\')" >'+c+'</button>';
+  });
+  step4+='</div></div>';
+
+  // STEP1ラベル（車図の上に付ける）
+  var step1label='<div style="border:2px solid #1a3a6b;border-radius:8px;overflow:hidden;margin-bottom:6px;">'
+    +'<div style="background:#1a3a6b;color:white;font-size:11px;font-weight:bold;padding:6px 10px;display:flex;align-items:center;gap:6px;">'
+    +'<span style="background:white;color:#1a3a6b;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;">1</span>'
+    +'部位タップ → 板金・交換・脱着を選ぶ（塗装はSTEP3で）</div>'
+    +'<div style="padding:4px 8px;background:#eef1f8;font-size:10px;color:#555;">※ 先に車種を選んでから部位をタップ。左＝助手席側・右＝運転席側</div></div>';
+
+  return tabs+step2+step3+step4+step1label+svg;
 }
 
 // ===== ④ よく使う作業セット =====
@@ -2944,6 +2977,15 @@ function applyPaintCalc(){
     paintSum+=(cs.coat==='3coat'?p.coat3:p.coat2);
   });
   if(cnt===0){alert('部位を選択してください');return;}
+  // ★ 既存の塗装計算行を削除してから追加（重複防止）
+  var hadPaint=sel.some(function(s){return s._paintcalc;});
+  if(hadPaint){
+    if(!confirm('既に塗装工数が入力されています。\n上書き（置き換え）しますか？\n\n「キャンセル」で追記します。')){
+      // 追記モードはそのまま処理続行
+    } else {
+      sel=sel.filter(function(s){return !s._paintcalc;});
+    }
+  }
   var adjustedSum=paintSum*(1+cnt*0.1);
   var tbl=PAINT_TIME_TABLE[cs.coat+'_'+cs.season];
   var dryH=tbl.dry, boothH=tbl.booth, bakeH=tbl.bake;
@@ -3231,7 +3273,7 @@ function renderCustomerPanel(){
         </div>
       </div>
       <div style="margin-top:14px;display:flex;gap:6px">
-        <button class="btn btn-g btn-sm" onclick="saveToM()">💾 マスターに保存</button>
+        <span style="font-size:11px;color:#2e7d32;font-weight:bold;">✅ 保存・転記ボタンで自動登録</span>
         <button class="btn btn-sm" onclick="clearC()">クリア</button>
       </div>
     </div>
@@ -3291,7 +3333,11 @@ function renderEstimate(){
   <div class="part-and-task">
     <div style="position:sticky;top:0;z-index:5">
       <div class="card" style="padding:12px">
-        <div style="font-size:11px;font-weight:bold;color:#999;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.8px">部位選択（左：助手席　右：運転席）</div>
+        <div style="font-size:11px;font-weight:bold;color:#1a3a6b;margin-bottom:8px;background:#eef1f8;border-radius:5px;padding:5px 10px;display:flex;align-items:center;gap:10px;">
+          <span style="background:#1a3a6b;color:white;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;">1</span>
+          <span>部位タップ → 板金・交換を選ぶ</span>
+          <span style="margin-left:auto;font-size:10px;color:#888;font-weight:normal;">左＝助手席　右＝運転席</span>
+        </div>
         <div class="kw-wrap">
           <input class="kw-input" placeholder="🔍 部位・作業名・工程名で検索..." value="${kw}" oninput="kw=this.value;var el=this;rIP();var inp=document.querySelector('.kw-input');if(inp){inp.value=kw;inp.focus();}">
           ${kw?`<button class="btn btn-sm" onclick="kw='';rIP()" style="height:42px;padding:0 12px">✕ クリア</button>`:''}
@@ -3508,7 +3554,8 @@ function renderMaster(){
   h+='<button class="btn btn-sm" onclick="importData()" style="background:#e65100;color:white">⬆️ JSON復元</button>';
   h+='<span id="dbModeTag" style="margin-left:8px;font-size:11px;padding:3px 8px;border-radius:12px;background:#e0e0e0;color:#555">LOCAL</span>';
   h+='<button class="btn btn-sm" onclick="loadFromCloud()" style="background:#1565c0;color:white;margin-left:4px">⬇️ クラウドから読込</button>';
-  h+='<button class="btn btn-g btn-sm" onclick="syncToCloud()">☁ クラウドに保存</button>';
+  h+='<span style="font-size:11px;color:#2e7d32;font-weight:bold;background:#e8f5e9;padding:4px 10px;border-radius:5px;border:1px solid #a5d6a7;">✅ 編集後に自動保存</span>';
+  h+='<button class="btn btn-g btn-sm" onclick="syncToCloud()" title="手動で強制保存する場合">☁ 手動保存</button>';
   h+='</div>';
 
   // ===== GASエリア =====
@@ -4288,9 +4335,8 @@ function renderPreview(){
   // ========== コントロールバー ==========
   var ctrlBar='<div class="no-print" style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 12px;background:#e8f5e9;border-radius:8px;border:1px solid #a5d6a7;flex-wrap:wrap;position:relative;z-index:10;">'
     +'<span style="font-size:12px;font-weight:bold;'+(customer.no?'color:#1b5e20':'color:#e53935')+'">'+(customer.no?'☁ 保存済み：'+customer.no:'⚠ 未保存 → 保存ボタンを押してください')+'</span>'
-    +'<button onclick="saveEstimate()" style="background:#2e7d32;color:white;border:none;border-radius:6px;padding:6px 16px;font-size:12px;font-weight:bold;cursor:pointer">&#9729; クラウドに保存</button>'
+    +'<button onclick="saveEstimate()" style="background:#1b5e20;color:white;border:none;border-radius:6px;padding:6px 18px;font-size:12px;font-weight:bold;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,0.2);">&#9729; 保存・転記（自動）</button>'
     +'<button onclick="showEstimateList()" style="background:#1565c0;color:white;border:none;border-radius:6px;padding:6px 16px;font-size:12px;cursor:pointer">&#128203; 過去見積</button>'
-    +'<button onclick="sendToSheet()" style="background:linear-gradient(135deg,#e65100,#ff6d00);color:white;border:none;border-radius:6px;padding:6px 16px;font-size:12px;font-weight:bold;cursor:pointer">&#128202; 案件一覧に転記</button>'
     +'<button onclick="sendEstimateByEmail()" style="background:#1565c0;color:white;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:bold;cursor:pointer">&#128231; メール送付</button>'
     +'<button onclick="sendEstimateByLine()" style="background:#00b900;color:white;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:bold;cursor:pointer">&#128172; LINE送付</button>'
     +'<span style="font-size:11px;color:#555;margin-left:8px;font-weight:bold;">見出し：</span>'
@@ -4560,7 +4606,15 @@ function tT(part,idx,cb){
     sel=sel.filter(s=>!(s.name===t.name&&s.process===t.process));
   }
   cb.closest('.task-item').classList.toggle('checked',cb.checked);
+  // ★ チェック時にcurPartをこの部位に更新（別の場所に移動不要）
+  if(part && PARTS_DATA[part]){
+    curPart=part;
+    if(!curParts||curParts.indexOf(part)<0) curParts=[part];
+  }
   uS();
+  // ★ 合計バッジだけ更新（全再描画より軽い）
+  var sb=document.getElementById('sB');
+  if(sb){var tt=calcTotals();sb.innerHTML=sumHTML(tt.labor,tt.pt,tt.mt,tt.sub,tt.tax);}
   const lb=document.querySelectorAll('.tpb-btn');
   if(lb[1])lb[1].textContent='✅ 選択作業一覧・工数入力 '+sel.length+'件';
 }
@@ -5757,14 +5811,58 @@ async function saveEstimate(){
     showNotify('✅ 見積保存完了 '+estNo);
     savePhotosLocal();
     await savePhotosToSupabase(estId, estNo);
-    // 顧客・車両マスターも自動同期
+    // ★ 顧客・車両マスターも自動同期
     await syncMasterToCloud();
+    // ★ 案件一覧へ自動転記（手動ボタン不要）
+    try{ sendToSheet._fromAuto=true; await sendToSheet(); }catch(se){ console.warn('案件転記スキップ:',se); }
+    // ★ マスターにも自動登録
+    autoSaveToMaster();
     render();
   }catch(e){
     console.error('saveEstimate error:',e);
     showNotify('❌ 保存失敗: '+e.message+'\nF12→Consoleで確認');
     console.error('saveEstimate詳細:', e);
   }
+}
+
+// ★ 見積保存時に顧客・車両マスターへ自動登録
+function autoSaveToMaster(){
+  if(!customer.name) return;
+  // 顧客マスター
+  var ei = cMaster.findIndex(function(c){ return c.name===customer.name; });
+  var newCid = 'C'+(cMaster.length+1).toString().padStart(4,'0');
+  var actualCid = ei>=0 ? cMaster[ei].id : newCid;
+  if(ei>=0){
+    cMaster[ei] = Object.assign({}, cMaster[ei], { name:customer.name });
+  } else {
+    cMaster.unshift({
+      id:newCid, name:customer.name, honorific:'様',
+      tel:'', postal:'', address:'',
+      insurance:customer.insCompany||'', aj:customer.ajCompany||'', memo:'',
+      date:new Date().toISOString().split('T')[0]
+    });
+  }
+  customer.cid = actualCid;
+  // 車両マスター
+  if(customer.plate || customer.car){
+    var vi = vMaster.findIndex(function(v){ return v.plate===customer.plate; });
+    var g = GRADE_MASTER.find(function(x){ return x.name===customer.grade; })||{coef:1.1,foreign:1.0};
+    var newVid = 'V'+(vMaster.length+1).toString().padStart(4,'0');
+    var vo = {
+      id: vi>=0 ? vMaster[vi].id : newVid,
+      cid: actualCid, plate:customer.plate||'',
+      maker:'', name:customer.car||'', vin:'', year:'', drive:'2WD',
+      grade:customer.grade, gradeCoef:g.coef, foreignCoef:g.foreign||1.0,
+      evhv:'', color:customer.color||'',
+      film:pc4.film, paint:pc4.paint, clear:pc4.clear, special:pc4.special, memo:''
+    };
+    if(vi>=0) vMaster[vi]=Object.assign({},vMaster[vi],vo);
+    else vMaster.unshift(vo);
+  }
+  try{
+    localStorage.setItem('fa_c6',JSON.stringify(cMaster));
+    localStorage.setItem('fa_v6',JSON.stringify(vMaster));
+  }catch(e){}
 }
 
 
@@ -5907,8 +6005,12 @@ async function loadPhotosFromSupabase(estId, estNo){
 var GAS_URL='https://script.google.com/macros/s/AKfycbw1-ja8aiZgHpap4powbrdSEUiiYofF5ntXYAXy9Na0odp1tAMQbeo_qLqLpU8quveI/exec';
 
 async function sendToSheet(){
-  if(!customer.no){showNotify('⚠ 先にクラウドに保存してください');return;}
-  showNotify('📊 スプレッドシートに転記中...');
+  // ★ saveEstimateから自動呼び出しの場合はnoチェック不要
+  if(!customer.no && !sendToSheet._fromAuto){
+    showNotify('⚠ 先に保存してください');return;
+  }
+  sendToSheet._fromAuto = false;
+  showNotify('📊 案件一覧に転記中...');
   try{
     var tots=calcTotals();
     var vehicleRec=vMaster.find(function(v){return v.plate===customer.plate&&v.name===customer.car;});
@@ -6224,8 +6326,17 @@ function autoSaveM(){
     localStorage.setItem('fa_vMaster',JSON.stringify(vMaster));
     localStorage.setItem('fa_c6',JSON.stringify(cMaster));
     localStorage.setItem('fa_v6',JSON.stringify(vMaster));
-    showNotify('💾 自動保存しました');
+    showNotify('💾 ローカル自動保存しました');
   }catch(e){}
+  // ★ 3秒後にSupabaseへも自動同期
+  if(autoSaveM._timer) clearTimeout(autoSaveM._timer);
+  autoSaveM._timer = setTimeout(function(){
+    syncMasterToCloud().then(function(){
+      showNotify('☁ マスターをクラウドに自動保存しました');
+    }).catch(function(e){
+      console.warn('マスター自動クラウド保存失敗:',e);
+    });
+  }, 3000);
 }
 function savePaintToVehicle(){
   if(!customer.plate&&!customer.car){alert('見積作成タブで車両を選択してください');return;}
