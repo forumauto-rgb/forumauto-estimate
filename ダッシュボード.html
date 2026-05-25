@@ -7,18 +7,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;900&family=Oswald:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  /* 背景：白ベース、カードがグレー */
   --bg:      #f0f2f6;
   --bg2:     #ffffff;
   --bg3:     #e8eaee;
   --bg4:     #dde0e6;
   --border:  rgba(0,0,0,0.07);
   --border2: rgba(0,0,0,0.12);
-  /* 文字：濃くはっきり */
   --txt:     #111827;
   --txt2:    #1f2937;
   --txt3:    #4b5563;
-  /* アクセント */
   --red:     #c8251b;
   --red2:    rgba(200,37,27,0.10);
   --red3:    rgba(200,37,27,0.06);
@@ -44,8 +41,6 @@ body {
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
-
-/* ══ HEADER ══ */
 .header {
   background: var(--bg2);
   border-bottom: 2px solid var(--border2);
@@ -72,11 +67,7 @@ body {
 .logo-sub  { font-size:11px; color:var(--txt3); margin-top:1px; letter-spacing:1px; font-weight:500; }
 .clock { font-family:var(--font2); font-size:26px; font-weight:600; color:var(--txt); letter-spacing:2px; }
 .date-str { font-size:12px; color:var(--txt3); text-align:right; margin-top:1px; font-weight:600; }
-
-/* ══ LAYOUT ══ */
 .main { padding:20px 24px; max-width:1200px; margin:0 auto; }
-
-/* ══ STATS ══ */
 .stats-bar {
   display: grid;
   grid-template-columns: repeat(4,1fr);
@@ -103,8 +94,6 @@ body {
 .stat-label { font-size:12px; font-weight:700; color:var(--txt3); letter-spacing:.5px; }
 .stat-num   { font-family:var(--font2); font-size:30px; font-weight:600; color:var(--txt); line-height:1; margin-top:4px; }
 .stat-unit  { font-size:14px; color:var(--txt3); margin-left:3px; font-weight:600; }
-
-/* ══ セクションラベル ══ */
 .sec-label {
   font-size:12px; font-weight:800; letter-spacing:2.5px;
   color:var(--txt3); text-transform:uppercase;
@@ -112,8 +101,6 @@ body {
   display:flex; align-items:center; gap:8px;
 }
 .sec-label::after { content:''; flex:1; height:1.5px; background:var(--border2); }
-
-/* ══ メインメニュー 3列 ══ */
 .main-grid {
   display: grid;
   grid-template-columns: repeat(3,1fr);
@@ -145,13 +132,10 @@ body {
 .mc-blue::before   { background:var(--blue); }
 .mc-orange::before { background:var(--orange); }
 .mc-purple::before { background:var(--purple); }
-
 .main-card-icon { font-size:36px; flex-shrink:0; }
 .main-card-text {}
 .main-card-name { font-size:19px; font-weight:900; color:var(--txt); margin-bottom:6px; }
 .main-card-desc { font-size:13px; color:var(--txt3); line-height:1.7; font-weight:600; }
-
-/* ══ サブメニュー 3×2+1 ══ */
 .sub-grid {
   display: grid;
   grid-template-columns: repeat(3,1fr);
@@ -173,8 +157,6 @@ body {
 .sub-card-icon { font-size:26px; margin-bottom:10px; display:block; }
 .sub-card-name { font-size:15px; font-weight:800; color:var(--txt); margin-bottom:3px; }
 .sub-card-desc { font-size:12px; color:var(--txt3); line-height:1.6; font-weight:600; }
-
-/* ══ 送信パネル ══ */
 .send-panel {
   background: var(--bg2);
   border: 1.5px solid var(--border2);
@@ -196,7 +178,6 @@ body {
 }
 .send-body { padding:20px 22px; display:none; }
 .send-body.open { display:block; }
-
 .send-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
 .sf-g { display:flex; flex-direction:column; gap:6px; }
 .sf-label { font-size:12px; font-weight:600; color:var(--txt3); }
@@ -208,7 +189,6 @@ body {
 }
 .sf-input:focus { border-color:var(--red); }
 .sf-input::placeholder { color:#aaa; }
-
 .msg-tabs { display:flex; gap:6px; margin-bottom:12px; }
 .msg-tab {
   padding:7px 16px; border-radius:7px; cursor:pointer;
@@ -235,8 +215,6 @@ body {
 .sbtn-line  { background:var(--line); }
 .sbtn-mail  { background:var(--blue); }
 .sbtn-copy  { background:var(--bg3); border:1.5px solid var(--border2); color:var(--txt2); }
-
-/* ══ 案件テーブル ══ */
 .cases-wrap {
   background:var(--bg2); border:1.5px solid var(--border2);
   border-radius:14px; overflow:hidden; margin-bottom:20px;
@@ -281,8 +259,6 @@ tr:hover td { background:var(--bg3); }
 .act-btn:hover { color:var(--txt); border-color:var(--txt3); }
 .act-btn.line-btn { background:var(--line2); border-color:rgba(3,164,78,0.3); color:var(--line); }
 .act-btn.line-btn:hover { background:rgba(3,164,78,0.2); }
-
-/* ══ フッター ══ */
 .footer {
   padding: 16px 24px;
   display: flex; align-items:center; justify-content:space-between;
@@ -294,8 +270,6 @@ tr:hover td { background:var(--bg3); }
 .dot { width:9px; height:9px; border-radius:50%; background:var(--green); animation:pulse2 2s infinite; }
 @keyframes pulse2 { 0%,100%{opacity:1} 50%{opacity:.4} }
 .footer-copy { font-size:12px; color:var(--txt3); font-weight:500; }
-
-/* ══ トースト ══ */
 .toast {
   position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
   background:var(--txt); color:#fff; padding:13px 26px; border-radius:8px;
@@ -304,8 +278,6 @@ tr:hover td { background:var(--bg3); }
   box-shadow:0 4px 16px rgba(0,0,0,0.2);
 }
 .toast.show { opacity:1; }
-
-/* ══ レスポンシブ ══ */
 @media(max-width:900px) {
   .stats-bar { grid-template-columns:1fr 1fr; }
   .main-grid  { grid-template-columns:1fr 1fr; }
@@ -325,7 +297,6 @@ tr:hover td { background:var(--bg3); }
 </head>
 <body>
 
-<!-- ヘッダー -->
 <header class="header">
   <div class="header-left">
     <div class="logo-mark">FA</div>
@@ -334,7 +305,14 @@ tr:hover td { background:var(--bg3); }
       <div class="logo-sub">〒437-0123 袋井市下山梨545　TEL 0538-49-0632</div>
     </div>
   </div>
-  <div style="display:flex;align-items:center;gap:20px;">
+  <div style="display:flex;align-items:center;gap:14px;">
+    <div style="display:flex;align-items:center;gap:6px;background:var(--bg3);border:1.5px solid var(--border2);border-radius:10px;padding:5px 10px;">
+      <span style="font-size:11px;font-weight:700;color:var(--txt3);">表示</span>
+      <button onclick="changeZoom(-0.1)" style="width:26px;height:26px;border:1.5px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--txt);font-size:15px;font-weight:bold;cursor:pointer;line-height:1;">－</button>
+      <span id="zoomLabel" style="font-size:13px;font-weight:800;color:var(--txt);min-width:38px;text-align:center;">100%</span>
+      <button onclick="changeZoom(0.1)" style="width:26px;height:26px;border:1.5px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--txt);font-size:15px;font-weight:bold;cursor:pointer;line-height:1;">＋</button>
+      <button onclick="resetZoom()" style="padding:0 7px;height:26px;border:1.5px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--txt3);font-size:11px;font-weight:700;cursor:pointer;">戻す</button>
+    </div>
     <div>
       <div class="clock" id="clock">--:--:--</div>
       <div class="date-str" id="datestr">----年-月-日（-）</div>
@@ -343,40 +321,25 @@ tr:hover td { background:var(--bg3); }
 </header>
 
 <main class="main">
-
-  <!-- 統計バー -->
   <div class="stats-bar">
     <div class="stat-card">
       <div class="stat-icon si-red">🔧</div>
-      <div>
-        <div class="stat-label">進行中</div>
-        <div class="stat-num" id="stat-wip">—<span class="stat-unit">件</span></div>
-      </div>
+      <div><div class="stat-label">進行中</div><div class="stat-num" id="stat-wip">—<span class="stat-unit">件</span></div></div>
     </div>
     <div class="stat-card">
       <div class="stat-icon si-orange">🚗</div>
-      <div>
-        <div class="stat-label">代車貸出</div>
-        <div class="stat-num" id="stat-rental">—<span class="stat-unit">台</span></div>
-      </div>
+      <div><div class="stat-label">代車貸出</div><div class="stat-num" id="stat-rental">—<span class="stat-unit">台</span></div></div>
     </div>
     <div class="stat-card">
       <div class="stat-icon si-green">✅</div>
-      <div>
-        <div class="stat-label">完成待ち</div>
-        <div class="stat-num" id="stat-done">—<span class="stat-unit">台</span></div>
-      </div>
+      <div><div class="stat-label">完成待ち</div><div class="stat-num" id="stat-done">—<span class="stat-unit">台</span></div></div>
     </div>
     <div class="stat-card">
       <div class="stat-icon si-blue">📋</div>
-      <div>
-        <div class="stat-label">本日受付</div>
-        <div class="stat-num" id="stat-today">—<span class="stat-unit">台</span></div>
-      </div>
+      <div><div class="stat-label">本日受付</div><div class="stat-num" id="stat-today">—<span class="stat-unit">台</span></div></div>
     </div>
   </div>
 
-  <!-- メイン業務 -->
   <div class="sec-label">メイン業務</div>
   <div class="main-grid">
     <a href="forum_auto_reception.html" class="main-card mc-red">
@@ -416,7 +379,6 @@ tr:hover td { background:var(--bg3); }
     </div>
   </div>
 
-  <!-- 進捗URL送信パネル -->
   <div class="send-panel" id="send-panel" style="display:none;">
     <div class="send-panel-header" onclick="toggleSendPanel()">
       <div class="send-panel-title">📤 進捗URL送信パネル</div>
@@ -443,52 +405,18 @@ tr:hover td { background:var(--bg3); }
     </div>
   </div>
 
-  <!-- サブ機能 -->
   <div class="sec-label">サブ機能</div>
   <div class="sub-grid">
-    <a href="photo_upload.html" class="sub-card">
-      <span class="sub-card-icon">📸</span>
-      <div class="sub-card-name">写真転送</div>
-      <div class="sub-card-desc">QRコード</div>
-    </a>
-    <a href="kosu_master.html" class="sub-card">
-      <span class="sub-card-icon">⏱️</span>
-      <div class="sub-card-name">標準工数</div>
-      <div class="sub-card-desc">マスタ管理</div>
-    </a>
-    <a href="sales_dashboard.html" class="sub-card">
-      <span class="sub-card-icon">📈</span>
-      <div class="sub-card-name">売上分析</div>
-      <div class="sub-card-desc">保険・自費別</div>
-    </a>
-    <a href="rental_cost.html" class="sub-card">
-      <span class="sub-card-icon">🚙</span>
-      <div class="sub-card-name">レンタカー原価</div>
-      <div class="sub-card-desc">稼働率・粗利</div>
-    </a>
-    <a href="tv_guide.html" class="sub-card">
-      <span class="sub-card-icon">📡</span>
-      <div class="sub-card-name">TV接続ガイド</div>
-      <div class="sub-card-desc">3パターン</div>
-    </a>
-    <a href="forum_auto_3dscan.html" class="sub-card">
-      <span class="sub-card-icon">🔬</span>
-      <div class="sub-card-name">3D損傷スキャン</div>
-      <div class="sub-card-desc">損傷解析</div>
-    </a>
-    <a href="customer.html" class="sub-card">
-      <span class="sub-card-icon">🔗</span>
-      <div class="sub-card-name">お客様HP</div>
-      <div class="sub-card-desc">スタッフへ共有</div>
-    </a>
-    <a href="forum_auto_agents.html" class="sub-card">
-      <span class="sub-card-icon">🤖</span>
-      <div class="sub-card-name">AIコンシェルジュ</div>
-      <div class="sub-card-desc">麗子・愛華・真子</div>
-    </a>
+    <a href="photo_upload.html" class="sub-card"><span class="sub-card-icon">📸</span><div class="sub-card-name">写真転送</div><div class="sub-card-desc">QRコード</div></a>
+    <a href="kosu_master.html" class="sub-card"><span class="sub-card-icon">⏱️</span><div class="sub-card-name">標準工数</div><div class="sub-card-desc">マスタ管理</div></a>
+    <a href="sales_dashboard.html" class="sub-card"><span class="sub-card-icon">📈</span><div class="sub-card-name">売上分析</div><div class="sub-card-desc">保険・自費別</div></a>
+    <a href="rental_cost.html" class="sub-card"><span class="sub-card-icon">🚙</span><div class="sub-card-name">レンタカー原価</div><div class="sub-card-desc">稼働率・粗利</div></a>
+    <a href="tv_guide.html" class="sub-card"><span class="sub-card-icon">📡</span><div class="sub-card-name">TV接続ガイド</div><div class="sub-card-desc">3パターン</div></a>
+    <a href="forum_auto_3dscan.html" class="sub-card"><span class="sub-card-icon">🔬</span><div class="sub-card-name">3D損傷スキャン</div><div class="sub-card-desc">損傷解析</div></a>
+    <a href="customer.html" class="sub-card"><span class="sub-card-icon">🔗</span><div class="sub-card-name">お客様HP</div><div class="sub-card-desc">スタッフへ共有</div></a>
+    <a href="forum_auto_agents.html" class="sub-card"><span class="sub-card-icon">🤖</span><div class="sub-card-name">AIコンシェルジュ</div><div class="sub-card-desc">麗子・愛華・真子</div></a>
   </div>
 
-  <!-- 進行中案件一覧 -->
   <div class="sec-label">進行中の案件</div>
   <div class="cases-wrap">
     <div class="cases-head">
@@ -498,12 +426,7 @@ tr:hover td { background:var(--bg3); }
     <table>
       <thead>
         <tr>
-          <th>見積No</th>
-          <th>お客様</th>
-          <th>車両</th>
-          <th>ステータス</th>
-          <th>受付日</th>
-          <th>操作</th>
+          <th>見積No</th><th>お客様</th><th>車両</th><th>ステータス</th><th>受付日</th><th>操作</th>
         </tr>
       </thead>
       <tbody id="cases-tbody">
@@ -514,7 +437,6 @@ tr:hover td { background:var(--bg3); }
 
 </main>
 
-<!-- フッター -->
 <footer class="footer">
   <div class="footer-status">
     <div class="dot"></div>
@@ -534,7 +456,6 @@ var SB_H      = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
 var STATUS_URL= 'https://forumauto-rgb.github.io/forumauto-estimate/status.html';
 var msgTab    = 'line';
 
-/* 時計 */
 function tick() {
   var n   = new Date();
   var hms = [n.getHours(),n.getMinutes(),n.getSeconds()].map(function(x){return String(x).padStart(2,'0');}).join(':');
@@ -544,7 +465,6 @@ function tick() {
 }
 setInterval(tick, 1000); tick();
 
-/* 統計 */
 async function loadStats() {
   try {
     var res  = await fetch(SB_URL + '/rest/v1/estimates?select=repair_status,estimate_date', { headers: SB_H });
@@ -564,15 +484,14 @@ async function loadStats() {
   } catch(e) { console.error(e); }
 }
 
-/* 案件一覧 */
 async function loadCases() {
   var tb = document.getElementById('cases-tbody');
   tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--txt3);padding:20px;">読み込み中...</td></tr>';
   try {
     var url = SB_URL + '/rest/v1/estimates'
       + '?select=estimate_no,customer_name,car_name,repair_status,estimate_date,plate'
-      + '&repair_status=neq.完成&repair_status=neq.納車済'
-      + '&order=estimate_date.desc&limit=20';
+      + '&repair_status=neq.完成&repair_status=neq.納車済&repair_status=neq.キャンセル'
+      + '&order=estimate_date.desc&limit=50';
     var res  = await fetch(url, { headers: SB_H });
     var data = await res.json();
     if (!Array.isArray(data) || !data.length) {
@@ -584,15 +503,19 @@ async function loadCases() {
       var bc = getBadgeClass(r.repair_status || '');
       var p4 = (r.plate||'').replace(/[-\s]/g,'').slice(-4);
       var su = STATUS_URL + '?id=' + encodeURIComponent(r.estimate_no||'');
+      var no  = esc(r.estimate_no||'');
+      var cus = esc(r.customer_name||'');
+      var car = esc(r.car_name||'');
       h += '<tr>';
-      h += '<td style="font-weight:700;color:var(--txt);">' + esc(r.estimate_no||'—') + '</td>';
-      h += '<td>' + esc(r.customer_name||'—') + '</td>';
-      h += '<td>' + esc(r.car_name||'—') + '</td>';
+      h += '<td style="font-weight:700;color:var(--txt);">' + no + '</td>';
+      h += '<td>' + cus + '</td>';
+      h += '<td>' + car + '</td>';
       h += '<td><span class="badge ' + bc + '">' + esc(r.repair_status||'—') + '</span></td>';
       h += '<td>' + esc((r.estimate_date||'').slice(0,10)) + '</td>';
       h += '<td>';
-      h += '<button class="act-btn line-btn" onclick="quickSend(\'' + esc(r.estimate_no||'') + '\',\'' + esc(r.customer_name||'') + '\',\'' + esc(r.car_name||'') + '\',\'' + p4 + '\')">📤 送信</button>';
+      h += '<button class="act-btn line-btn" onclick="quickSend(\'' + no + '\',\'' + cus + '\',\'' + car + '\',\'' + p4 + '\')">📤 送信</button>';
       h += '<a class="act-btn" href="' + su + '" target="_blank">🔍 進捗</a>';
+      h += '<button class="act-btn" style="color:#c8251b;border-color:rgba(200,37,27,0.3);background:rgba(200,37,27,0.06);" onclick="cancelCase(\'' + no + '\',\'' + cus + '\')">✖ 取消</button>';
       h += '</td></tr>';
     });
     tb.innerHTML = h;
@@ -603,15 +526,15 @@ async function loadCases() {
 }
 
 function getBadgeClass(s) {
-  if (s==='見積中') return 'b-blue';
-  if (s==='入庫中') return 'b-orange';
-  if (s==='鈑金中') return 'b-red';
-  if (s==='塗装中') return 'b-purple';
-  if (s==='完成')   return 'b-green';
+  if (s==='見積中')    return 'b-blue';
+  if (s==='入庫中')    return 'b-orange';
+  if (s==='鈑金中'||s==='板金中') return 'b-red';
+  if (s==='塗装中')    return 'b-purple';
+  if (s==='完成')      return 'b-green';
+  if (s==='キャンセル') return 'b-gray';
   return 'b-gray';
 }
 
-/* 送信パネル */
 function toggleSendPanel() {
   var p = document.getElementById('send-panel');
   if (p.style.display === 'none') {
@@ -716,6 +639,80 @@ function esc(s) {
   return String(s||'').replace(/[&<>"']/g, function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
   });
+}
+
+// ★ ズーム機能
+var currentZoom = 1.0;
+var MIN_ZOOM = 0.6;
+var MAX_ZOOM = 2.0;
+
+function applyZoom() {
+  var el = document.querySelector('.main');
+  if (!el) return;
+  el.style.transformOrigin = 'top center';
+  el.style.transform = 'scale(' + currentZoom + ')';
+  if (currentZoom !== 1.0) {
+    el.style.marginBottom = Math.round((currentZoom - 1) * 600) + 'px';
+  } else {
+    el.style.marginBottom = '';
+  }
+  document.getElementById('zoomLabel').textContent = Math.round(currentZoom * 100) + '%';
+  try { localStorage.setItem('fa_dash_zoom', currentZoom); } catch(e) {}
+}
+
+function changeZoom(delta) {
+  var next = Math.round((currentZoom + delta) * 10) / 10;
+  if (next < MIN_ZOOM || next > MAX_ZOOM) return;
+  currentZoom = next;
+  applyZoom();
+}
+
+function resetZoom() {
+  currentZoom = 1.0;
+  applyZoom();
+}
+
+// 前回ズームを復元
+(function(){
+  try {
+    var saved = parseFloat(localStorage.getItem('fa_dash_zoom'));
+    if (saved && saved >= MIN_ZOOM && saved <= MAX_ZOOM) {
+      currentZoom = saved;
+      document.addEventListener('DOMContentLoaded', applyZoom);
+    }
+  } catch(e) {}
+})();
+
+// キーボードショートカット
+document.addEventListener('keydown', function(e) {
+  if ((e.key === '+' || e.key === '=') && !e.target.matches('input,textarea')) changeZoom(0.1);
+  if ((e.key === '-' || e.key === '_') && !e.target.matches('input,textarea')) changeZoom(-0.1);
+  if (e.key === '0' && !e.target.matches('input,textarea')) resetZoom();
+});
+
+// ★ キャンセル処理（案件をキャンセル状態に変更）
+async function cancelCase(estimateNo, customerName) {
+  if (!estimateNo) return;
+  if (!confirm(customerName + ' 様の案件「' + estimateNo + '」を\nキャンセルしますか？\n\nダッシュボードから非表示になります。\n（過去案件として検索可能です）')) return;
+  try {
+    var res = await fetch(SB_URL + '/rest/v1/estimates?estimate_no=eq.' + encodeURIComponent(estimateNo), {
+      method: 'PATCH',
+      headers: Object.assign({}, SB_H, {
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      }),
+      body: JSON.stringify({ repair_status: 'キャンセル' })
+    });
+    if (res.ok) {
+      showToast('✖ ' + estimateNo + ' をキャンセルしました');
+      loadCases();
+      loadStats();
+    } else {
+      showToast('エラーが発生しました');
+    }
+  } catch(e) {
+    showToast('通信エラー: ' + e.message);
+  }
 }
 
 function loadAll() { loadStats(); loadCases(); }
