@@ -533,6 +533,7 @@ async function loadCases() {
       h += '<td>';
       h += '<button class="act-btn line-btn" onclick="quickSend(\'' + no + '\',\'' + cus + '\',\'' + car + '\',\'' + p4 + '\')">📤 送信</button>';
       h += '<a class="act-btn" href="' + su + '" target="_blank">🔍 進捗</a>';
+      h += '<button class="act-btn" style="color:#6a1b9a;border-color:rgba(107,63,192,0.3);background:rgba(107,63,192,0.06);" onclick="showPhotoQR(\'' + no + '\',\'' + cus + '\',\'' + car + '\')">📸 写真</button>';
       h += '<button class="act-btn" style="color:#c8251b;border-color:rgba(200,37,27,0.3);background:rgba(200,37,27,0.06);" onclick="cancelCase(\'' + no + '\',\'' + cus + '\')">✖ 取消</button>';
       h += '</td></tr>';
     });
@@ -731,6 +732,55 @@ document.addEventListener('keydown', function(e) {
   if ((e.key === '-' || e.key === '_') && !e.target.matches('input,textarea')) changeZoom(-0.1);
   if (e.key === '0' && !e.target.matches('input,textarea')) resetZoom();
 });
+
+// ★ 写真QRポップアップ
+function closePhotoQr() {
+  var el = document.getElementById('photoQrOverlay');
+  if(el) el.remove();
+}
+
+function showPhotoQR(estimateNo, customerName, carName) {
+  var sessionId = 'fa_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+  var baseUrl = 'https://forumauto-rgb.github.io/forumauto-estimate/photo_upload.html';
+  var uploadUrl = baseUrl
+    + '?session=' + sessionId
+    + '&eid=' + encodeURIComponent(estimateNo)
+    + '&name=' + encodeURIComponent(customerName)
+    + '&car=' + encodeURIComponent(carName)
+    + '&cat=photoWork';
+
+  // ポップアップを作成
+  var overlay = document.createElement('div');
+  overlay.id = 'photoQrOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
+
+  var box = document.createElement('div');
+  box.style.cssText = 'background:white;border-radius:16px;padding:24px;max-width:340px;width:90%;text-align:center;';
+
+  box.innerHTML = '<div style="font-size:16px;font-weight:bold;color:#1a3a6b;margin-bottom:4px;">📸 作業写真を撮影</div>'
+    + '<div style="font-size:13px;color:#6b7a99;margin-bottom:4px;">' + customerName + ' 様 / ' + carName + '</div>'
+    + '<div style="font-size:11px;color:#888;margin-bottom:14px;">スマホでQRコードを読み取ってください</div>'
+    + '<div id="photoQrArea" style="width:200px;height:200px;margin:0 auto 12px;border:2px solid #e0e0e0;border-radius:8px;display:flex;align-items:center;justify-content:center;">'
+    + '<div style="font-size:11px;color:#999;">QR生成中...</div></div>'
+    + '<div style="font-size:10px;color:#888;background:#f5f5f5;padding:6px;border-radius:6px;word-break:break-all;margin-bottom:14px;">' + uploadUrl + '</div>'
+    + '<div style="display:flex;gap:8px;">'
+    + '<button onclick="closePhotoQr()" style="flex:1;padding:10px;border:2px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px;font-weight:bold;color:#666;">閉じる</button>'
+    + '<a href="' + uploadUrl + '" target="_blank" style="flex:2;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#6a1b9a,#8e24aa);color:white;font-size:13px;font-weight:bold;text-decoration:none;display:flex;align-items:center;justify-content:center;cursor:pointer;">📱 PCで開く</a>'
+    + '</div>';
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  // QRコード生成
+  var qrImg = document.createElement('img');
+  qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(uploadUrl);
+  qrImg.style.cssText = 'width:180px;height:180px;';
+  qrImg.onload = function() {
+    var area = document.getElementById('photoQrArea');
+    if(area) { area.innerHTML = ''; area.appendChild(qrImg); }
+  };
+}
 
 // ★ キャンセル処理（案件をキャンセル状態に変更）
 async function cancelCase(estimateNo, customerName) {
