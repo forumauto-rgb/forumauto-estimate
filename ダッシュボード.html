@@ -41,6 +41,12 @@ body {
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
+/* ★ ズームターゲット: ヘッダー外のコンテンツのみ拡大縮小 */
+#zoomTarget {
+  transform-origin: top center;
+  transition: transform 0.15s ease;
+  will-change: transform;
+}
 .header {
   background: var(--bg2);
   border-bottom: 2px solid var(--border2);
@@ -51,8 +57,10 @@ body {
   justify-content: space-between;
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 1000;  /* ★ ズームされたmainより前面に */
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  /* ★ transformの影響を受けないようisolateを指定 */
+  isolation: isolate;
 }
 .header-left { display:flex; align-items:center; gap:14px; }
 .logo-mark {
@@ -298,6 +306,7 @@ tr:hover td { background:var(--bg3); }
 <body>
 
 <header class="header">
+  <!-- 左: ロゴ -->
   <div class="header-left">
     <div class="logo-mark">FA</div>
     <div>
@@ -305,22 +314,22 @@ tr:hover td { background:var(--bg3); }
       <div class="logo-sub">〒437-0123 袋井市下山梨545　TEL 0538-49-0632</div>
     </div>
   </div>
-  <div style="display:flex;align-items:center;gap:14px;">
-    <div style="display:flex;align-items:center;gap:6px;background:var(--bg3);border:1.5px solid var(--border2);border-radius:10px;padding:5px 10px;">
-      <span style="font-size:11px;font-weight:700;color:var(--txt3);">表示</span>
-      <button onclick="changeZoom(-0.1)" style="width:26px;height:26px;border:1.5px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--txt);font-size:15px;font-weight:bold;cursor:pointer;line-height:1;">－</button>
-      <span id="zoomLabel" style="font-size:13px;font-weight:800;color:var(--txt);min-width:38px;text-align:center;">100%</span>
-      <button onclick="changeZoom(0.1)" style="width:26px;height:26px;border:1.5px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--txt);font-size:15px;font-weight:bold;cursor:pointer;line-height:1;">＋</button>
-      <button onclick="resetZoom()" style="padding:0 7px;height:26px;border:1.5px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--txt3);font-size:11px;font-weight:700;cursor:pointer;">戻す</button>
-    </div>
-    <div>
-      <div class="clock" id="clock">--:--:--</div>
-      <div class="date-str" id="datestr">----年-月-日（-）</div>
-    </div>
+  <!-- 中央: ズームコントロール -->
+  <div style="display:flex;align-items:center;gap:8px;background:var(--bg3);border:1.5px solid var(--border2);border-radius:10px;padding:6px 14px;">
+    <span style="font-size:12px;font-weight:700;color:var(--txt3);">表示サイズ</span>
+    <button onclick="changeZoom(-0.1)" title="縮小（-キー）" style="width:30px;height:30px;border:1.5px solid var(--border2);border-radius:7px;background:var(--bg2);color:var(--txt);font-size:18px;font-weight:bold;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;">－</button>
+    <span id="zoomLabel" style="font-size:14px;font-weight:900;color:var(--txt);min-width:44px;text-align:center;letter-spacing:1px;">100%</span>
+    <button onclick="changeZoom(0.1)" title="拡大（+キー）" style="width:30px;height:30px;border:1.5px solid var(--border2);border-radius:7px;background:var(--bg2);color:var(--txt);font-size:18px;font-weight:bold;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;">＋</button>
+    <button onclick="resetZoom()" title="リセット（0キー）" style="padding:0 10px;height:30px;border:1.5px solid var(--border2);border-radius:7px;background:var(--bg2);color:var(--txt3);font-size:12px;font-weight:700;cursor:pointer;">リセット</button>
+  </div>
+  <!-- 右: 時計 -->
+  <div style="text-align:right;">
+    <div class="clock" id="clock">--:--:--</div>
+    <div class="date-str" id="datestr">----年-月-日（-）</div>
   </div>
 </header>
 
-<main class="main">
+<main class="main" id="zoomTarget">
   <div class="stats-bar">
     <div class="stat-card">
       <div class="stat-icon si-red">🔧</div>
@@ -647,16 +656,20 @@ var MIN_ZOOM = 0.6;
 var MAX_ZOOM = 2.0;
 
 function applyZoom() {
-  var el = document.querySelector('.main');
+  var el = document.getElementById('zoomTarget');
   if (!el) return;
+  var lbl = document.getElementById('zoomLabel');
+  // transform: scaleで拡大縮小
   el.style.transformOrigin = 'top center';
   el.style.transform = 'scale(' + currentZoom + ')';
-  if (currentZoom !== 1.0) {
-    el.style.marginBottom = Math.round((currentZoom - 1) * 600) + 'px';
+  // スケール後の高さ補正（コンテンツが切れないよう）
+  var naturalH = el.scrollHeight;
+  if (currentZoom > 1) {
+    el.style.marginBottom = Math.round(naturalH * (currentZoom - 1)) + 'px';
   } else {
-    el.style.marginBottom = '';
+    el.style.marginBottom = '0';
   }
-  document.getElementById('zoomLabel').textContent = Math.round(currentZoom * 100) + '%';
+  if (lbl) lbl.textContent = Math.round(currentZoom * 100) + '%';
   try { localStorage.setItem('fa_dash_zoom', currentZoom); } catch(e) {}
 }
 
