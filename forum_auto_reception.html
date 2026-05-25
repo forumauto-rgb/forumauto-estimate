@@ -432,10 +432,25 @@ textarea { resize: vertical; min-height: 80px; }
   <div class="tab-content" id="tab-cases">
     <div class="card" style="padding:14px 16px;">
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <!-- 日付 -->
         <input type="date" id="caseSearchDate" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);" onchange="loadCases()"/>
-        <input type="text" id="caseSearchName" placeholder="顧客名・車名で検索" style="flex:1;min-width:140px;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);" oninput="filterCaseList()"/>
+        <!-- ★ 期間終了日 -->
+        <span style="font-size:12px;color:var(--text-light);">〜</span>
+        <input type="date" id="caseSearchDateEnd" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);" onchange="loadCases()"/>
+        <!-- 名前検索 -->
+        <input type="text" id="caseSearchName" placeholder="顧客名・車名・ナンバーで検索" style="flex:1;min-width:140px;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);" oninput="filterCaseList()"/>
         <button onclick="caseSearchClear()" style="padding:7px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;background:white;cursor:pointer;color:var(--text-light);">リセット</button>
         <button onclick="loadCases()" style="padding:7px 14px;border:none;border-radius:8px;font-size:12px;background:var(--primary);color:white;cursor:pointer;font-weight:700;">🔍 検索</button>
+      </div>
+      <!-- ★ クイック期間ボタン -->
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
+        <span style="font-size:11px;color:var(--text-light);line-height:2;font-weight:700;">過去案件：</span>
+        <button onclick="setSearchRange(0)" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">本日</button>
+        <button onclick="setSearchRange(7)" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">過去7日</button>
+        <button onclick="setSearchRange(30)" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">過去30日</button>
+        <button onclick="setSearchRange(90)" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">過去3ヶ月</button>
+        <button onclick="setSearchRange(365)" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">過去1年</button>
+        <button onclick="searchAllCases()" style="padding:4px 12px;border:1.5px solid #e8392a;border-radius:20px;font-size:11px;background:#fff0ee;color:#e8392a;cursor:pointer;font-weight:700;">🔍 全期間</button>
       </div>
     </div>
     <div class="card">
@@ -522,7 +537,11 @@ function switchTab(name, btn) {
   var tabEl = document.getElementById('tab-' + name);
   if (tabEl) tabEl.classList.add('active');
   if (btn) btn.classList.add('active');
-  if (name === 'cases') { var d=document.getElementById('caseSearchDate'); if(d&&!d.value) d.value=new Date().toISOString().split('T')[0]; loadCases(); }
+  if (name === 'cases') {
+    var d=document.getElementById('caseSearchDate');
+    if(d&&!d.value) d.value=new Date().toISOString().split('T')[0];
+    loadCases();
+  }
   if (name === 'rental') loadRentalCars();
   if (name === 'map') initMainMap();
 }
@@ -1096,15 +1115,57 @@ async function saveRental() {
 }
 
 var allCasesCache = [];
+// ★ クイック期間ボタンで日付セット
+function setSearchRange(days) {
+  var today = new Date();
+  var start = new Date(today);
+  start.setDate(today.getDate() - days);
+  var fmt = function(d){ return d.toISOString().split('T')[0]; };
+  var sEl = document.getElementById('caseSearchDate');
+  var eEl = document.getElementById('caseSearchDateEnd');
+  if(sEl) sEl.value = fmt(start);
+  if(eEl) eEl.value = fmt(today);
+  loadCases();
+}
+
+// ★ 全期間検索
+function searchAllCases() {
+  var sEl = document.getElementById('caseSearchDate');
+  var eEl = document.getElementById('caseSearchDateEnd');
+  if(sEl) sEl.value = '';
+  if(eEl) eEl.value = '';
+  loadCases();
+}
+
 async function loadCases() {
   try {
-    var dateEl=document.getElementById('caseSearchDate');
-    var searchDate=dateEl?dateEl.value:'';
-    var today=searchDate||new Date().toISOString().split('T')[0];
-    var titleEl=document.getElementById('caseListTitle');
-    if(titleEl) titleEl.textContent=searchDate?searchDate+' の案件':'本日の案件';
-    var data=await supabaseQuery('receptions','GET',null,'?reception_datetime=gte.'+today+'T00:00:00&reception_datetime=lt.'+today+'T23:59:59&order=reception_datetime.desc&limit=100');
-    allCasesCache=data||[];
+    var dateEl = document.getElementById('caseSearchDate');
+    var dateEndEl = document.getElementById('caseSearchDateEnd');
+    var searchDate = dateEl ? dateEl.value : '';
+    var searchDateEnd = dateEndEl ? dateEndEl.value : '';
+    var today = new Date().toISOString().split('T')[0];
+
+    var titleEl = document.getElementById('caseListTitle');
+    var filter = '';
+
+    if (!searchDate && !searchDateEnd) {
+      // 日付未指定 → 全期間（最新200件）
+      filter = '?order=reception_datetime.desc&limit=200';
+      if(titleEl) titleEl.textContent = '全期間の案件';
+    } else if (searchDate && !searchDateEnd) {
+      // 開始日のみ → その日1日
+      filter = '?reception_datetime=gte.'+searchDate+'T00:00:00&reception_datetime=lte.'+searchDate+'T23:59:59&order=reception_datetime.desc&limit=200';
+      if(titleEl) titleEl.textContent = searchDate + ' の案件';
+    } else {
+      // 期間指定
+      var start = searchDate || '2020-01-01';
+      var end = searchDateEnd || today;
+      filter = '?reception_datetime=gte.'+start+'T00:00:00&reception_datetime=lte.'+end+'T23:59:59&order=reception_datetime.desc&limit=500';
+      if(titleEl) titleEl.textContent = start + ' 〜 ' + end + ' の案件';
+    }
+
+    var data = await supabaseQuery('receptions','GET',null,filter);
+    allCasesCache = data || [];
     filterCaseList();
     // ★ レンタカー貸出中一覧を構築（詳細付き）
     await loadRentalActiveInfo();
@@ -1156,8 +1217,13 @@ function filterCaseList() {
 }
 
 function caseSearchClear() {
-  var d=document.getElementById('caseSearchDate'); var n=document.getElementById('caseSearchName');
-  if(d)d.value=''; if(n)n.value=''; loadCases();
+  var d=document.getElementById('caseSearchDate');
+  var de=document.getElementById('caseSearchDateEnd');
+  var n=document.getElementById('caseSearchName');
+  if(d)d.value=''; if(de)de.value=''; if(n)n.value='';
+  // リセット時は本日に戻す
+  if(d) d.value=new Date().toISOString().split('T')[0];
+  loadCases();
 }
 
 function renderCases(cases) {
