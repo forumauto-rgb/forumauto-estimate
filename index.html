@@ -4058,6 +4058,36 @@ function addDamagePoint(event, svgEl) {
   }, 100);
 }
 
+function buildSignSectionInvoice(){
+  // 請求書用：入庫時のサイン表示（サインボタンなし）
+  var signDateDisp = customer.signDate || customer.date || '　　年　月　日';
+  var h = '';
+  h += '<div style="border:2px solid #1a3a6b;padding:8px;">';
+  h += '<div style="font-size:10px;font-weight:bold;color:#1a3a6b;margin-bottom:4px;">✍ お客様確認・署名</div>';
+  h += '<div style="font-size:10px;color:#444;margin-bottom:8px;line-height:1.6;">上記内容を確認し、修理作業をフォーラムオートに依頼いたします。追加作業が発生した場合は事前にご連絡いただき、承認後に作業を進めることに同意します。</div>';
+  h += '<div style="display:flex;gap:12px;align-items:flex-start;">';
+  h += '<div style="flex:1;">';
+  if(customer.signatureData){
+    // 入庫時サインがあれば表示
+    h += '<img src="' + customer.signatureData + '" style="width:100%;height:80px;object-fit:contain;border:1px solid #ccc;border-radius:4px;background:white;">';
+    h += '<div style="font-size:9px;color:#555;margin-top:2px;">署名日：' + signDateDisp + '</div>';
+  } else {
+    // サインがない場合は空欄（印刷用）
+    h += '<div style="border-bottom:2px solid #333;min-height:60px;"></div>';
+    h += '<div style="font-size:9px;color:#999;margin-top:2px;">入庫時署名</div>';
+  }
+  h += '</div>';
+  h += '<div style="width:150px;">';
+  h += '<div style="font-size:11px;">' + signDateDisp + '</div>';
+  h += '</div>';
+  h += '<div style="width:60px;">';
+  h += '<div style="border:1px solid #999;height:60px;display:flex;align-items:center;justify-content:center;">';
+  h += '<div style="font-size:9px;color:#bbb;text-align:center;">担当者印</div>';
+  h += '</div></div>';
+  h += '</div></div>';
+  return h;
+}
+
 function buildSignSection(){
   var signDate = customer.signDate || new Date().toISOString().split('T')[0];
   var signDateDisp = customer.signDate || '　　年　月　日';
@@ -4161,13 +4191,17 @@ function renderPreview(){
       if(isLoss && estMode!=='invoice' && showDiscount) html += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 6px;background:#fff3f3;border-radius:3px;margin-top:2px;color:#c62828;"><span>値引き（損金）</span><span style="font-weight:bold">▲¥'+Math.round(discount).toLocaleString()+'</span></div>';
       if(isLoss && estMode!=='invoice' && showDiscount) html += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 6px;background:#e8f5e9;border-radius:3px;margin-bottom:2px;"><span style="font-weight:bold">実入金合計</span><span style="font-weight:bold;color:#2e7d32">¥'+Math.round(actualIncome).toLocaleString()+'</span></div>';
       // サービス値引き：常に表示
-      if(isService && showDiscount) html += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 6px;background:#e3f2fd;border-radius:3px;margin-top:2px;color:#1565c0;"><span>サービス値引き</span><span style="font-weight:bold">▲¥'+Math.round(discount).toLocaleString()+'</span></div>';
+      // サービス値引き：請求書のみ表示（見積書では非表示）
+      if(isService && showDiscount && estMode==='invoice') html += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 6px;background:#e3f2fd;border-radius:3px;margin-top:2px;color:#1565c0;"><span>サービス値引き</span><span style="font-weight:bold">▲¥'+Math.round(discount).toLocaleString()+'</span></div>';
       // 総合計欄
-      var grandLabel = (isLoss && showDiscount && estMode!=='invoice') ? '請求合計（税込）'
-                     : (isService && showDiscount) ? '請求合計（税込）'
+      // 総合計ラベル・金額・色の決定
+      var showInvoiceService = isService && showDiscount && estMode==='invoice';
+      var showEstLoss = isLoss && showDiscount && estMode!=='invoice';
+      var grandLabel = showInvoiceService ? '請求合計（税込）'
+                     : showEstLoss ? '総合計（税込）'
                      : '総合計（税込）';
-      var grandAmt = (showDiscount) ? actualIncome : total;
-      var grandColor = (showDiscount) ? '#1b5e20' : '#2d5a96';
+      var grandAmt = showInvoiceService ? actualIncome : total;
+      var grandColor = showInvoiceService ? '#1b5e20' : '#2d5a96';
       html += '<div class="ep-grand-total" style="background:'+grandColor+';color:white;display:flex;justify-content:space-between;align-items:center;padding:6px 10px;margin-top:4px;border-radius:3px;-webkit-print-color-adjust:exact;print-color-adjust:exact">';
       html += '<span style="font-size:13px;font-weight:900">'+grandLabel+'</span>';
       html += '<span style="font-size:20px;font-weight:900;letter-spacing:1px">¥'+Math.floor(grandAmt).toLocaleString()+'</span>';
@@ -4236,7 +4270,8 @@ function renderPreview(){
     +(function(){
       var discType2 = customer.discountType||'loss';
       var disc2 = parseFloat(customer.discount)||0;
-      var dispAmt = (disc2>0) ? (total - disc2) : total;
+      // サービス値引き かつ 請求書モードのときだけ値引き後を表示
+      var dispAmt = (disc2>0 && discType2==='service' && estMode==='invoice') ? (total - disc2) : total;
       return '<div style="font-size:26px;font-weight:900;color:white;letter-spacing:1px;">¥'+Math.floor(dispAmt).toLocaleString()+'</div>';
     })()
     +'</div>'
@@ -4293,8 +4328,8 @@ function renderPreview(){
     +'</div>'
     +'</div>'
 
-    // サイン欄（Canvas電子サイン）
-    +buildSignSection();
+    // サイン欄（見積書：入力可、請求書：入庫時サイン表示のみ）
+    +(estMode==='invoice' ? buildSignSectionInvoice() : buildSignSection());
   // ========== 見積書2枚目：明細 ==========
   var page2 = '<div class="ep-page-break" style="font-family:\'Helvetica Neue\',Arial,\'Hiragino Kaku Gothic ProN\',\'Meiryo\',sans-serif;padding:6mm 8mm;box-sizing:border-box;">'
     // ヘッダー
