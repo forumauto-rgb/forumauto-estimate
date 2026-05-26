@@ -4146,12 +4146,12 @@ function renderPreview(){
 
   // 合計欄HTML（共通）
   function makeSumHTML(){
-    return ''
-      +'<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #eee"><span>工賃合計</span><span style="font-weight:bold">¥'+labor.toLocaleString()+'</span></div>'
-      +'<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #eee;background:#fafafa"><span>部品合計</span><span style="font-weight:bold">¥'+Math.round(pt).toLocaleString()+'</span></div>'
-      +'<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #eee"><span>材料合計'+(matAutoMode?'<span style="font-size:10px;color:#888;margin-left:3px;">(自動)</span>':'')+'</span><span style="font-weight:bold">¥'+Math.round(mt).toLocaleString()+'</span></div>'
-      +'<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-top:2px solid #1a3a6b;font-weight:bold"><span>修理代小計</span><span>¥'+Math.round(sub).toLocaleString()+'</span></div>'
-      +'<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #eee;background:#fafafa"><span>消費税(10%)</span><span>¥'+tax.toLocaleString()+'</span></div>'
+    var html = '';
+      html += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #eee"><span>工賃合計</span><span style="font-weight:bold">¥'+labor.toLocaleString()+'</span></div>';
+      html += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #eee;background:#fafafa"><span>部品合計</span><span style="font-weight:bold">¥'+Math.round(pt).toLocaleString()+'</span></div>';
+      html += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #eee"><span>材料合計'+(matAutoMode?'<span style="font-size:10px;color:#888;margin-left:3px;">(自動)</span>':'')+'</span><span style="font-weight:bold">¥'+Math.round(mt).toLocaleString()+'</span></div>';
+      html += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-top:2px solid #1a3a6b;font-weight:bold"><span>修理代小計</span><span>¥'+Math.round(sub).toLocaleString()+'</span></div>';
+      html += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #eee;background:#fafafa"><span>消費税(10%)</span><span>¥'+tax.toLocaleString()+'</span></div>';
       // 値引き種別：loss=損金（非表示）/ service=サービス値引き（表示）
       var discType = customer.discountType || 'loss';
       var showDiscount = discount > 0;
