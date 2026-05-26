@@ -3261,7 +3261,11 @@ function renderCustomerPanel(){
           `:''}
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;">
-          <span style="font-size:11px;color:#e53935;font-weight:bold;">▲値引き（損金）</span>
+          <span style="font-size:11px;color:#e53935;font-weight:bold;">▲値引き</span>
+          <select onchange="customer.discountType=this.value;rIP()" style="font-size:11px;padding:3px 5px;border:1.5px solid #e53935;border-radius:4px;background:white;color:#c62828;font-weight:bold;">
+            <option value="loss" ${(customer.discountType||'loss')==='loss'?'selected':''}>損金（非表示）</option>
+            <option value="service" ${customer.discountType==='service'?'selected':''}>サービス値引き（表示）</option>
+          </select>
           <input type="number" placeholder="0" value="${customer.discount||''}" oninput="customer.discount=this.value;rIP()" style="padding:3px 6px;border:1.5px solid #e53935;border-radius:4px;font-size:11px;width:80px;">
           <span style="font-size:11px;color:#555;margin-left:4px;">入金予定日</span>
           <input type="date" value="${customer.paymentDue||''}" oninput="customer.paymentDue=this.value" style="padding:3px 6px;border:1px solid #ccc;border-radius:4px;font-size:11px;">
@@ -4148,12 +4152,27 @@ function renderPreview(){
       +'<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #eee"><span>材料合計'+(matAutoMode?'<span style="font-size:10px;color:#888;margin-left:3px;">(自動)</span>':'')+'</span><span style="font-weight:bold">¥'+Math.round(mt).toLocaleString()+'</span></div>'
       +'<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-top:2px solid #1a3a6b;font-weight:bold"><span>修理代小計</span><span>¥'+Math.round(sub).toLocaleString()+'</span></div>'
       +'<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #eee;background:#fafafa"><span>消費税(10%)</span><span>¥'+tax.toLocaleString()+'</span></div>'
-      +(discount>0?'<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 6px;background:#fff3f3;border-radius:3px;margin-top:2px;color:#c62828;"><span>値引き（損金）</span><span style="font-weight:bold">▲¥'+Math.round(discount).toLocaleString()+'</span></div>':'')
-      +(discount>0?'<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 6px;background:#e8f5e9;border-radius:3px;margin-bottom:2px;"><span style="font-weight:bold">実入金合計</span><span style="font-weight:bold;color:#2e7d32">¥'+Math.round(actualIncome).toLocaleString()+'</span></div>':'')
-      +'<div class="ep-grand-total" style="background:#2d5a96;color:white;display:flex;justify-content:space-between;align-items:center;padding:6px 10px;margin-top:4px;border-radius:3px;-webkit-print-color-adjust:exact;print-color-adjust:exact">'
-      +'<span style="font-size:13px;font-weight:900">総合計（税込）</span>'
-      +'<span style="font-size:20px;font-weight:900;letter-spacing:1px">¥'+Math.floor(total).toLocaleString()+'</span>'
-      +'</div>';
+      // 値引き種別：loss=損金（非表示）/ service=サービス値引き（表示）
+      var discType = customer.discountType || 'loss';
+      var showDiscount = discount > 0;
+      var isService = discType === 'service'; // サービス値引き＝請求書に表示
+      var isLoss = !isService; // 損金＝内部のみ
+      // 損金：見積書のみ表示（内部用）
+      if(isLoss && estMode!=='invoice' && showDiscount) html += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 6px;background:#fff3f3;border-radius:3px;margin-top:2px;color:#c62828;"><span>値引き（損金）</span><span style="font-weight:bold">▲¥'+Math.round(discount).toLocaleString()+'</span></div>';
+      if(isLoss && estMode!=='invoice' && showDiscount) html += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 6px;background:#e8f5e9;border-radius:3px;margin-bottom:2px;"><span style="font-weight:bold">実入金合計</span><span style="font-weight:bold;color:#2e7d32">¥'+Math.round(actualIncome).toLocaleString()+'</span></div>';
+      // サービス値引き：常に表示
+      if(isService && showDiscount) html += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 6px;background:#e3f2fd;border-radius:3px;margin-top:2px;color:#1565c0;"><span>サービス値引き</span><span style="font-weight:bold">▲¥'+Math.round(discount).toLocaleString()+'</span></div>';
+      // 総合計欄
+      var grandLabel = (isLoss && showDiscount && estMode!=='invoice') ? '請求合計（税込）'
+                     : (isService && showDiscount) ? '請求合計（税込）'
+                     : '総合計（税込）';
+      var grandAmt = (showDiscount) ? actualIncome : total;
+      var grandColor = (showDiscount) ? '#1b5e20' : '#2d5a96';
+      html += '<div class="ep-grand-total" style="background:'+grandColor+';color:white;display:flex;justify-content:space-between;align-items:center;padding:6px 10px;margin-top:4px;border-radius:3px;-webkit-print-color-adjust:exact;print-color-adjust:exact">';
+      html += '<span style="font-size:13px;font-weight:900">'+grandLabel+'</span>';
+      html += '<span style="font-size:20px;font-weight:900;letter-spacing:1px">¥'+Math.floor(grandAmt).toLocaleString()+'</span>';
+      html += '</div>';
+      return html;
   }
 
   // 会社情報・振込先HTML（共通）
@@ -4300,7 +4319,7 @@ function renderPreview(){
   // ========== 請求書モード：写真ページ（カテゴリ選択可能） ==========
   var invoicePhotoPage = '';
   if(estMode==='invoice'){
-    var ipm = customer.invoicePhotoMode || 'work_done';
+    var ipm = customer.invoicePhotoMode || 'done'; // 請求書デフォルト：完成写真のみ
     var incomingPhotos = customer.photoIncoming||[];
     var workPhotos = customer.photoWork||[];
     var donePhotos = customer.photoDone||[];
@@ -4540,7 +4559,7 @@ function renderPreview(){
 
     +'</div>'; // /page3
 
-  return ctrlBar + page1 + (estMode==='invoice'?invoicePhotoPage:'') + page2 + page3;
+  return ctrlBar + page1 + (estMode==='invoice'?invoicePhotoPage:'') + page2 + (estMode==='invoice'?'':page3);
 }
 
 
@@ -4682,7 +4701,7 @@ function saveToM(){
   try{localStorage.setItem('fa_c6',JSON.stringify(cMaster));localStorage.setItem('fa_v6',JSON.stringify(vMaster));}catch(e){}
   alert('マスターに保存しました：'+customer.name+'\n顧客ID：'+actualCid);
 }
-function clearC(){customer={name:'',car:'',plate:'',color:'',grade:'中型',date:customer.date,no:'',photos:[],photoIncoming:[],photoWork:[],photoDone:[],photoTags:{},repairType:'insurance',insCompany:'',ajCompany:'',ajStaff:'',deductible:0,discount:0,paymentDue:'',paymentDate:'',mileage:'',estNote:'',signatureData:'',repairStatus:'受付',staffName:'',deliveryDate:'',
+function clearC(){customer={name:'',car:'',plate:'',color:'',grade:'中型',date:customer.date,no:'',photos:[],photoIncoming:[],photoWork:[],photoDone:[],photoTags:{},repairType:'insurance',insCompany:'',ajCompany:'',ajStaff:'',deductible:0,discount:0,discountType:'loss',paymentDue:'',paymentDate:'',mileage:'',estNote:'',signatureData:'',repairStatus:'受付',staffName:'',deliveryDate:'',
   colorCode:'',trim:'',paintType:'',
   photoCheckList:{zenkai:'',kinsetsu:'',shikisa:'',bunkai:'',kansei:''},
   damagePoints:[],
@@ -6063,7 +6082,7 @@ async function sendToSheet(){
       ajCompany:customer.ajCompany||'',
       ajStaffName:customer.ajStaff||'',
       deductible:parseFloat(customer.deductible)||0,
-      discount:parseFloat(customer.discount)||0,
+      discount:parseFloat(customer.discount)||0,discount_type:customer.discountType||'loss',
       paymentDueDate:customer.paymentDue||'',
       mileage:customer.mileage||''
     };
