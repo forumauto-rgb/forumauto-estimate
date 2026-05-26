@@ -3214,6 +3214,7 @@ function renderCustomerPanel(){
         <div style="font-size:12px;font-weight:bold;color:#1a3a6b;margin-bottom:8px;">📷 車両写真管理</div>
         <div style="margin-bottom:8px;display:flex;gap:6px;flex-wrap:wrap;">
           <button onclick="showPhotoHistory()" style="padding:4px 10px;font-size:10px;background:#5c6bc0;color:white;border:none;border-radius:5px;cursor:pointer;font-weight:bold;">📂 保存済み写真を読み込む</button>
+          <button onclick="openPhotoUploadDirect()" style="padding:4px 10px;font-size:10px;background:#2e7d32;color:white;border:none;border-radius:5px;cursor:pointer;font-weight:bold;">📱 スマホで直接撮影</button>
           <button onclick="showQRUpload()" style="padding:4px 10px;font-size:10px;background:#e65100;color:white;border:none;border-radius:5px;cursor:pointer;font-weight:bold;">📱 スマホで撮影（QR）</button>
           ${customer.no?'<span style="font-size:10px;color:#888;line-height:2">現在：'+customer.no+'</span>':'<span style="font-size:10px;color:#e53935;line-height:2">※見積保存後に写真が紐づきます</span>'}
         </div>
@@ -4296,39 +4297,44 @@ function renderPreview(){
     +'</div>'
     +'</div>';
 
-  // ========== 請求書モード：作業・完成写真ページ ==========
+  // ========== 請求書モード：写真ページ（カテゴリ選択可能） ==========
   var invoicePhotoPage = '';
   if(estMode==='invoice'){
-    var workPhotos=customer.photoWork||[];
-    var donePhotos=customer.photoDone||[];
-    var allJobPhotos=workPhotos.concat(donePhotos);
-    if(allJobPhotos.length>0){
-      var photoSections='';
-      if(workPhotos.length>0){
-        photoSections+='<div style="margin-bottom:14px;">'
-          +'<div style="font-size:11px;font-weight:bold;color:#1565c0;margin-bottom:6px;padding:3px 8px;background:#e3f2fd;border-left:3px solid #1565c0;">🔧 作業中写真（'+workPhotos.length+'枚）</div>'
-          +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">';
-        workPhotos.forEach(function(src){
-          photoSections+='<div style="aspect-ratio:4/3;overflow:hidden;border:1px solid #ddd;border-radius:4px;"><img src="'+src+'" style="width:100%;height:100%;object-fit:cover;"></div>';
-        });
-        photoSections+='</div></div>';
-      }
-      if(donePhotos.length>0){
-        photoSections+='<div style="margin-bottom:14px;">'
-          +'<div style="font-size:11px;font-weight:bold;color:#2e7d32;margin-bottom:6px;padding:3px 8px;background:#e8f5e9;border-left:3px solid #2e7d32;">✅ 完成写真（'+donePhotos.length+'枚）</div>'
-          +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">';
-        donePhotos.forEach(function(src){
-          photoSections+='<div style="aspect-ratio:4/3;overflow:hidden;border:1px solid #ddd;border-radius:4px;"><img src="'+src+'" style="width:100%;height:100%;object-fit:cover;"></div>';
-        });
-        photoSections+='</div></div>';
-      }
-      invoicePhotoPage='<div class="ep-page-break" style="font-family:\'Helvetica Neue\',Arial,\'Hiragino Kaku Gothic ProN\',\'Meiryo\',sans-serif;padding:6mm 8mm;box-sizing:border-box;">'
-        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #1a3a6b;">'
-        +'<div style="font-size:14px;font-weight:bold;color:#1a3a6b;">📷 作業・完成写真</div>'
-        +'<div style="font-size:10px;color:#555;">'+(customer.name||'')+'　様　'+(customer.car||'')+'　'+(customer.plate||'')+'</div>'
-        +'</div>'
-        +photoSections
-        +'</div>';
+    var ipm = customer.invoicePhotoMode || 'work_done';
+    var incomingPhotos = customer.photoIncoming||[];
+    var workPhotos = customer.photoWork||[];
+    var donePhotos = customer.photoDone||[];
+    var photoSections = '';
+    function makePhotoSec(photos, label, color, bg){
+      if(!photos.length) return '';
+      var s = '<div style="margin-bottom:14px;">';
+      s += '<div style="font-size:11px;font-weight:bold;color:'+color+';margin-bottom:6px;padding:3px 8px;background:'+bg+';border-left:3px solid '+color+';">'+label+'（'+photos.length+'枚）</div>';
+      s += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">';
+      photos.forEach(function(src){ s += '<div style="aspect-ratio:4/3;overflow:hidden;border:1px solid #ddd;border-radius:4px;"><img src="'+src+'" style="width:100%;height:100%;object-fit:cover;"></div>'; });
+      s += '</div></div>';
+      return s;
+    }
+    if(ipm==='incoming_done'){
+      photoSections += makePhotoSec(incomingPhotos,'📥 入庫時写真','#e65100','#fff3e0');
+      photoSections += makePhotoSec(donePhotos,'✅ 完成写真','#2e7d32','#e8f5e9');
+    } else if(ipm==='all'){
+      photoSections += makePhotoSec(incomingPhotos,'📥 入庫時写真','#e65100','#fff3e0');
+      photoSections += makePhotoSec(workPhotos,'🔧 作業中写真','#1565c0','#e3f2fd');
+      photoSections += makePhotoSec(donePhotos,'✅ 完成写真','#2e7d32','#e8f5e9');
+    } else if(ipm==='incoming'){
+      photoSections += makePhotoSec(incomingPhotos,'📥 入庫時写真','#e65100','#fff3e0');
+    } else if(ipm==='done'){
+      photoSections += makePhotoSec(donePhotos,'✅ 完成写真','#2e7d32','#e8f5e9');
+    } else {
+      photoSections += makePhotoSec(workPhotos,'🔧 作業中写真','#1565c0','#e3f2fd');
+      photoSections += makePhotoSec(donePhotos,'✅ 完成写真','#2e7d32','#e8f5e9');
+    }
+    if(photoSections){
+      invoicePhotoPage = '<div class="ep-page-break" style="font-family:Helvetica Neue,Arial,Hiragino Kaku Gothic ProN,Meiryo,sans-serif;padding:6mm 8mm;box-sizing:border-box;">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #1a3a6b;">'
+        + '<div style="font-size:14px;font-weight:bold;color:#1a3a6b;">📷 修理写真</div>'
+        + '<div style="font-size:10px;color:#555;">'+(customer.name||'')+'　様　'+(customer.car||'')+'　'+(customer.plate||'')+'</div>'
+        + '</div>' + photoSections + '</div>';
     }
   }
 
@@ -4360,6 +4366,7 @@ function renderPreview(){
     +'<span style="font-size:11px;color:#555;font-weight:bold;">書類：</span>'
     +'<button onclick="setEstMode(\'estimate\')" style="padding:5px 14px;font-size:12px;border-radius:6px;border:2px solid #1a3a6b;cursor:pointer;font-weight:bold;background:'+(estMode==='estimate'?'#1a3a6b':'white')+';color:'+(estMode==='estimate'?'white':'#1a3a6b')+';">見積書</button>'
     +'<button onclick="setEstMode(\'invoice\')" style="padding:5px 14px;font-size:12px;border-radius:6px;border:2px solid #e65100;cursor:pointer;font-weight:bold;background:'+(estMode==='invoice'?'#e65100':'white')+';color:'+(estMode==='invoice'?'white':'#e65100')+';">請求書</button>'
+    +(estMode==='invoice'?('<span style="font-size:11px;color:#555;margin-left:6px;font-weight:bold;">写真：</span><select onchange="customer.invoicePhotoMode=this.value;render()" style="font-size:11px;padding:3px 6px;border:1px solid #ccc;border-radius:5px;"><option value="work_done"'+((customer.invoicePhotoMode||'work_done')==='work_done'?' selected':'')+'>作業中＋完成</option><option value="incoming_done"'+(customer.invoicePhotoMode==='incoming_done'?' selected':'')+'>入庫時＋完成</option><option value="done"'+(customer.invoicePhotoMode==='done'?' selected':'')+'>完成のみ</option><option value="incoming"'+(customer.invoicePhotoMode==='incoming'?' selected':'')+'>入庫時のみ</option><option value="all"'+(customer.invoicePhotoMode==='all'?' selected':'')+'>全部</option></select>'):'')
     +'<button onclick="openInsuranceAI()" style="padding:5px 14px;font-size:12px;border-radius:6px;border:2px solid #7b1fa2;cursor:pointer;background:#7b1fa2;color:white;font-weight:bold;">⚖️ 保険対応</button>'
     +'</div>'
     +'</div>'
@@ -5796,7 +5803,11 @@ async function saveEstimate(){
       headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
       body:JSON.stringify(items)
     });
-    // 部品・材料保存
+    // 部品・材料保存（★先に全削除してから再挿入）
+    await fetch(SUPABASE_URL+'/rest/v1/estimate_parts?estimate_id=eq.'+estId,{
+      method:'DELETE',
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+    });
     var pm=(partsItems||[]).filter(function(p){return p.name||p.cost;}).map(function(p,i){return{estimate_id:estId,item_type:'parts',name:p.name||'',part_no:p.partNo||'',cost:parseInt(p.cost)||0,profit:parseInt(p.profit)||0,sort_order:i};});
     var mm=(matItems||[]).filter(function(m){return m.name||m.cost;}).map(function(m,i){return{estimate_id:estId,item_type:'material',name:m.name||'',cost:parseInt(m.cost)||0,profit:parseInt(m.profit)||30,sort_order:i};});
     var all=pm.concat(mm);
@@ -6469,60 +6480,117 @@ var qrLastReceivedCount = 0; // 前回受信枚数を記録
 async function pollQRPhotos(){
   if(!qrSessionId) return;
   try{
-    // まず現在のsession_idで検索
-    var resp = await fetch(
-      SUPABASE_URL + '/rest/v1/photo_sessions?session_id=eq.' + encodeURIComponent(qrSessionId) + '&select=category,data_url&order=id.asc',
-      {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
-    );
+    // ★ estimate_idで絞り込む（session_idが変わっても正確に取得）
+    var estNo = customer.no || '';
+    var filterUrl = '';
+    if(estNo){
+      // estimate_idがある場合はそちらを優先（最も正確）
+      filterUrl = SUPABASE_URL + '/rest/v1/photo_sessions?estimate_id=eq.' + encodeURIComponent(estNo) + '&select=id,session_id,category,data_url&order=id.asc';
+    } else {
+      // estimate_idがない場合はsession_idで検索
+      filterUrl = SUPABASE_URL + '/rest/v1/photo_sessions?session_id=eq.' + encodeURIComponent(qrSessionId) + '&select=id,session_id,category,data_url&order=id.asc';
+    }
+    var resp = await fetch(filterUrl, {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
     if(!resp.ok) return;
     var rows = await resp.json();
 
-    // データがない場合→最新10分以内を検索（session_idが変わった場合の救済）
-    if(!rows || !rows.length){
+    // estimate_idで取れなかった場合のフォールバック（session_id検索）
+    if((!rows || !rows.length) && estNo){
       var resp2 = await fetch(
-        SUPABASE_URL + '/rest/v1/photo_sessions?select=session_id,category,data_url&order=id.desc&limit=30',
+        SUPABASE_URL + '/rest/v1/photo_sessions?session_id=eq.' + encodeURIComponent(qrSessionId) + '&select=id,session_id,category,data_url&order=id.asc',
         {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
       );
-      if(!resp2.ok) return;
-      var recent = await resp2.json();
-      if(!recent || !recent.length) return;
-      // 最新のsession_idで絞り込み
-      var latestSid = recent[0].session_id;
-      rows = recent.filter(function(r){ return r.session_id === latestSid; });
-      if(rows.length > 0){
-        qrSessionId = latestSid; // session_idを更新
-        var s2=document.getElementById('qr-poll-status');
-        if(s2) s2.textContent='📡 新しいセッション検出: '+latestSid.slice(-8);
-      }
+      if(resp2.ok) rows = await resp2.json();
     }
 
     if(!rows || !rows.length) return;
     if(rows.length === qrLastReceivedCount) return;
 
-    var newIncoming=[], newWork=[], newDone=[];
-    rows.forEach(function(row){
-      if(row.category==='photoIncoming') newIncoming.push(row.data_url);
-      else if(row.category==='photoWork') newWork.push(row.data_url);
-      else if(row.category==='photoDone') newDone.push(row.data_url);
-    });
-
+    // ★ 追記方式（上書きしない）＋重複除去
     var prevCount = qrLastReceivedCount;
     qrLastReceivedCount = rows.length;
-    customer.photoIncoming = newIncoming;
-    customer.photoWork = newWork;
-    customer.photoDone = newDone;
 
-    var added = rows.length - prevCount;
+    // 既存の写真セットをハッシュ化（重複チェック用）
+    var existSet = {};
+    (customer.photoIncoming||[]).forEach(function(u){ existSet[u]=1; });
+    (customer.photoWork||[]).forEach(function(u){ existSet[u]=1; });
+    (customer.photoDone||[]).forEach(function(u){ existSet[u]=1; });
+
+    var addedIncoming=0, addedWork=0, addedDone=0;
+    rows.forEach(function(row){
+      if(existSet[row.data_url]) return; // 重複スキップ
+      existSet[row.data_url] = 1;
+      if(row.category==='photoIncoming'){
+        if(!customer.photoIncoming) customer.photoIncoming=[];
+        customer.photoIncoming.push(row.data_url);
+        addedIncoming++;
+      } else if(row.category==='photoWork'){
+        if(!customer.photoWork) customer.photoWork=[];
+        customer.photoWork.push(row.data_url);
+        addedWork++;
+      } else if(row.category==='photoDone'){
+        if(!customer.photoDone) customer.photoDone=[];
+        customer.photoDone.push(row.data_url);
+        addedDone++;
+      }
+    });
+    var totalAdded = addedIncoming + addedWork + addedDone;
+
     var statusEl = document.getElementById('qr-poll-status');
     if(statusEl){
+      var inc=(customer.photoIncoming||[]).length;
+      var wrk=(customer.photoWork||[]).length;
+      var don=(customer.photoDone||[]).length;
       statusEl.style.color = '#2e7d32';
-      statusEl.textContent = '✅ 合計'+rows.length+'枚（入庫:'+newIncoming.length+' 作業:'+newWork.length+' 完成:'+newDone.length+'）';
+      statusEl.textContent = '✅ 合計'+(inc+wrk+don)+'枚（入庫:'+inc+' 作業:'+wrk+' 完成:'+don+'）';
     }
-    showNotify('📷 '+added+'枚 追加！合計'+rows.length+'枚');
+    if(totalAdded > 0) showNotify('📷 '+totalAdded+'枚 追加！');
     render();
   }catch(e){
     console.warn('pollQRPhotos error:', e);
   }
+}
+
+// ★ スマホで直接撮影（案件番号付きURL）
+function closeDirectQr() {
+  var el = document.getElementById('directQrOverlay');
+  if(el) el.remove();
+}
+function openPhotoUploadDirect() {
+  var estNo = customer.no || '';
+  var name = customer.name || '';
+  var car = customer.car || '';
+  var baseUrl = 'https://forumauto-rgb.github.io/forumauto-estimate/photo_upload.html';
+  var uploadUrl = baseUrl
+    + '?eid=' + encodeURIComponent(estNo)
+    + '&name=' + encodeURIComponent(name)
+    + '&car=' + encodeURIComponent(car);
+  // QRコードポップアップ
+  var overlay = document.createElement('div');
+  overlay.id = 'directQrOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
+  var box = document.createElement('div');
+  box.style.cssText = 'background:white;border-radius:16px;padding:24px;max-width:320px;width:90%;text-align:center;';
+  box.innerHTML = '<div style="font-size:15px;font-weight:bold;color:#1a3a6b;margin-bottom:4px;">📱 スマホで撮影</div>'
+    + '<div style="font-size:12px;color:#666;margin-bottom:4px;">'+(name||'お客様')+' 様 / '+(car||'')+'</div>'
+    + '<div style="font-size:11px;color:#888;margin-bottom:12px;">スマホでQRコードを読み取ってください<br>案件一覧から選んで撮影できます</div>'
+    + '<div id="directQrArea" style="width:190px;height:190px;margin:0 auto 12px;border:1px solid #eee;border-radius:8px;display:flex;align-items:center;justify-content:center;"><div style="font-size:11px;color:#999;">生成中...</div></div>'
+    + '<div style="font-size:10px;color:#888;background:#f5f5f5;padding:5px;border-radius:5px;word-break:break-all;margin-bottom:12px;">'+ uploadUrl +'</div>'
+    + '<div style="display:flex;gap:8px;">'
+    + '<button onclick="closeDirectQr()" style="flex:1;padding:9px;border:1.5px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:13px;font-weight:bold;color:#666;">閉じる</button>'
+    + '<a href="'+uploadUrl+'" target="_blank" style="flex:2;padding:9px;border:none;border-radius:8px;background:#2e7d32;color:white;font-size:12px;font-weight:bold;text-decoration:none;display:flex;align-items:center;justify-content:center;">📱 スマホで開く</a>'
+    + '</div>';
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  // QR生成
+  var qrImg = new Image();
+  qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(uploadUrl);
+  qrImg.style.cssText = 'width:180px;height:180px;';
+  qrImg.onload = function(){
+    var area = document.getElementById('directQrArea');
+    if(area){ area.innerHTML=''; area.appendChild(qrImg); }
+  };
 }
 
 function openSignModal(){
