@@ -257,6 +257,9 @@ function getStatusBadge(s) {
 
 function selectCase(c) {
   selectedCase = c;
+  // ★ estimateIdを必ず更新（カテゴリ振り分けの基準になる）
+  estimateId = c.estimate_no || c.id || '';
+  sessionId = sessionId || ('manual_' + Date.now() + '_' + (estimateId||'').replace(/[^a-z0-9]/gi,''));
   // 案件情報をセット
   document.getElementById('selectedCaseName').textContent = (c.customer_name || '---') + ' 様';
   document.getElementById('selectedCaseSub').textContent = (c.car_name || '') + '　' + (c.plate || '') + '　' + (c.estimate_no || '');
@@ -449,6 +452,10 @@ function hideStatus() { document.getElementById('status').className = 'status'; 
 async function submitPhotos() {
   var total = photos.photoIncoming.length + photos.photoWork.length + photos.photoDone.length;
   if(!total) return;
+  // ★ 案件番号が設定されているか確認
+  if(!estimateId && selectedCase) {
+    estimateId = selectedCase.estimate_no || selectedCase.id || '';
+  }
   var btn = document.getElementById('submitBtn');
   btn.disabled = true;
   btn.textContent = '送信中...';
