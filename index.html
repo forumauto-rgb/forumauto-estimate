@@ -4233,7 +4233,12 @@ function renderPreview(){
     +'</div>'
     +'<div class="ep-amount-bar" style="min-width:200px;background:#1a3a6b;padding:14px 16px;display:flex;flex-direction:column;justify-content:center;align-items:center;-webkit-print-color-adjust:exact;print-color-adjust:exact;">'
     +'<div style="font-size:9px;color:#b0c4de;font-weight:500;margin-bottom:2px;">'+(estMode==='invoice'?'御請求金額（税込）':'御見積金額（税込）')+'</div>'
-    +'<div style="font-size:26px;font-weight:900;color:white;letter-spacing:1px;">¥'+Math.floor(total).toLocaleString()+'</div>'
+    +(function(){
+      var discType2 = customer.discountType||'loss';
+      var disc2 = parseFloat(customer.discount)||0;
+      var dispAmt = (disc2>0) ? (total - disc2) : total;
+      return '<div style="font-size:26px;font-weight:900;color:white;letter-spacing:1px;">¥'+Math.floor(dispAmt).toLocaleString()+'</div>';
+    })()
     +'</div>'
     +'</div>'
 
