@@ -4968,7 +4968,7 @@ function renderSelectedTasks(fullMode){
   h+='<span>選択作業一覧　<span style="font-size:11px;font-weight:normal">'+sel.length+'件</span></span>';
   h+='<div style="display:flex;gap:6px;align-items:center;">';
   h+='<button onclick="clearEstimate()" style="background:#e53935;color:white;border:none;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:bold;cursor:pointer;">🗑 作業クリア</button>';
-  h+='<button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;border-color:rgba(255,255,255,0.3)" onclick="ST(\'preview\',document.querySelector(\'.tab[onclick*=preview]\')); window.scrollTo(0,0);">見積書 &rarr;</button>';
+  h+='<button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;border-color:rgba(255,255,255,0.3)" onclick="goToPreviewTab();">見積書 &rarr;</button>';
   h+='</div>';
   h+='</div>';
   h+='<div style="overflow-y:auto;max-height:'+lH+'">';
@@ -6371,6 +6371,18 @@ function showNotify(msg){
   el.style.opacity='1';
   clearTimeout(el._t);
   el._t=setTimeout(()=>{el.style.opacity='0';},3000);
+}
+function goToPreviewTab(){
+  var tabs = document.querySelectorAll('.tab');
+  var target = null;
+  tabs.forEach(function(b){
+    var oc = b.getAttribute('onclick') || '';
+    if(oc.indexOf('preview') >= 0) target = b;
+  });
+  if(target){
+    ST('preview', target);
+    window.scrollTo(0, 0);
+  }
 }
 function ST(tab,el){
   var prevTab = curTab;
