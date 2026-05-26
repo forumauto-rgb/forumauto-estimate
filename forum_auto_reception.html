@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+  <link rel="apple-touch-icon" href="apple-touch-icon-reception.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>フォーラムオート 受付システム</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23e8392a'/><rect x='8' y='52' width='70' height='20' rx='4' fill='%23ffffff'/><rect x='68' y='44' width='24' height='28' rx='4' fill='%23ffffff'/><rect x='71' y='47' width='18' height='12' rx='2' fill='%23a8c8e8'/><rect x='10' y='40' width='60' height='12' rx='2' fill='%23eeeeee' transform='rotate(-9 40 46)'/><rect x='18' y='28' width='30' height='14' rx='4' fill='%231a2744'/><rect x='22' y='24' width='22' height='10' rx='3' fill='%23263a6e'/><rect x='24' y='25' width='8' height='7' rx='1' fill='%23a8c8e8' opacity='.9'/><rect x='34' y='25' width='8' height='7' rx='1' fill='%23a8c8e8' opacity='.9'/><circle cx='22' cy='74' r='8' fill='%23333'/><circle cx='22' cy='74' r='4' fill='%23666'/><circle cx='52' cy='74' r='8' fill='%23333'/><circle cx='52' cy='74' r='4' fill='%23666'/><circle cx='80' cy='74' r='8' fill='%23333'/><circle cx='80' cy='74' r='4' fill='%23666'/></svg>">
@@ -279,6 +280,7 @@ textarea { resize: vertical; min-height: 80px; }
     </div>
     <div class="btn-row">
       <button class="btn btn-outline" onclick="clearForm()">🗑️ クリア</button>
+      <button class="btn" onclick="cancelReception()" style="background:#9e9e9e;color:white;">✖ キャンセル</button>
       <button class="btn btn-accent" onclick="saveReception()">💾 案件登録</button>
     </div>
   </div>
@@ -424,6 +426,7 @@ textarea { resize: vertical; min-height: 80px; }
     </div>
     <div class="btn-row">
       <button class="btn btn-outline" onclick="printContract()">🖨️ 印刷</button>
+      <button class="btn" onclick="cancelRental()" style="background:#9e9e9e;color:white;">✖ キャンセル</button>
       <button class="btn btn-accent" onclick="saveRental()">💾 貸出登録</button>
     </div>
   </div>
@@ -1024,7 +1027,7 @@ function afterReceptionSaved(caseNum, name, needRental, rentalCar) {
 }
 
 function showRentalDialog(caseNum,name,phone,carName,carNum,rentalCar) {
-  window._rentalTransfer={caseNum,name,phone,carName,carNum};
+  window._rentalTransfer={caseNum:caseNum,name:name,phone:phone,carName:carName,carNum:carNum,rentalCarId:(selectedRentalCar?selectedRentalCar.id:null),rentalCarName:(selectedRentalCar?(selectedRentalCar['車種']||selectedRentalCar['め']||''):'')};
   var overlay=document.createElement('div');
   overlay.id='rentalDialog';
   overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(26,39,68,0.6);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;';
@@ -1052,9 +1055,28 @@ function goToRentalTab() {
   clearForm(); switchTab('rental', document.querySelectorAll('.tab-btn')[1]);
   setTimeout(function(){
     var set=function(id,val){var e=document.getElementById(id);if(e)e.value=val||'';};
-    set('rentalCaseNum',d.caseNum||''); set('rentalCustomer',d.name||''); set('driverName',d.name||''); set('driverPhone',d.phone||'');
+    set('rentalCaseNum',d.caseNum||'');
+    set('rentalCustomer',d.name||'');
+    set('driverName',d.name||'');
+    set('driverPhone',d.phone||'');
     window.scrollTo({top:0,behavior:'smooth'});
-    showToast('受付データを引き継ぎました（'+(d.name||'')+' 様）✅','success');
+    // ★ 受付で選んだ車両を自動選択
+    if(d.rentalCarId){
+      var trySelect=function(retry){
+        var card=document.querySelector('[data-car-id="'+d.rentalCarId+'"]');
+        if(card){
+          card.click();
+          showToast('🚗 '+d.rentalCarName+' を自動選択しました ✅','success');
+        } else if(retry>0){
+          setTimeout(function(){trySelect(retry-1);},300);
+        } else {
+          showToast('受付データを引き継ぎました（'+(d.name||'')+' 様）✅','success');
+        }
+      };
+      setTimeout(function(){trySelect(10);},400);
+    } else {
+      showToast('受付データを引き継ぎました（'+(d.name||'')+' 様）✅','success');
+    }
     window._rentalTransfer=null;
   },200);
 }
@@ -1437,6 +1459,26 @@ document.addEventListener('click',function(e){
   var inp=document.getElementById('customerName');
   if(dd&&inp&&!inp.contains(e.target)&&!dd.contains(e.target))dd.style.display='none';
 });
+
+function cancelReception() {
+  if(!confirm('入力内容を破棄して受付をキャンセルしますか？')) return;
+  clearForm();
+  showToast('受付をキャンセルしました','success');
+}
+
+function cancelRental() {
+  if(!confirm('レンタカー貸出をキャンセルしますか？')) return;
+  selectedRentalCar=null;
+  document.querySelectorAll('.rental-car-card').forEach(function(c){c.classList.remove('selected');});
+  ['rentalCaseNum','rentalCustomer','driverName','licenseNum','driverPhone','rentalStartKm','rentalEndKm'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  var days=document.getElementById('rentalDays'); if(days) days.value='';
+  var billing=document.getElementById('rentalBilling'); if(billing) billing.value='';
+  clearDamages();
+  showToast('レンタカー貸出をキャンセルしました','success');
+  switchTab('reception', document.querySelectorAll('.tab-btn')[0]);
+}
 
 function clearForm() {
   ['customerName','phone','carName','carNum','carColor','colorCode','insurance','symptoms','locationInput','destAddr','remarks'].forEach(function(id){
