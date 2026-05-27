@@ -292,13 +292,13 @@ if(location.protocol==='file:'){
   <div class="logo">📋 フォーラムオート</div>
   <button class="tab active" onclick="ST('estimate',this)">見積作成</button>
   <button class="tab" onclick="ST('paint',this)">塗装設定</button>
-  <button class="tab" onclick="ST('master',this)">マスター管理（初回はここ）</button>
+  <button class="tab" onclick="ST('master',this)">マスター</button>
   <button class="tab" onclick="ST('material',this)">&#129514; 材料計算書</button>
   <button class="tab" onclick="ST('preview',this)">見積書</button>
-  <button class="tab" onclick="openWorkOrder()">🔧 作業指示書</button>
-  <button class="tab" onclick="ST('manual',this)">📖 使い方</button>
-  <button class="tab" onclick="ST('analytics',this)">📊 分析</button>
-  <button class="tab" onclick="ST('aiassist',this)" style="background:linear-gradient(135deg,rgba(103,58,183,0.7),rgba(156,39,176,0.7));color:white;border-bottom-color:#ce93d8;position:relative;z-index:0;flex-shrink:0">🤖 AIアシスト</button>
+  <button class="tab" onclick="openWorkOrder()">🔧 指示書</button>
+  <button class="tab" onclick="ST('manual',this)">使い方</button>
+  <button class="tab" onclick="ST('analytics',this)">分析</button>
+  <button class="tab" onclick="ST('aiassist',this)" style="background:linear-gradient(135deg,rgba(103,58,183,0.7),rgba(156,39,176,0.7));color:white;border-bottom-color:#ce93d8;position:relative;z-index:0;flex-shrink:0">🤖 AI</button>
   <button id="printBtn" onclick="doPrint()" style="display:none;margin-left:auto;background:#e65100;color:white;border:none;border-radius:8px;padding:6px 16px;font-size:13px;font-weight:bold;cursor:pointer">&#128424; 印刷 / PDF保存</button>
   <button id="sheetBtn" onclick="saveEstimateToSheet()" style="display:none;margin-left:4px;background:#2e7d32;color:white;border:none;border-radius:6px;padding:6px 14px;font-size:13px;font-weight:bold;cursor:pointer;">📊 Sheetに保存</button>
 </div>
@@ -4226,7 +4226,6 @@ function renderPreview(){
   // ★ 請求書と見積書で写真グリッドを切り替え
   var photoGrid = '';
   if(estMode==='invoice'){
-    // 請求書：入庫時2枚＋作業前1枚＋完成1枚 = 計4枚
     var invoiceSlots = [
       {src:incomingPhotos[0]||null, label:'受付（前）'},
       {src:incomingPhotos[1]||null, label:'受付（後）'},
@@ -4240,12 +4239,11 @@ function renderPreview(){
           +'<div style="position:absolute;bottom:3px;left:3px;background:rgba(0,0,0,0.6);color:white;font-size:9px;padding:1px 5px;border-radius:2px;">'+slot.label+'</div>'
           +'</div>';
       } else {
-        photoGrid += '<div style="aspect-ratio:4/3;border:1.5px dashed #ccc;border-radius:3px;display:flex;align-items:center;justify-content:center;">'
-          +'<div style="font-size:9px;color:#bbb;text-align:center;">'+slot.label+'</div></div>';
+        photoGrid += '<div style="aspect-ratio:4/3;border:1.5px dashed #ccc;border-radius:3px;display:flex;align-items:center;justify-content:center;background:#f9f9f9;">'
+          +'<div style="text-align:center;color:#bbb;font-size:10px;">📷<br>'+slot.label+'</div></div>';
       }
     });
   } else {
-    // 見積書：入庫時4枚（前後左右）
     for(var pi=0;pi<4;pi++){
       if(pi<incomingPhotos.length){
         photoGrid += '<div style="position:relative;">'
@@ -4253,14 +4251,104 @@ function renderPreview(){
           +'<div style="position:absolute;bottom:3px;left:3px;background:rgba(0,0,0,0.6);color:white;font-size:9px;padding:1px 5px;border-radius:2px;">'+photoLabels[pi]+'</div>'
           +'</div>';
       } else {
-        var emptyLabel = photoLabels[pi]||'';
-        photoGrid += '<div style="aspect-ratio:4/3;border:1.5px dashed #ccc;border-radius:3px;display:flex;align-items:center;justify-content:center;">'
-          +'<div style="font-size:9px;color:#bbb;text-align:center;">'+emptyLabel+'</div></div>';
+        photoGrid += '<div style="aspect-ratio:3/2;border:1.5px dashed #ccc;border-radius:3px;display:flex;align-items:center;justify-content:center;background:#f9f9f9;">'
+          +'<div style="text-align:center;color:#bbb;font-size:10px;">📷<br>'+photoLabels[pi]+'</div></div>';
       }
     }
   }
 
-  // サイン欄（見積書：入力可、請求書：入庫時サイン表示のみ）
+  // レンタカー情報
+  var rentalInfo = '';
+  if(customer.rentalCarId||customer.rentalDays){
+    rentalInfo = '貸出車両：'+(customer.rentalCarId||'')+'　'+(customer.rentalDays?customer.rentalDays+'日':'')+(customer.rentalBilling?'　請求：'+customer.rentalBilling:'');
+  }
+
+  // チェックボックス
+  function chk(val){ return val?'■':'□'; }
+
+  var page1 = '<div class="ep ep-wrap" style="width:100%;max-width:794px;margin:0 auto;box-sizing:border-box;font-family:\'Helvetica Neue\',Arial,\'Hiragino Kaku Gothic ProN\',\'Meiryo\',sans-serif;font-size:10px;">'
+
+    // ヘッダー
+    +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">'
+    +'<div style="font-size:9px;line-height:1.8;color:#666;">有限会社フォーラムオート<br>〒437-0123 静岡県袋井市下山梨545<br>TEL: 0538-49-0632</div>'
+    +'<div style="font-size:17px;font-weight:bold;letter-spacing:3px;color:#1a3a6b;">'+(estMode==='invoice'?'請　求　書':'修理受付確認書')+'</div>'
+    +'<div style="text-align:right;font-size:9px;line-height:2;color:#555;">'
+    +'<div>'+(estMode==='invoice'?'請求日':'受付日')+'：'+(customer.date||'')+'</div>'
+    +'<div>No：'+no+'</div>'
+    +'</div>'
+    +'</div>'
+
+    // 顧客名＋金額
+    +'<div style="display:flex;gap:10px;margin-bottom:8px;">'
+    +'<div style="flex:1;border:1px solid #aaa;padding:10px 12px;">'
+    +'<div style="font-size:9px;color:#777;margin-bottom:2px;">お客様</div>'
+    +'<div style="font-size:17px;font-weight:bold;color:#111;">'+(customer.name||'　　　　　　')+'　'+(customer.honorific||'様')+'</div>'
+    +(customer.tel?'<div style="font-size:9.5px;color:#555;margin-top:2px;">TEL: '+customer.tel+'</div>':'')
+    +'</div>'
+    +'<div class="ep-amount-bar" style="min-width:200px;background:#1a3a6b;padding:14px 16px;display:flex;flex-direction:column;justify-content:center;align-items:center;-webkit-print-color-adjust:exact;print-color-adjust:exact;">'
+    +'<div style="font-size:9px;color:#b0c4de;font-weight:500;margin-bottom:2px;">'+(estMode==='invoice'?'御請求金額（税込）':'御見積金額（税込）')+'</div>'
+    +(function(){
+      var discType2 = customer.discountType||'loss';
+      var disc2 = parseFloat(customer.discount)||0;
+      // サービス値引き かつ 請求書モードのときだけ値引き後を表示
+      var dispAmt = (disc2>0 && discType2==='service' && estMode==='invoice') ? (total - disc2) : total;
+      return '<div style="font-size:26px;font-weight:900;color:white;letter-spacing:1px;">¥'+Math.floor(dispAmt).toLocaleString()+'</div>';
+    })()
+    +'</div>'
+    +'</div>'
+
+    // 車両情報＋損傷依頼（横並び）
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">'
+
+    +'<div style="border:1px solid #bbb;">'
+    +'<div style="font-size:9.5px;font-weight:bold;background:#1a3a6b;color:white;padding:4px 8px;-webkit-print-color-adjust:exact;print-color-adjust:exact;">車両情報</div>'
+    +'<table style="width:100%;border-collapse:collapse;">'
+    +'<tr><td style="color:#666;padding:6px 8px;width:58px;white-space:nowrap;border-bottom:0.5px solid #eee;font-size:9.5px;">車　　種</td><td style="padding:6px 8px;font-weight:600;border-bottom:0.5px solid #eee;font-size:10px;color:#222;">'+(customer.car||'')+'</td></tr>'
+    +'<tr><td style="color:#666;padding:3.5px 7px;border-bottom:0.5px solid #eee;font-size:9.5px;">ナンバー</td><td style="padding:6px 8px;font-weight:600;border-bottom:0.5px solid #eee;font-size:10px;color:#222;">'+(customer.plate||'')+'</td></tr>'
+    +'<tr><td style="color:#666;padding:3.5px 7px;border-bottom:0.5px solid #eee;font-size:9.5px;">車　　色</td><td style="padding:6px 8px;border-bottom:0.5px solid #eee;font-size:10px;color:#333;">'+(customer.color||'')+(customer.colorCode?' ['+customer.colorCode+']':'')+'</td></tr>'
+    +'<tr><td style="color:#666;padding:3.5px 7px;border-bottom:0.5px solid #eee;font-size:9.5px;">走行距離</td><td style="padding:6px 8px;border-bottom:0.5px solid #eee;font-size:10px;color:#333;">'+(customer.mileage?customer.mileage+' km':'')+'</td></tr>'
+    +'<tr><td style="color:#666;padding:3.5px 7px;border-bottom:0.5px solid #eee;font-size:9.5px;">修理区分</td><td style="padding:6px 8px;border-bottom:0.5px solid #eee;font-size:10px;font-weight:600;color:#222;">'+(customer.repairType==='own'?'自費修理':'保険修理')+'</td></tr>'
+    +(customer.insCompany?'<tr><td style="color:#666;padding:3.5px 7px;border-bottom:0.5px solid #eee;font-size:9.5px;">保険会社</td><td style="padding:6px 8px;border-bottom:0.5px solid #eee;font-size:10px;color:#333;">'+customer.insCompany+'</td></tr>':'')
+    +(customer.ajCompany?'<tr><td style="color:#666;padding:3.5px 7px;border-bottom:0.5px solid #eee;font-size:9.5px;">AJ会社</td><td style="padding:6px 8px;border-bottom:0.5px solid #eee;font-size:10px;color:#333;">'+customer.ajCompany+'</td></tr>':'')
+    +(customer.ajStaff?'<tr><td style="color:#666;padding:3.5px 7px;border-bottom:0.5px solid #eee;font-size:9.5px;">AJ担当</td><td style="padding:6px 8px;border-bottom:0.5px solid #eee;font-size:10px;color:#333;">'+customer.ajStaff+'</td></tr>':'')
+    +(customer.deductible?'<tr><td style="color:#666;padding:3.5px 7px;border-bottom:0.5px solid #eee;font-size:9.5px;">免責金額</td><td style="padding:6px 8px;border-bottom:0.5px solid #eee;font-size:10px;color:#333;">¥'+parseInt(customer.deductible).toLocaleString()+'</td></tr>':'')
+    +'</table></div>'
+
+    +'<div style="border:1px solid #bbb;">'
+    +'<div style="font-size:9.5px;font-weight:bold;background:#1a3a6b;color:white;padding:4px 8px;-webkit-print-color-adjust:exact;print-color-adjust:exact;">損傷状況・作業依頼内容</div>'
+    +'<div style="padding:7px;">'
+    +'<div class="no-print">'
+    +'<textarea rows="7" style="width:100%;font-size:10px;border:1px solid #ddd;border-radius:3px;padding:4px;resize:none;box-sizing:border-box;" placeholder="損傷箇所・作業依頼内容を入力..." oninput="customer.estNote=this.value">'+(customer.estNote||'').replace(/</g,'&lt;')+'</textarea>'
+    +'</div>'
+    +'<div class="print-only" style="font-size:9.5px;min-height:90px;white-space:pre-wrap;line-height:1.9;color:#333;">'+(customer.estNote||'')+'</div>'
+    +'<div style="margin-top:4px;font-size:9px;color:#777;border-top:0.5px solid #eee;padding-top:4px;">塗膜：'+(pc4?pc4.film:'')+'　塗料：'+(pc4?pc4.paint:'')+'　クリヤー：'+(pc4?pc4.clear:'')+'</div>'
+    +'</div>'
+    +'</div>'
+    +'</div>'
+
+    // 確認チェック
+    +'<div style="border:1px solid #bbb;margin-bottom:14px;">'
+    +'<div style="font-size:9.5px;font-weight:bold;background:#37474f;color:white;padding:4px 8px;-webkit-print-color-adjust:exact;print-color-adjust:exact;">ご確認事項</div>'
+    +'<div style="padding:10px 10px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">'
+    +'<div style="font-size:10px;padding:6px 8px;border:0.5px solid #ddd;border-radius:2px;color:#333;">'+chk(true)+' 修理内容の説明</div>'
+    +'<div style="font-size:10px;padding:6px 8px;border:0.5px solid #ddd;border-radius:2px;color:#333;">'+chk(true)+' 見積金額の確認</div>'
+    +'<div style="font-size:10px;padding:6px 8px;border:0.5px solid #ddd;border-radius:2px;color:#333;">'+chk(customer.repairType!=='own')+' 保険手続きの説明</div>'
+    +'<div style="font-size:10px;padding:6px 8px;border:0.5px solid #ddd;border-radius:2px;color:#333;">'+chk(!!customer.rentalCarId)+' 代車の確認</div>'
+    +'<div style="font-size:10px;padding:6px 8px;border:0.5px solid #ddd;border-radius:2px;color:#333;">'+chk(true)+' 追加作業時の連絡</div>'
+    +'<div style="font-size:10px;padding:6px 8px;border:0.5px solid #ddd;border-radius:2px;color:#333;">'+chk(true)+' 納期のご説明</div>'
+    +'</div>'
+    +(rentalInfo?'<div style="margin:0 8px 6px;font-size:9.5px;color:#1565c0;padding:3px 8px;background:#e3f2fd;border-radius:3px;">代車：'+rentalInfo+'</div>':'')
+    +'</div>'
+
+    // 入庫写真4枚
+    +'<div style="margin-bottom:8px;">'
+    +'<div style="font-size:9.5px;font-weight:bold;background:#37474f;color:white;padding:4px 8px;margin-bottom:6px;-webkit-print-color-adjust:exact;print-color-adjust:exact;">入庫時写真（前・後・左・右）</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">'
+    +photoGrid
+    +'</div>'
+    +'</div>'
+
+    // サイン欄（見積書：入力可、請求書：入庫時サイン表示のみ）
     +(estMode==='invoice' ? buildSignSectionInvoice() : buildSignSection());
   // ========== 見積書2枚目：明細 ==========
   var page2 = '<div class="ep-page-break" style="font-family:\'Helvetica Neue\',Arial,\'Hiragino Kaku Gothic ProN\',\'Meiryo\',sans-serif;padding:6mm 8mm;box-sizing:border-box;">'
@@ -4531,7 +4619,6 @@ function renderPreview(){
 
     +'</div>'; // /page3
 
-  // 請求書：1枚目＋明細のみ（invoicePhotoPageは使わない→1枚目に組み込み済み）
   return ctrlBar + page1 + page2 + (estMode==='invoice'?'':page3);
 }
 
