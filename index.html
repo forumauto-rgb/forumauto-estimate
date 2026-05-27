@@ -2338,7 +2338,7 @@ function rearView(ox,oy){
     g+=partRect('aori_l',  ox+3,   oy+50,  14, 80, 3, 'アオリ左', 5);
     g+=partRect('aori_r',  ox+163, oy+50,  14, 80, 3, 'アオリ右', 5);
     g+=partRect('aori_b',  ox+22,  oy+148,136, 10, 2, '後アオリ', 6);
-    g+=partRect('荷台',    ox+22,  oy+52,  136, 90, 2, '荷　台',  8);
+    g+=partRect('truck_bed', ox+22, oy+52, 136, 90, 2, '荷　台', 8);
   }
   return g;
 }
@@ -3212,8 +3212,10 @@ function getBP(){
     bp.aori_l={p:['左アオリ']};
     bp.aori_r={p:['右アオリ']};
     bp.aori_b={p:['後アオリ']};
-    bp.荷台={p:['荷台']};
+    bp.truck_bed={p:['荷台']};
     // センターピラー（Bピラーアウター）
+    bp.cpillar_l = {p:['センターピラー左']};
+    bp.cpillar_r = {p:['センターピラー右']};
     if(bp.door_fl) bp.door_fl.p = bp.door_fl.p.concat(['センターピラー左']);
     if(bp.door_fr) bp.door_fr.p = bp.door_fr.p.concat(['センターピラー右']);
     delete bp.door_rl; delete bp.door_rr;
