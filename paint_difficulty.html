@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>塗装難色・注意情報 AIアシスト｜フォーラムオート</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
+  :root {
+    --gold: #c9a227;
+    --gold-light: #e8c547;
+    --bg: #0f172a;
+    --bg2: #1e293b;
+    --bg3: #0a0f1e;
+    --red: #e74c3c;
+    --orange: #e67e22;
+    --purple: #8e44ad;
+    --green: #27ae60;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --dim: #64748b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* ヘッダー */
+  .header {
+    background: linear-gradient(135deg, #1a2540, var(--bg3));
+    border-bottom: 2px solid var(--gold);
+    padding: 14px 16px 10px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header h1 { font-size: 17px; color: var(--gold); font-weight: 900; letter-spacing: 0.5px; }
+  .header p { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* タブ */
+  .tabs {
+    display: flex;
+    background: var(--bg2);
+    border-bottom: 1px solid #334155;
+    position: sticky; top: 64px; z-index: 99;
+  }
+  .tab-btn {
+    flex: 1; padding: 11px 4px; background: transparent;
+    border: none; border-bottom: 3px solid transparent;
+    color: var(--muted); cursor: pointer; font-size: 12px;
+    font-weight: 700; font-family: 'Noto Sans JP', sans-serif;
+    transition: all 0.2s;
+  }
+  .tab-btn.active {
+    color: var(--gold);
+    border-bottom-color: var(--gold);
+    background: var(--bg3);
+  }
+
+  /* メインコンテンツ */
+  .content { padding: 14px 14px 40px; }
+  .pane { display: none; }
+  .pane.active { display: block; }
+
+  /* 検索 */
+  .search-box {
+    background: var(--bg2);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  .search-label { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .search-row { display: flex; gap: 8px; }
+  .search-input {
+    flex: 1; padding: 12px 14px;
+    background: var(--bg3); border: 1px solid #334155;
+    border-radius: 8px; color: var(--text);
+    font-size: 16px; font-family: 'Noto Sans JP', sans-serif;
+    outline: none; transition: border 0.2s;
+    text-transform: uppercase;
+  }
+  .search-input:focus { border-color: var(--gold); }
+  .search-btn {
+    background: var(--gold); color: #000;
+    border: none; border-radius: 8px;
+    padding: 12px 18px; font-weight: 900;
+    cursor: pointer; font-size: 14px;
+    font-family: 'Noto Sans JP', sans-serif;
+    transition: background 0.2s;
+  }
+  .search-btn:hover { background: var(--gold-light); }
+
+  /* クイックボタン */
+  .quick-title { font-size: 12px; color: var(--gold); font-weight: 700; margin-bottom: 8px; }
+  .quick-btns { display: flex; flex-wrap: wrap; gap: 7px; }
+  .quick-btn {
+    background: var(--bg3);
+    border: 1px solid #334155;
+    border-radius: 6px; padding: 6px 10px;
+    cursor: pointer; font-size: 12px;
+    font-family: 'Noto Sans JP', sans-serif;
+    color: var(--text); transition: all 0.2s;
+  }
+  .quick-btn:hover { border-color: var(--gold); }
+  .quick-code { font-weight: 700; }
+
+  /* 結果カード */
+  .result-card {
+    background: var(--bg2);
+    border-radius: 12px; padding: 14px;
+    margin-top: 14px;
+    border-left: 4px solid var(--gold);
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+  .result-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .result-code { font-size: 26px; font-weight: 900; color: var(--gold); }
+  .result-maker { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .result-name { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
+  .result-type { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+
+  .badge {
+    border-radius: 6px; padding: 4px 10px;
+    font-size: 11px; font-weight: 700;
+    white-space: nowrap; color: #fff;
+    display: inline-block;
+  }
+
+  .info-block {
+    background: var(--bg3);
+    border-radius: 8px; padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .info-block-title {
+    font-size: 10px; font-weight: 700;
+    margin-bottom: 6px; letter-spacing: 0.5px;
+  }
+  .surcharge-value { font-size: 18px; font-weight: 900; color: var(--gold-light); }
+
+  .warn-item {
+    font-size: 12px; padding: 5px 0;
+    border-bottom: 1px solid #1e293b;
+    display: flex; gap: 6px; line-height: 1.5;
+  }
+  .warn-item:last-child { border-bottom: none; }
+  .warn-arrow { color: var(--red); flex-shrink: 0; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+
+  .ai-btn {
+    width: 100%; margin-top: 10px;
+    background: linear-gradient(135deg, #1a3a5c, #0f172a);
+    border: 1px solid var(--gold);
+    color: var(--gold); border-radius: 8px;
+    padding: 13px; font-weight: 700;
+    cursor: pointer; font-size: 14px;
+    font-family: 'Noto Sans JP', sans-serif;
+    transition: all 0.2s;
+  }
+  .ai-btn:hover { background: linear-gradient(135deg, #1e4a7a, #1e293b); }
+  .ai-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* 未登録 */
+  .not-found {
+    background: var(--bg2); border-radius: 12px;
+    padding: 28px; text-align: center; margin-top: 14px;
+  }
+  .not-found-icon { font-size: 36px; margin-bottom: 10px; }
+
+  /* 一覧 */
+  .filter-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .filter-btn {
+    padding: 6px 12px; border-radius: 6px;
+    border: 1px solid #334155;
+    background: var(--bg2); color: var(--muted);
+    cursor: pointer; font-size: 12px; font-weight: 700;
+    font-family: 'Noto Sans JP', sans-serif;
+    transition: all 0.2s;
+  }
+  .filter-btn.active { background: var(--gold); color: #000; border-color: var(--gold); }
+
+  .list-item {
+    background: var(--bg2); border-radius: 10px;
+    padding: 11px 12px; margin-bottom: 8px;
+    cursor: pointer; transition: all 0.2s;
+    border-left: 4px solid #334155;
+  }
+  .list-item:hover { transform: translateX(3px); }
+  .list-item-top { display: flex; justify-content: space-between; align-items: center; }
+  .list-code { color: var(--gold); font-weight: 700; font-size: 15px; margin-right: 8px; }
+  .list-name { font-size: 13px; }
+  .list-sub { font-size: 11px; color: var(--dim); margin-top: 4px; }
+
+  /* AI */
+  .ai-result {
+    background: var(--bg2); border-radius: 12px; padding: 16px;
+    animation: fadeIn 0.3s ease;
+  }
+  .ai-result-title { font-size: 13px; color: var(--gold); font-weight: 700; margin-bottom: 12px; }
+  .ai-result-body {
+    font-size: 13px; line-height: 1.85;
+    white-space: pre-wrap; color: var(--text);
+  }
+  .ai-placeholder {
+    background: var(--bg2); border-radius: 12px;
+    padding: 32px; text-align: center;
+  }
+  .ai-placeholder-icon { font-size: 40px; margin-bottom: 12px; }
+  .ai-loading {
+    background: var(--bg2); border-radius: 12px;
+    padding: 32px; text-align: center;
+  }
+  .spinner {
+    width: 36px; height: 36px;
+    border: 3px solid #334155;
+    border-top-color: var(--gold);
+    border-radius: 50%; margin: 0 auto 12px;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* 戻るボタン */
+  .back-btn {
+    background: transparent; border: 1px solid #334155;
+    color: var(--muted); border-radius: 6px;
+    padding: 6px 12px; cursor: pointer;
+    font-size: 12px; margin-bottom: 12px;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🎨 塗装難色・注意情報 AIアシスト</h1>
+  <p>フォーラムオート｜見積り・施工前チェック専用ツール</p>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="showTab('search')">🔍 コード検索</button>
+  <button class="tab-btn" onclick="showTab('list')">📋 難色一覧</button>
+  <button class="tab-btn" onclick="showTab('ai')">🤖 AIアドバイス</button>
+</div>
+
+<div class="content">
+
+  <!-- 検索タブ -->
+  <div id="pane-search" class="pane active">
+    <div class="search-box">
+      <div class="search-label">カラーコードを入力（例：46V、070、QAB）</div>
+      <div class="search-row">
+        <input id="searchInput" class="search-input" type="text" placeholder="コード入力" maxlength="8"
+          onkeydown="if(event.key==='Enter') doSearch()" oninput="this.value=this.value.toUpperCase()">
+        <button class="search-btn" onclick="doSearch()">検索</button>
+      </div>
+    </div>
+
+    <div id="quickArea">
+      <div class="quick-title">よく使う難色（タップで即検索）</div>
+      <div class="quick-btns" id="quickBtns"></div>
+    </div>
+
+    <div id="resultArea"></div>
+  </div>
+
+  <!-- 一覧タブ -->
+  <div id="pane-list" class="pane">
+    <div class="filter-row" id="filterRow">
+      <button class="filter-btn active" onclick="filterList('all',this)">全て</button>
+      <button class="filter-btn" onclick="filterList('超難色',this)">🔴 超難色</button>
+      <button class="filter-btn" onclick="filterList('難色',this)">🟠 難色</button>
+      <button class="filter-btn" onclick="filterList('黒ずみ',this)">🟣 黒ずみ注意</button>
+    </div>
+    <div id="listArea"></div>
+  </div>
+
+  <!-- AIタブ -->
+  <div id="pane-ai" class="pane">
+    <div id="aiArea">
+      <div class="ai-placeholder">
+        <div class="ai-placeholder-icon">🤖</div>
+        <div style="color:var(--muted);font-size:14px">
+          検索タブでカラーを検索し<br>「AIが詳細アドバイスを生成する」<br>ボタンを押してください
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// データベース
+// ============================================================
+const DB = {
+  "46V": {
+    maker:"マツダ", name:"ソウルレッドクリスタルメタリック",
+    level:"超難色", lc:"#c0392b", surcharge:"50〜80%割増",
+    type:"カラークリヤー系（3コート）",
+    warns:[
+      "色付きクリヤーの塗り回数で濃度が変わる。2回と3回では全く別物",
+      "正面・左右は合っても上下方向（透かし）で合わないケースが頻発",
+      "ボカシ不可。必ずブロック塗装で対応",
+      "旧型41Vとは別の専用塗料が必要。絶対に流用しないこと"
+    ],
+    proc:"カラーベース → カラークリヤー ×3回 → クリヤー",
+    pigment:"高（色付きクリヤー専用品）",
+    note:"板金職人難易度ランキング全国1位"
+  },
+  "41V": {
+    maker:"マツダ", name:"ソウルレッドプレミアムメタリック",
+    level:"超難色", lc:"#c0392b", surcharge:"40〜70%割増",
+    type:"カラークリヤー系（3コート）",
+    warns:[
+      "現行46Vとは専用塗料が異なる。混用厳禁",
+      "キャンディ系の中では比較的単純だが依然として高難度",
+      "調色が迷宮入りしやすい。試し吹き必須"
+    ],
+    proc:"カラーベース → カラークリヤー → クリヤー",
+    pigment:"高",
+    note:"旧ソウルレッド。現行46Vより若干易しいが要注意"
+  },
+  "46G": {
+    maker:"マツダ", name:"マシーングレープレミアムメタリック",
+    level:"超難色", lc:"#c0392b", surcharge:"50〜80%割増",
+    type:"特殊メタリック（3ステージ）",
+    warns:[
+      "見た目メタリックだが実はパールと同じ3ステージ構造",
+      "メタリックベースを300〜400%希釈して3〜4回極薄塗りが必須",
+      "通常塗装の倍以上の時間がかかる",
+      "リアドアなど小パネルで先行テスト塗装（捨て吹き）を必ず実施"
+    ],
+    proc:"カラーベース → 超希釈メタリックベース ×3〜4回 → クリヤー",
+    pigment:"高",
+    note:"ソウルレッドと並ぶ最高難度"
+  },
+  "083": {
+    maker:"トヨタ/レクサス", name:"ホワイトノーヴァガラスフレーク",
+    level:"超難色", lc:"#c0392b", surcharge:"40〜60%割増",
+    type:"ガラスフレーク系（3コート）",
+    warns:[
+      "ガラス微粒子使用で調色が極めて複雑。通常のアルミフレークと別物",
+      "専用塗料の入手コストが高く塗料単価が非常に高額",
+      "レクサス専用色。調色データが少なく経験のない場合は外注推奨",
+      "研磨時にガラス粒子が露出するとツヤが崩れる"
+    ],
+    proc:"ベースコート → ガラスフレークパール → クリヤー",
+    pigment:"非常に高（ガラスフレーク原料）",
+    note:"レクサスFスポーツ専用。市販補修塗料は3コートセットで高額"
+  },
+  "8X8": {
+    maker:"トヨタ/レクサス", name:"グラファイトブラックガラスフレーク",
+    level:"超難色", lc:"#c0392b", surcharge:"40〜60%割増",
+    type:"ガラスフレーク系（ブラック）",
+    warns:[
+      "ガラスフレーク黒系。漆黒に微細な輝きがあり調色が難しい",
+      "パール粒子の向きが仕上がりに大きく影響する",
+      "研磨でガラスフレークが露出するとツヤが崩れる"
+    ],
+    proc:"ダークベース → ガラスフレーク → クリヤー",
+    pigment:"非常に高",
+    note:"レクサス専用ガラスフレークブラック"
+  },
+  "3U5": {
+    maker:"トヨタ/レクサス", name:"ルビーフレアパールメタリック",
+    level:"難色", lc:"#e67e22", surcharge:"30〜50%割増",
+    type:"カラークリヤー系（キャンディ赤系）",
+    warns:[
+      "キャンディ赤系。塗り回数で色が変わるためボカシ不可",
+      "マツダ41Vに近い構造。ブロック塗装が基本",
+      "特別色のため塗料コストが高い"
+    ],
+    proc:"カラーベース → カラークリヤー → クリヤー",
+    pigment:"高",
+    note:"ハリアー等採用。トヨタ系キャンディ赤の代表格"
+  },
+  "070": {
+    maker:"トヨタ/スバル/ダイハツ共通", name:"ホワイトパールクリスタルシャイン",
+    level:"難色", lc:"#e67e22", surcharge:"15〜25%割増",
+    type:"3コートパール",
+    warns:[
+      "採用車種が非常に多く油断されがちだが3コートの難色",
+      "パール層の膜厚管理が重要。薄すぎると黄色みが出る",
+      "バンパーとボディで色ズレが出やすい"
+    ],
+    proc:"ホワイトベース → パールベース → クリヤー",
+    pigment:"中",
+    note:"国産最多採用3コートパール"
+  },
+  "QAB": {
+    maker:"日産/スズキ共通", name:"ブリリアントホワイトパール（3P）",
+    level:"難色", lc:"#e67e22", surcharge:"20〜40%割増",
+    type:"3コートパール",
+    warns:[
+      "GT-R等に採用。3コートのため工程が多い",
+      "パール層の塗り量で白さが変わる。均一塗布が命",
+      "透かし方向での色調整に注意"
+    ],
+    proc:"ホワイトベース → パールベース → クリヤー",
+    pigment:"中〜高",
+    note:"GT-Rのアイデンティティカラー"
+  },
+  "KAB": {
+    maker:"日産", name:"ブリリアントホワイトパール（旧型）",
+    level:"難色", lc:"#e67e22", surcharge:"20〜35%割増",
+    type:"3コートパール",
+    warns:[
+      "QABの旧型。現行QABとは調色データが異なる",
+      "旧型車の場合は年式を確認してコードを区別すること"
+    ],
+    proc:"ホワイトベース → パールベース → クリヤー",
+    pigment:"中〜高",
+    note:"旧型GT-R等。現行QABと混同注意"
+  },
+  "61K": {
+    maker:"スバル", name:"クリスタルホワイトパール",
+    level:"難色", lc:"#e67e22", surcharge:"15〜25%割増",
+    type:"3コートパール",
+    warns:[
+      "スバルのホワイトパール代表色。3コートのため工程が多い",
+      "パール層の均一塗布が重要"
+    ],
+    proc:"ホワイトベース → パールベース → クリヤー",
+    pigment:"中",
+    note:"インプレッサ・XV・フォレスター等に多数採用"
+  },
+  "X11": {
+    maker:"ダイハツ/トヨタ共通", name:"シャンパンゴールドメタリック",
+    level:"注意色（黒ずみ）", lc:"#8e44ad", surcharge:"10〜20%割増",
+    type:"メタリック（ベージュ・ゴールド系）",
+    warns:[
+      "【黒ずみ注意】アルミ粒子の向きが乱れるとボカシ際が黒暗くなる",
+      "ベージュ・ゴールド系は黒ずみが最も目立ちやすい色域",
+      "ガン距離・吐出量を一定に保ちアルミ粒子の寝かし方を統一",
+      "ウェット気味に塗りすぎると粒子が沈んで黒ずむ"
+    ],
+    proc:"メタリックベース → クリヤー",
+    pigment:"低〜中",
+    note:"ムーヴ・タント等に多い。ボカシ際の黒ずみが頻発する代表色"
+  },
+  "T29": {
+    maker:"ダイハツ", name:"ライトローズマイカメタリックII",
+    level:"注意色（黒ずみ）", lc:"#8e44ad", surcharge:"10〜20%割増",
+    type:"マイカメタリック（ピンク・ベージュ系）",
+    warns:[
+      "【黒ずみ注意】マイカ（雲母）粒子の量・深度で見え方が変わる",
+      "ピンク系は透かし方向での色ズレが特に顕著",
+      "ボカシ際は十分広くとること"
+    ],
+    proc:"マイカメタリックベース → クリヤー",
+    pigment:"中",
+    note:"ダイハツ系ピンク・ベージュマイカ。軽自動車で多数採用"
+  },
+  "T27": {
+    maker:"ダイハツ", name:"パウダリーベージュメタリック",
+    level:"注意色（黒ずみ）", lc:"#8e44ad", surcharge:"10〜20%割増",
+    type:"メタリック（ベージュ系）",
+    warns:[
+      "【黒ずみ注意】ソフトなベージュのためボカシ際の色変化が目立ちやすい",
+      "エアブラシ圧が高すぎると粒子が起きて青白く見える",
+      "低圧・近距離すぎると粒子が寝て黒ずむ"
+    ],
+    proc:"メタリックベース → クリヤー",
+    pigment:"低〜中",
+    note:"タント・キャンバス等。軟調ベージュ系のボカシ際要注意"
+  },
+  "T28": {
+    maker:"ダイハツ/トヨタ共通", name:"トープグレーメタリック",
+    level:"注意色（黒ずみ）", lc:"#8e44ad", surcharge:"10〜20%割増",
+    type:"メタリック（グレー系）",
+    warns:[
+      "【黒ずみ注意】グレー系は黒ずみが最も確認しやすい色域",
+      "ボカシ際に濃淡差が出やすい。フェザーエッジを丁寧に"
+    ],
+    proc:"メタリックベース → クリヤー",
+    pigment:"低〜中",
+    note:"グレー系メタリックの黒ずみ典型例"
+  },
+  "ZVR": {
+    maker:"スズキ", name:"スチールシルバーメタリック",
+    level:"注意色（黒ずみ）", lc:"#8e44ad", surcharge:"10〜20%割増",
+    type:"メタリック（シルバー系）",
+    warns:[
+      "【黒ずみ注意】シルバー系はボカシ際の黒ずみが最も確認しやすい",
+      "アルミ粒子の向きが不揃いになると黒っぽく沈んで見える",
+      "透かし角度15°・45°での確認を必ず行うこと"
+    ],
+    proc:"シルバーメタリックベース → クリヤー",
+    pigment:"低〜中",
+    note:"スズキ系シルバー。黒ずみの教科書的な代表色"
+  },
+  "D4S": {
+    maker:"スバル", name:"アイスシルバーメタリック",
+    level:"注意色（黒ずみ）", lc:"#8e44ad", surcharge:"10〜20%割増",
+    type:"メタリック（シルバー系）",
+    warns:[
+      "【黒ずみ注意】青白い輝きが特徴で粒子の向きに非常に敏感",
+      "ガン角度を一定に保ちドライ気味に仕上げることで黒ずみを防ぐ"
+    ],
+    proc:"シルバーメタリックベース → クリヤー",
+    pigment:"中",
+    note:"スバル系アイスシルバー。レガシィ・フォレスター等"
+  },
+  "NH731P": {
+    maker:"ホンダ", name:"クリスタルブラックパール",
+    level:"注意色", lc:"#8e44ad", surcharge:"10〜20%割増",
+    type:"ブラックパール",
+    warns:[
+      "ブラック系パールは傷・磨きムラが最も目立つ",
+      "ボカシ際の研磨でパール粒子が露出しやすい",
+      "高品質仕上げには全パネル磨き込みを推奨"
+    ],
+    proc:"ブラックベース → パール → クリヤー",
+    pigment:"中",
+    note:"ホンダ最多採用黒パール。ステップワゴン・ヴェゼル等"
+  }
+};
+
+const LEVEL_ORDER = {"超難色":0,"難色":1,"注意色（黒ずみ）":2,"注意色":3};
+
+// ============================================================
+// 初期化
+// ============================================================
+window.onload = function() {
+  // クイックボタン生成
+  const quickCodes = ["46V","46G","41V","083","070","QAB","X11","T29"];
+  const qb = document.getElementById('quickBtns');
+  quickCodes.forEach(code => {
+    const d = DB[code];
+    if(!d) return;
+    const btn = document.createElement('button');
+    btn.className = 'quick-btn';
+    btn.innerHTML = '<span class="quick-code" style="color:' + d.lc + '">' + code + '</span>'
+      + '<span style="color:var(--dim);margin-left:5px">' + d.name.substring(0,8) + '</span>';
+    btn.onclick = () => { document.getElementById('searchInput').value = code; doSearch(); };
+    qb.appendChild(btn);
+  });
+
+  // 一覧生成
+  renderList('all');
+};
+
+// ============================================================
+// タブ切替
+// ============================================================
+function showTab(name) {
+  document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('pane-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ============================================================
+// 検索
+// ============================================================
+function doSearch() {
+  const code = document.getElementById('searchInput').value.trim().toUpperCase();
+  const area = document.getElementById('resultArea');
+  const quick = document.getElementById('quickArea');
+  if(!code) return;
+
+  const d = DB[code];
+  if(!d) {
+    quick.style.display = 'none';
+    area.innerHTML = '<div class="not-found"><div class="not-found-icon">🔍</div>'
+      + '<div style="color:var(--muted);font-size:14px">「' + code + '」はデータベースに未登録です</div>'
+      + '<div style="color:var(--dim);font-size:12px;margin-top:8px">一覧タブで全登録色を確認、<br>またはAIアドバイスタブで相談できます</div>'
+      + '<button class="back-btn" style="margin-top:14px" onclick="clearSearch()">← 戻る</button></div>';
+    return;
+  }
+
+  quick.style.display = 'none';
+
+  const pigColor = d.pigment.includes('非常に高') ? '#e74c3c' : d.pigment.includes('高') ? '#e67e22' : 'var(--text)';
+
+  let warnsHtml = d.warns.map(w =>
+    '<div class="warn-item"><span class="warn-arrow">▶</span><span>' + w + '</span></div>'
+  ).join('');
+
+  area.innerHTML = `
+    <button class="back-btn" onclick="clearSearch()">← 戻る</button>
+    <div class="result-card" style="border-left-color:${d.lc}">
+      <div class="result-top">
+        <div>
+          <div class="result-code">${code}</div>
+          <div class="result-maker">${d.maker}</div>
+        </div>
+        <span class="badge" style="background:${d.lc}">${d.level}</span>
+      </div>
+      <div class="result-name">${d.name}</div>
+      <div class="result-type">${d.type}</div>
+
+      <div class="info-block">
+        <div class="info-block-title" style="color:var(--gold)">💴 見積り割増目安</div>
+        <div class="surcharge-value">${d.surcharge}</div>
+      </div>
+
+      <div class="info-block">
+        <div class="info-block-title" style="color:var(--red)">⚠️ 塗装注意事項</div>
+        ${warnsHtml}
+      </div>
+
+      <div class="grid2">
+        <div class="info-block" style="margin-bottom:0">
+          <div class="info-block-title" style="color:var(--muted)">塗装工程</div>
+          <div style="font-size:11px;margin-top:4px;line-height:1.6">${d.proc}</div>
+        </div>
+        <div class="info-block" style="margin-bottom:0">
+          <div class="info-block-title" style="color:var(--muted)">顔料コスト</div>
+          <div style="font-size:13px;font-weight:700;margin-top:4px;color:${pigColor}">${d.pigment}</div>
+        </div>
+      </div>
+
+      ${d.note ? '<div class="info-block" style="margin-top:8px"><div class="info-block-title" style="color:var(--muted)">補足メモ</div><div style="font-size:12px;margin-top:4px">' + d.note + '</div></div>' : ''}
+
+      <button class="ai-btn" onclick="requestAI('${code}')">🤖 AIが詳細アドバイスを生成する</button>
+    </div>`;
+}
+
+function clearSearch() {
+  document.getElementById('resultArea').innerHTML = '';
+  document.getElementById('searchInput').value = '';
+  document.getElementById('quickArea').style.display = '';
+}
+
+// ============================================================
+// 一覧
+// ============================================================
+let currentFilter = 'all';
+function renderList(filter) {
+  currentFilter = filter;
+  const area = document.getElementById('listArea');
+  area.innerHTML = '';
+  const entries = Object.entries(DB)
+    .filter(([,v]) => filter === 'all' || v.level.includes(filter))
+    .sort(([,a],[,b]) => (LEVEL_ORDER[a.level]??9) - (LEVEL_ORDER[b.level]??9));
+
+  entries.forEach(([code, d]) => {
+    const el = document.createElement('div');
+    el.className = 'list-item';
+    el.style.borderLeftColor = d.lc;
+    el.innerHTML = `
+      <div class="list-item-top">
+        <div><span class="list-code">${code}</span><span class="list-name">${d.name}</span></div>
+        <span class="badge" style="background:${d.lc};font-size:10px">${d.level}</span>
+      </div>
+      <div class="list-sub">${d.maker} ／ 割増：${d.surcharge}</div>`;
+    el.onclick = () => {
+      document.getElementById('searchInput').value = code;
+      showTabDirect('search');
+      doSearch();
+    };
+    area.appendChild(el);
+  });
+}
+
+function filterList(filter, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderList(filter);
+}
+
+function showTabDirect(name) {
+  document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('pane-' + name).classList.add('active');
+  document.querySelectorAll('.tab-btn')[0].classList.add('active');
+}
+
+// ============================================================
+// AI アドバイス
+// ============================================================
+async function requestAI(code) {
+  const d = DB[code];
+  if(!d) return;
+
+  // AIタブに切り替え
+  document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('pane-ai').classList.add('active');
+  document.querySelectorAll('.tab-btn')[2].classList.add('active');
+
+  document.getElementById('aiArea').innerHTML = `
+    <div class="ai-loading">
+      <div class="spinner"></div>
+      <div style="color:var(--gold)">AIが詳細アドバイスを生成中...</div>
+      <div style="color:var(--muted);font-size:12px;margin-top:6px">${code}：${d.name}</div>
+    </div>`;
+
+  const prompt = `あなたはフォーラムオート（静岡県袋井市）の57年の経験を持つベテラン板金塗装職人AIアシスタントです。
+以下のカラーについて、見積り担当者・塗装職人向けに実践的なアドバイスを日本語で出力してください。
+
+【カラー情報】
+メーカー：${d.maker}
+カラーコード：${code}
+色名：${d.name}
+難易度：${d.level}
+塗装工程：${d.proc}
+主な注意点：${d.warns.join('、')}
+
+以下の4項目を見出し付きで記述してください：
+1. 見積り時のポイント（割増理由の説明方法）
+2. 塗装前の準備・確認事項
+3. 施工中の最大注意点
+4. 保険会社・お客様への説明トーク例（1〜2文）`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = (data.content || []).map(b => b.text || '').join('') || '取得できませんでした';
+    document.getElementById('aiArea').innerHTML = `
+      <div class="ai-result">
+        <div class="ai-result-title">🤖 AI詳細アドバイス ／ ${code}：${d.name}</div>
+        <div class="ai-result-body">${text}</div>
+      </div>`;
+  } catch(e) {
+    document.getElementById('aiArea').innerHTML = `
+      <div class="ai-result">
+        <div class="ai-result-title" style="color:var(--red)">⚠️ エラー</div>
+        <div style="font-size:13px;color:var(--muted)">AIアドバイスの取得に失敗しました。<br>ネットワークを確認してください。</div>
+      </div>`;
+  }
+}
+</script>
+</body>
+</html>
