@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>フォーラムオート｜ご相談窓口</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+:root {
+  --bg: #f5f0eb;
+  --white: #ffffff;
+  --primary: #c0392b;
+  --primary-light: #e74c3c;
+  --dark: #2c2c2c;
+  --mid: #666;
+  --light: #999;
+  --border: #e0d8d0;
+  --bubble-staff: #ffffff;
+  --bubble-user: #fff3e0;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--dark);
+  min-height: 100vh;
+  font-size: 15px;
+}
+
+/* ===== トップ選択画面 ===== */
+#topScreen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  background: linear-gradient(160deg, #fff8f5 0%, #f5f0eb 100%);
+}
+.logo-area { text-align: center; margin-bottom: 32px; }
+.logo-fa {
+  width: 64px; height: 64px; background: var(--primary);
+  border-radius: 14px; display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 12px;
+  font-size: 26px; font-weight: 900; color: white; letter-spacing: -1px;
+}
+.logo-name { font-size: 18px; font-weight: 700; color: var(--dark); }
+.logo-sub { font-size: 12px; color: var(--light); margin-top: 3px; }
+
+.top-title { font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 8px; line-height: 1.4; }
+.top-sub { font-size: 13px; color: var(--mid); text-align: center; margin-bottom: 36px; line-height: 1.7; }
+
+.mode-cards { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 14px; }
+.mode-card {
+  background: var(--white);
+  border-radius: 18px;
+  padding: 22px 20px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+  display: flex; align-items: center; gap: 16px;
+}
+.mode-card:active { transform: scale(0.98); border-color: var(--primary); }
+.mode-icon {
+  width: 54px; height: 54px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; flex-shrink: 0;
+}
+.mode-icon.saki { background: #fff0f0; }
+.mode-icon.takashi { background: #f0f4ff; }
+.mode-card-text h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+.mode-card-text p { font-size: 12px; color: var(--mid); line-height: 1.5; }
+.mode-badge {
+  font-size: 10px; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; margin-left: 6px; vertical-align: middle;
+}
+.badge-a { background: #fff0f0; color: var(--primary); }
+.badge-b { background: #f0f4ff; color: #3a5bd9; }
+
+.top-footer { margin-top: 32px; text-align: center; }
+.tel-link {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--white); border-radius: 50px; padding: 12px 24px;
+  box-shadow: var(--shadow); color: var(--dark); text-decoration: none;
+  font-weight: 700; font-size: 16px;
+}
+.tel-link span { font-size: 20px; }
+.top-note { font-size: 11px; color: var(--light); margin-top: 10px; }
+
+/* ===== チャット共通 ===== */
+#chatScreen { display: none; flex-direction: column; height: 100vh; }
+
+.chat-header {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+  display: flex; align-items: center; gap: 12px;
+  position: sticky; top: 0; z-index: 10;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+}
+.back-btn {
+  background: none; border: none; font-size: 22px;
+  cursor: pointer; padding: 4px; color: var(--mid);
+}
+.staff-avatar {
+  width: 42px; height: 42px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+}
+.staff-avatar.saki { background: #fff0f0; }
+.staff-avatar.takashi { background: #f0f4ff; }
+.staff-info h4 { font-size: 15px; font-weight: 700; }
+.staff-info p { font-size: 11px; color: var(--light); }
+.online-dot {
+  width: 8px; height: 8px; background: #2ecc71;
+  border-radius: 50%; margin-left: auto; flex-shrink: 0;
+}
+
+.chat-messages {
+  flex: 1; overflow-y: auto;
+  padding: 16px 14px 20px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+
+/* バブル */
+.msg-row { display: flex; align-items: flex-end; gap: 8px; }
+.msg-row.user { flex-direction: row-reverse; }
+.msg-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.msg-avatar.saki { background: #fff0f0; }
+.msg-avatar.takashi { background: #f0f4ff; }
+
+.bubble {
+  max-width: 78%; padding: 12px 15px;
+  border-radius: 18px; font-size: 14px; line-height: 1.7;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+}
+.bubble.staff {
+  background: var(--bubble-staff);
+  border-bottom-left-radius: 4px;
+}
+.bubble.user {
+  background: var(--bubble-user);
+  border-bottom-right-radius: 4px;
+  color: var(--dark);
+}
+.bubble-time { font-size: 10px; color: var(--light); margin-top: 3px; padding: 0 4px; }
+
+/* 選択肢ボタン */
+.choices {
+  display: flex; flex-direction: column; gap: 8px;
+  margin-top: 6px; padding-left: 42px;
+}
+.choice-btn {
+  background: var(--white); border: 1.5px solid var(--border);
+  border-radius: 50px; padding: 11px 18px;
+  font-size: 14px; font-family: 'Noto Sans JP', sans-serif;
+  cursor: pointer; text-align: left;
+  transition: all 0.15s; color: var(--dark);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.choice-btn:active { background: #fff0f0; border-color: var(--primary); color: var(--primary); }
+.choice-btn.selected { background: #fff0f0; border-color: var(--primary); color: var(--primary); pointer-events: none; }
+
+/* タイピング */
+.typing { display: flex; align-items: center; gap: 4px; padding: 12px 15px; }
+.dot { width: 7px; height: 7px; background: var(--light); border-radius: 50%; animation: bounce 1.2s infinite; }
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+/* 入力欄（Bモード） */
+.chat-input-area {
+  background: var(--white);
+  border-top: 1px solid var(--border);
+  padding: 10px 14px;
+  display: flex; gap: 8px; align-items: flex-end;
+}
+.chat-input {
+  flex: 1; border: 1.5px solid var(--border);
+  border-radius: 22px; padding: 10px 16px;
+  font-size: 14px; font-family: 'Noto Sans JP', sans-serif;
+  outline: none; resize: none; max-height: 100px;
+  line-height: 1.5; color: var(--dark);
+}
+.chat-input:focus { border-color: var(--primary); }
+.send-btn {
+  width: 42px; height: 42px; background: var(--primary);
+  border: none; border-radius: 50%; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0; transition: background 0.2s;
+}
+.send-btn:active { background: var(--primary-light); }
+.voice-btn {
+  width: 42px; height: 42px; background: #f0f4ff;
+  border: 1.5px solid #c5d0f5; border-radius: 50%; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+
+/* CTAボタン */
+.cta-block {
+  background: #fff8f0; border: 1.5px solid #f0d0b0;
+  border-radius: 14px; padding: 16px; margin-top: 4px;
+}
+.cta-block p { font-size: 13px; color: var(--mid); margin-bottom: 12px; line-height: 1.6; }
+.cta-tel {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--primary); color: white; border-radius: 50px;
+  padding: 13px; font-weight: 700; font-size: 16px;
+  text-decoration: none; margin-bottom: 8px;
+}
+.cta-line {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: #06c755; color: white; border-radius: 50px;
+  padding: 11px; font-weight: 700; font-size: 14px;
+  text-decoration: none;
+}
+</style>
+</head>
+<body>
+
+<!-- ===== トップ画面 ===== -->
+<div id="topScreen">
+  <div class="logo-area">
+    <div class="logo-fa">FA</div>
+    <div class="logo-name">フォーラムオート</div>
+    <div class="logo-sub">袋井市下山梨545｜鈑金塗装専門店</div>
+  </div>
+
+  <div class="top-title">お気軽にご相談ください😊</div>
+  <div class="top-sub">
+    車のキズ・へこみ・事故修理など<br>
+    どんな小さなことでもお聞きします
+  </div>
+
+  <div class="mode-cards">
+    <div class="mode-card" onclick="startMode('A')">
+      <div class="mode-icon saki">👩</div>
+      <div class="mode-card-text">
+        <h3>サキに相談する <span class="mode-badge badge-a">選択式</span></h3>
+        <p>選択肢をタップするだけで簡単に相談できます。まず状況を教えてください。</p>
+      </div>
+    </div>
+    <div class="mode-card" onclick="startMode('B')">
+      <div class="mode-icon takashi">👨</div>
+      <div class="mode-card-text">
+        <h3>タカシさんに相談 <span class="mode-badge badge-b">会話式</span></h3>
+        <p>ベテランスタッフのタカシさんが音声と文字でご対応します。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="top-footer">
+    <a href="tel:0538-49-0632" class="tel-link">
+      <span>📞</span> 0538-49-0632
+    </a>
+    <div class="top-note">営業時間 8:30〜18:00（日祝休）</div>
+  </div>
+</div>
+
+<!-- ===== チャット画面 ===== -->
+<div id="chatScreen">
+  <div class="chat-header">
+    <button class="back-btn" onclick="goTop()">←</button>
+    <div class="staff-avatar" id="headerAvatar"></div>
+    <div class="staff-info">
+      <h4 id="headerName"></h4>
+      <p id="headerSub"></p>
+    </div>
+    <div class="online-dot"></div>
+  </div>
+
+  <div class="chat-messages" id="chatMessages"></div>
+
+  <div class="chat-input-area" id="inputArea" style="display:none">
+    <textarea class="chat-input" id="chatInput" placeholder="メッセージを入力..." rows="1"
+      oninput="autoResize(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"></textarea>
+    <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()" title="音声ON/OFF">🔊</button>
+    <button class="send-btn" onclick="sendMsg()">➤</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// 設定
+// ============================================================
+const ELEVENLABS_API_KEY = 'ee89c81a338891b8d030a3e17c55ca5ee594f235b17399cb9fa85553d42d3b0c';
+const TAKASHI_VOICE_ID = '8FuuqoKHuM48hIEwni5e';
+const TEL = '0538-49-0632';
+
+let currentMode = '';
+let voiceEnabled = true;
+let stepA = 0;
+let convHistory = [];
+
+// ============================================================
+// 画面切り替え
+// ============================================================
+function startMode(mode) {
+  currentMode = mode;
+  document.getElementById('topScreen').style.display = 'none';
+  const cs = document.getElementById('chatScreen');
+  cs.style.display = 'flex';
+
+  if(mode === 'A') {
+    document.getElementById('headerAvatar').className = 'staff-avatar saki';
+    document.getElementById('headerAvatar').textContent = '👩';
+    document.getElementById('headerName').textContent = 'サキ（受付）';
+    document.getElementById('headerSub').textContent = '選択式でご案内します';
+    document.getElementById('inputArea').style.display = 'none';
+    stepA = 0;
+    startChatA();
+  } else {
+    document.getElementById('headerAvatar').className = 'staff-avatar takashi';
+    document.getElementById('headerAvatar').textContent = '👨';
+    document.getElementById('headerName').textContent = 'タカシ（スタッフ）';
+    document.getElementById('headerSub').textContent = '音声＋文字でご対応します';
+    document.getElementById('inputArea').style.display = 'flex';
+    startChatB();
+  }
+}
+
+function goTop() {
+  document.getElementById('chatScreen').style.display = 'none';
+  document.getElementById('topScreen').style.display = 'flex';
+  document.getElementById('chatMessages').innerHTML = '';
+  convHistory = [];
+  stepA = 0;
+}
+
+// ============================================================
+// 共通：メッセージ追加
+// ============================================================
+function getTime() {
+  const d = new Date();
+  return d.getHours() + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+
+function addStaffMsg(text, avatarClass, avatarIcon) {
+  const box = document.getElementById('chatMessages');
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+  row.innerHTML = `
+    <div class="msg-avatar ${avatarClass}">${avatarIcon}</div>
+    <div>
+      <div class="bubble staff">${text}</div>
+      <div class="bubble-time">${getTime()}</div>
+    </div>`;
+  box.appendChild(row);
+  scrollBottom();
+}
+
+function addUserMsg(text) {
+  const box = document.getElementById('chatMessages');
+  const row = document.createElement('div');
+  row.className = 'msg-row user';
+  row.innerHTML = `
+    <div>
+      <div class="bubble user">${text}</div>
+      <div class="bubble-time" style="text-align:right">${getTime()}</div>
+    </div>`;
+  box.appendChild(row);
+  scrollBottom();
+}
+
+function addChoices(items, callback) {
+  const box = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'choices';
+  div.id = 'choices-' + Date.now();
+  items.forEach(item => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = item;
+    btn.onclick = () => {
+      div.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+      btn.classList.add('selected');
+      addUserMsg(item);
+      setTimeout(() => callback(item), 400);
+    };
+    div.appendChild(btn);
+  });
+  box.appendChild(div);
+  scrollBottom();
+}
+
+function addTyping(avatarClass, avatarIcon) {
+  const box = document.getElementById('chatMessages');
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+  row.id = 'typing';
+  row.innerHTML = `
+    <div class="msg-avatar ${avatarClass}">${avatarIcon}</div>
+    <div class="bubble staff typing">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>`;
+  box.appendChild(row);
+  scrollBottom();
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing');
+  if(t) t.remove();
+}
+
+function addCTA() {
+  const box = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.style.paddingLeft = '42px';
+  div.innerHTML = `
+    <div class="cta-block">
+      <p>📍 静岡県袋井市下山梨545<br>まずはお電話またはお気軽にお立ち寄りください😊</p>
+      <a href="tel:${TEL}" class="cta-tel">📞 ${TEL}に電話する</a>
+      <a href="https://line.me/ti/g/dUCBJhxCE-" class="cta-line">💬 LINEで写真を送る</a>
+    </div>`;
+  box.appendChild(div);
+  scrollBottom();
+}
+
+function scrollBottom() {
+  const box = document.getElementById('chatMessages');
+  setTimeout(() => box.scrollTop = box.scrollHeight, 100);
+}
+
+// ============================================================
+// ElevenLabs 音声
+// ============================================================
+async function speak(text) {
+  if(!voiceEnabled) return;
+  try {
+    const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + TAKASHI_VOICE_ID, {
+      method: 'POST',
+      headers: {
+        'xi-api-key': ELEVENLABS_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        text: text,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: { stability: 0.6, similarity_boost: 0.8 }
+      })
+    });
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.play();
+  } catch(e) { console.log('音声エラー:', e); }
+}
+
+function toggleVoice() {
+  voiceEnabled = !voiceEnabled;
+  document.getElementById('voiceBtn').textContent = voiceEnabled ? '🔊' : '🔇';
+}
+
+// ============================================================
+// Aモード（サキ・選択式）
+// ============================================================
+const SAKI_AV = 'saki';
+const SAKI_IC = '👩';
+
+function staffMsgA(text) { addStaffMsg(text, SAKI_AV, SAKI_IC); }
+
+function startChatA() {
+  setTimeout(() => {
+    staffMsgA('こんにちは😊 フォーラムオートのサキです。\nお車のことで気になることがあれば、お気軽にどうぞ！');
+    setTimeout(() => {
+      staffMsgA('まず、今日はどういったことでお困りですか？');
+      addChoices([
+        '🚗 車をぶつけてしまった',
+        '🔍 キズやへこみに気づいた',
+        '🚙 当て逃げされた・事故にあった',
+        '💰 修理費用だけ知りたい',
+        '🛡️ 保険で直せるか聞きたい',
+        '📅 修理の予約がしたい',
+        '❓ その他・相談したい'
+      ], handleA_Q1);
+    }, 800);
+  }, 500);
+}
+
+function handleA_Q1(ans) {
+  addTyping(SAKI_AV, SAKI_IC);
+  setTimeout(() => {
+    removeTyping();
+    if(ans.includes('ぶつけて')) {
+      staffMsgA('それは心配でしたね💦\nどのあたりをぶつけてしまいましたか？');
+      addChoices(['ドア','バンパー（前）','バンパー（後ろ）','フェンダー','ボンネット','トランク','ルーフ（屋根）','サイドミラー','ホイール・タイヤ','複数箇所・よく分からない'], handleA_Q2_part);
+    } else if(ans.includes('キズ')) {
+      staffMsgA('いつ気づかれましたか？\n原因が分からなくても大丈夫ですよ😊');
+      addChoices(['今日気づいた','数日前から気になっていた','いつからか分からない'], (a) => {
+        addTyping(SAKI_AV, SAKI_IC);
+        setTimeout(() => {
+          removeTyping();
+          staffMsgA('そうでしたか。キズの場所はどのあたりですか？');
+          addChoices(['ドア','バンパー','ボンネット','フェンダー','その他・複数箇所'], handleA_Q2_part);
+        }, 800);
+      });
+    } else if(ans.includes('当て逃げ') || ans.includes('事故')) {
+      staffMsgA('それは大変でしたね😢\n警察への届け出はもうされましたか？\n（保険請求のために必要になります）');
+      addChoices(['はい、届け出しました','まだしていない','どうすればいいか分からない'], handleA_accident);
+    } else if(ans.includes('費用')) {
+      staffMsgA('もちろんです！\nまずどの部分のお見積りをご希望ですか？');
+      addChoices(['バンパー','ドア','フェンダー','ボンネット','複数箇所','まず写真を見てほしい'], handleA_Q2_part);
+    } else if(ans.includes('保険')) {
+      staffMsgA('保険のご相談ですね👍\n車両保険には入っていますか？');
+      addChoices(['入っている','入っていない','よく分からない・確認中'], handleA_insurance);
+    } else if(ans.includes('予約')) {
+      staffMsgA('ありがとうございます😊\nご来店のご予約ですね。\nお電話またはLINEでご連絡ください！\n\n丁寧に仕上げるため、混み合っている時期は\n少しお待ちいただくこともありますが\nまずご相談ください🙏');
+      addCTA();
+    } else {
+      staffMsgA('どんなことでも遠慮なく聞かせてください😊\n内容をもう少し教えてもらえますか？');
+      addChoices(['キズ・へこみの修理','保険の手続きについて','費用の目安を知りたい','その他'], handleA_Q1);
+    }
+  }, 900);
+}
+
+function handleA_Q2_part(ans) {
+  addTyping(SAKI_AV, SAKI_IC);
+  setTimeout(() => {
+    removeTyping();
+    staffMsgA('ありがとうございます。\n傷の状態はどんな感じですか？');
+    addChoices([
+      '塗装がこすれた・薄いキズ',
+      'へこみがある',
+      '深いキズ・塗装が剥がれた',
+      '割れている・穴があいた',
+      'よく分からない'
+    ], handleA_Q3);
+  }, 900);
+}
+
+function handleA_Q3(ans) {
+  addTyping(SAKI_AV, SAKI_IC);
+  setTimeout(() => {
+    removeTyping();
+    if(ans.includes('こすれ') || ans.includes('薄い')) {
+      staffMsgA('軽いキズでも早めにご対応されることをおすすめします😊\nそのままにしておくとサビが出ることもありますので。');
+    } else if(ans.includes('へこみ')) {
+      staffMsgA('へこみがあるんですね。\n大きさや場所によって修理方法が変わりますので\nまず実際に見せていただくのが一番です👍');
+    } else if(ans.includes('割れ') || ans.includes('穴')) {
+      staffMsgA('それはお早めに対応が必要ですね💦\nパーツ交換になる場合もありますが\nご安心ください、丁寧にご説明します。');
+    } else {
+      staffMsgA('分からなくて大丈夫ですよ😊\n実際に見てみないと分からないこともありますので\nお気軽にお持ち込みください。');
+    }
+    setTimeout(() => {
+      staffMsgA('保険はお使いになりますか？');
+      addChoices(['保険で直したい','自費で直したい','どちらか迷っている','保険が使えるか知りたい'], handleA_Q4);
+    }, 800);
+  }, 900);
+}
+
+function handleA_Q4(ans) {
+  addTyping(SAKI_AV, SAKI_IC);
+  setTimeout(() => {
+    removeTyping();
+    if(ans.includes('保険で') || ans.includes('使えるか')) {
+      staffMsgA('最近は塗料や部品の価格がかなり上がっています📈\n自費だと思ったより高くなることも多いので\n保険が使えるケースは積極的にご活用されることを\nおすすめしています😊\n\n保険の手続きもサポートしますので\nお気軽にご相談ください！');
+    } else if(ans.includes('自費')) {
+      staffMsgA('承知しました。\nできる限りお客様のご予算に合わせて\nご提案させていただきます😊\n\n当社は一台一台丁寧に仕上げますので\n少しお時間をいただくことがありますが\nその分きれいに仕上げます🙏');
+    } else {
+      staffMsgA('迷われている場合はまず一度ご相談ください😊\n状況をお聞きしてから最適な方法をご提案します。\n\nちなみに車両保険に加入されていると\nほぼ自己負担なしで直せることが多いです。\nまだの方は次回の更新時にご検討されることを\nおすすめしますよ👍');
+    }
+    setTimeout(() => {
+      staffMsgA('お急ぎの状況はいかがですか？');
+      addChoices(['すぐ直したい','1週間以内に','急いでいない・まず相談だけ','代車が必要かも'], handleA_Q5);
+    }, 1000);
+  }, 900);
+}
+
+function handleA_Q5(ans) {
+  addTyping(SAKI_AV, SAKI_IC);
+  setTimeout(() => {
+    removeTyping();
+    if(ans.includes('すぐ') || ans.includes('1週間')) {
+      staffMsgA('承知しました！\n混み合っている場合は予約をお願いすることも\nありますが、まずお電話でご確認ください😊\n\nお電話の際に状況をお伝えいただけると\nスムーズにご対応できます👍');
+    } else if(ans.includes('代車')) {
+      staffMsgA('代車のご用意もできますよ😊\n（状況によりますので、まずご確認ください）');
+    } else {
+      staffMsgA('ゆっくりご検討いただいて大丈夫ですよ😊\nいつでもお気軽にどうぞ！');
+    }
+    setTimeout(() => {
+      staffMsgA('ご相談内容を確認できました。\nお気軽にご連絡・ご来店ください😊\n写真をLINEで送っていただくだけでも\n概算をお伝えできますよ📷');
+      addCTA();
+    }, 800);
+  }, 900);
+}
+
+function handleA_accident(ans) {
+  addTyping(SAKI_AV, SAKI_IC);
+  setTimeout(() => {
+    removeTyping();
+    if(ans.includes('まだ') || ans.includes('どうすれば')) {
+      staffMsgA('まず警察（110番）に連絡して\n「物損事故」として届け出をしてください🙏\n\nこの届け出がないと保険が使えないことがあります。\n当店でも手続きのサポートができますので\nお気軽にご相談ください。');
+    } else {
+      staffMsgA('届け出済みなら安心ですね👍\n保険会社への連絡はもうされましたか？\n当店は保険修理のサポートも承っています😊');
+    }
+    setTimeout(() => {
+      staffMsgA('まずはお車を見せていただくのが一番です。\nお電話またはLINEでご連絡ください！');
+      addCTA();
+    }, 800);
+  }, 900);
+}
+
+function handleA_insurance(ans) {
+  addTyping(SAKI_AV, SAKI_IC);
+  setTimeout(() => {
+    removeTyping();
+    if(ans.includes('入っている')) {
+      staffMsgA('車両保険があれば、ほぼ自己負担なしで\n修理できるケースが多いです😊\n\n等級への影響が心配な場合も含めて\n一緒に確認しますのでお気軽に！');
+    } else if(ans.includes('入っていない')) {
+      staffMsgA('そうでしたか。\n最近は修理費用が上がっていますので\n次回の保険更新の際には車両保険への\nご加入を検討されることをおすすめします😊\n\n今回は自費でのお見積りになりますが\nできる限りご予算に合わせてご提案します。');
+    } else {
+      staffMsgA('保険証券を確認いただくか\n保険会社にお電話していただくと分かります😊\n当店でも一緒に確認できますよ👍');
+    }
+    setTimeout(() => {
+      staffMsgA('まず一度お車をお持ち込みいただくか\nLINEで写真を送っていただけると\nスムーズにご対応できます📷');
+      addCTA();
+    }, 800);
+  }, 900);
+}
+
+// ============================================================
+// Bモード（タカシ・会話式）
+// ============================================================
+const TAKASHI_AV = 'takashi';
+const TAKASHI_IC = '👨';
+const CLAUDE_API = 'https://api.anthropic.com/v1/messages';
+
+const TAKASHI_SYSTEM = `あなたはフォーラムオート（静岡県袋井市下山梨545）のスタッフ「タカシ」です。
+40代の気さくなベテランスタッフで、お客様に親しみやすく温かく接します。
+
+【会社の特徴】
+- 1968年創業、57年の歴史ある家族経営の鈑金塗装専門店
+- 丁寧で高品質な仕上げ（時間をかけてきれいに仕上げる）
+- 混み合う時期は予約が必要なこともある
+- 電話番号：0538-49-0632
+
+【会話のルール】
+- タメ語は使わず、でも堅すぎない親しみやすいトーン
+- 「タカシです」「うちの店では」など自然な一人称を使う
+- 修理費用が高くなりがちな現状を自然に伝える（物価・人件費高騰）
+- 保険が使えるケースはさりげなく保険使用を勧める
+- 車両保険未加入の方には次回更新での加入を自然に勧める
+- 来店・電話・LINE写真送付に自然に誘導する
+- 1回の返答は4〜6文程度にまとめる
+- 絵文字を適度に使い親しみやすく
+- 最終的にお客様が安心して来店・連絡できるように誘導する
+
+【禁止事項】
+- 具体的な金額を言い切らない（「〜円程度」「お見積りしてみないと」など）
+- 競合他社の批判はしない`;
+
+async function startChatB() {
+  const openingMsg = 'こんにちは！フォーラムオートのタカシです😊\nお車のことで何かお困りでしたら\nなんでも気軽に聞いてくださいね。\nどうされましたか？';
+
+  addTyping(TAKASHI_AV, TAKASHI_IC);
+  await new Promise(r => setTimeout(r, 800));
+  removeTyping();
+  addStaffMsg(openingMsg, TAKASHI_AV, TAKASHI_IC);
+  if(voiceEnabled) speak(openingMsg);
+
+  convHistory = [{ role: 'assistant', content: openingMsg }];
+}
+
+async function sendMsg() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = '';
+  input.style.height = 'auto';
+
+  addUserMsg(text);
+  convHistory.push({ role: 'user', content: text });
+
+  addTyping(TAKASHI_AV, TAKASHI_IC);
+
+  try {
+    const res = await fetch(CLAUDE_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: TAKASHI_SYSTEM,
+        messages: convHistory
+      })
+    });
+    const data = await res.json();
+    const reply = (data.content || []).map(b => b.text || '').join('') || 'すみません、もう一度お願いできますか？';
+
+    removeTyping();
+    addStaffMsg(reply, TAKASHI_AV, TAKASHI_IC);
+    convHistory.push({ role: 'assistant', content: reply });
+
+    if(voiceEnabled) speak(reply);
+
+    // 5回以上の会話でCTAを表示
+    if(convHistory.length >= 10 && !document.querySelector('.cta-block')) {
+      setTimeout(() => addCTA(), 500);
+    }
+
+  } catch(e) {
+    removeTyping();
+    const errMsg = 'すみません、少し混み合っております😅\nお電話でご相談いただけると助かります！';
+    addStaffMsg(errMsg, TAKASHI_AV, TAKASHI_IC);
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+</script>
+</body>
+</html>
