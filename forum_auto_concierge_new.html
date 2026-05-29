@@ -291,7 +291,7 @@ body {
 // 設定
 // ============================================================
 const ELEVENLABS_API_KEY = 'ee89c81a338891b8d030a3e17c55ca5ee594f235b17399cb9fa85553d42d3b0c';
-const TAKASHI_VOICE_ID = '8FuuqoKHuM48hIEwni5e';
+const TAKASHI_VOICE_ID = 'LNzr3u01PIEDg0fRlvE7';
 const TEL = '0538-49-0632';
 
 let currentMode = '';
@@ -443,7 +443,13 @@ async function speak(text) {
       body: JSON.stringify({
         text: text,
         model_id: 'eleven_multilingual_v2',
-        voice_settings: { stability: 0.6, similarity_boost: 0.8 }
+        voice_settings: {
+          stability: 0.80,
+          similarity_boost: 0.80,
+          style: 0.15,
+          use_speaker_boost: true,
+          speed: 0.90
+        }
       })
     });
     const blob = await res.blob();
@@ -700,14 +706,9 @@ async function sendMsg() {
 
     if(voiceEnabled) speak(reply);
 
-    // 5回以上の会話でCTAを表示
-    if(convHistory.length >= 10 && !document.querySelector('.cta-block')) {
-      setTimeout(() => addCTA(), 500);
-    }
-
   } catch(e) {
     removeTyping();
-    const errMsg = 'すみません、少し混み合っております😅\nお電話でご相談いただけると助かります！';
+    const errMsg = 'すみません、うまく聞き取れなかったようです😅\nもう一度お願いできますか？';
     addStaffMsg(errMsg, TAKASHI_AV, TAKASHI_IC);
   }
 }
