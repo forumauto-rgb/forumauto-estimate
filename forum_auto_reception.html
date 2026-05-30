@@ -170,6 +170,7 @@ textarea { resize: vertical; min-height: 80px; }
     <button class="tab-btn" onclick="switchTab('rental',this)">🚗 レンタカー貸出</button>
     <button class="tab-btn" onclick="switchTab('cases',this)">📁 案件一覧</button>
     <button class="tab-btn" onclick="switchTab('map',this)">📍 現場マップ</button>
+    <button class="tab-btn" onclick="switchTab('master',this)">🚗 車両管理（レンタカー）</button>
   </div>
 </div>
 
@@ -431,7 +432,17 @@ textarea { resize: vertical; min-height: 80px; }
     </div>
   </div>
 
-  <!-- 案件一覧タブ -->
+  
+  <!-- 車両管理タブ -->
+  <div class="tab-content" id="tab-master" style="display:none">
+    <div class="card">
+      <div class="card-title"><div class="icon orange">🚗</div>車両管理（レンタカー）
+        <button onclick="showAddCarDialog()" style="margin-left:auto;background:#1a2744;color:white;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">＋ 車両追加</button>
+      </div>
+      <div id="masterCarList"><div style="text-align:center;padding:20px;color:#999;">タブを開くと読み込みます</div></div>
+    </div>
+  </div>
+<!-- 案件一覧タブ -->
   <div class="tab-content" id="tab-cases">
     <div class="card" style="padding:14px 16px;">
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
@@ -546,6 +557,7 @@ function switchTab(name, btn) {
     loadCases();
   }
   if (name === 'rental') loadRentalCars();
+  if (name === 'master') renderMasterCars();
   if (name === 'map') initMainMap();
 }
 
@@ -620,13 +632,17 @@ function lookupColorName(code) {
 // ★ レンタカー貸出中の詳細をSupabaseから取得
 async function loadRentalActiveInfo() {
   try {
-    // receptions から rental_car_id が設定されている貸出中レコードを取得
-    var rentals = await supabaseQuery('receptions','GET',null,
-      '?rental_needed=eq.true&type=neq.'+encodeURIComponent('レンタカー返却')+'&order=reception_datetime.desc&limit=50');
+    var all = await supabaseQuery('receptions','GET',null,'?rental_needed=eq.true&order=reception_datetime.desc&limit=200');
+    var returnedKeys = {};
+    (all||[]).forEach(function(r) {
+      if(r.type === 'レンタカー返却') { var k=r.rental_type||r.car_model||''; if(k) returnedKeys[k]=true; }
+    });
     rentalActiveMap = {};
-    (rentals||[]).forEach(function(r) {
-      var key = r.rental_type || r.car_model || '';
-      if (key && !rentalActiveMap[key]) rentalActiveMap[key] = r;
+    (all||[]).forEach(function(r) {
+      if(r.type !== 'レンタカー返却') {
+        var k=r.rental_type||r.car_model||'';
+        if(k && !returnedKeys[k] && !rentalActiveMap[k]) rentalActiveMap[k]=r;
+      }
     });
   } catch(e) { console.warn('レンタカー貸出情報取得失敗:', e); }
 }
@@ -683,34 +699,7 @@ function renderRentalCars(containerId, compact) {
     // ★ 貸出中クリック → 詳細ポップアップ
     var clickFn = available
       ? 'selectRentalCar(\'' + car.id + '\',this)'
-      : 'showRentalDetail(\'' + carName.replace(/'/g,"\\'") + '\',this)';
-    return '<div class="rental-car-card' + (!available?' unavailable':'') + '" onclick="'+clickFn+'" data-car-id="' + car.id + '" style="border:2px solid ' + borderColor + ';position:relative;cursor:pointer;">'
-      + '<div class="rental-car-icon">🚗</div>'
-      + '<div class="rental-car-name">' + carName + '</div>'
-      + '<div class="rental-car-num">' + (car['登録番号']||'') + '</div>'
-      + '<div class="rental-car-price">¥' + Number(car['金額']||0).toLocaleString() + '/日</div>'
-      + '<span class="rental-car-status" style="background:' + badgeBg + ';color:#fff;border-radius:12px;padding:2px 10px;font-size:11px;font-weight:700;">' + badgeText + '</span>'
-      + whoLine
-      + '</div>';
-  }).join('');
-}
-
-// ★ 貸出中クリック → 詳細ポップアップ表示
-function showRentalDetail(carName, cardEl) {
-  // 既存ポップアップを削除
-  document.querySelectorAll('.rental-popup').forEach(function(p){p.remove();});
-  var rec = rentalActiveMap[carName];
-  if (!rec) { showToast('貸出詳細が取得できません', 'error'); return; }
-  var dt = rec.reception_datetime ? new Date(rec.reception_datetime).toLocaleString('ja-JP',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-';
-  var popup = document.createElement('div');
-  popup.className = 'rental-popup';
-  popup.innerHTML = '<div class="pop-title">🚗 貸出中詳細</div>'
-    + '<div class="pop-row"><span class="pop-label">貸出先</span><span class="pop-val">'+(rec.customer_name||'-')+' 様</span></div>'
-    + '<div class="pop-row"><span class="pop-label">案件番号</span><span class="pop-val">'+(rec.note||'-')+'</span></div>'
-    + '<div class="pop-row"><span class="pop-label">貸出日時</span><span class="pop-val">'+dt+'</span></div>'
-    + '<div class="pop-row"><span class="pop-label">担当</span><span class="pop-val">'+(rec.staff||'-')+'</span></div>'
-    + '<div style="margin-top:8px;display:flex;gap:6px;">'
-    + '<button onclick="this.closest(\'.rental-popup\').remove()" style="flex:1;padding:5px;border:1px solid #ddd;border-radius:6px;background:white;cursor:pointer;font-size:11px;">閉じる</button>'
+      : 'showRentalDetail(\'' + carName.replace(/'/g,"\\'") + '\',this)';\n    return '<div class="rental-car-card' + (!available?' unavailable':'') + '" onclick="'+clickFn+'" data-car-id="' + car.id + '" style="border:2px solid ' + borderColor + ';position:relative;cursor:pointer;">'\n      + '<div class="rental-car-icon">🚗</div>'\n      + '<div class="rental-car-name">' + carName + '</div>'\n      + '<div class="rental-car-num">' + (car['登録番号']||'') + '</div>'\n      + '<div class="rental-car-price">¥' + Number(car['金額']||0).toLocaleString() + '/日</div>'\n      + '<span class="rental-car-status" style="background:' + badgeBg + ';color:#fff;border-radius:12px;padding:2px 10px;font-size:11px;font-weight:700;">' + badgeText + '</span>'\n      + whoLine\n      + '</div>';\n  }).join('');\n}\n\n// ★ 貸出中クリック → 詳細ポップアップ表示\nfunction showRentalDetail(carName, cardEl) {\n  // 既存ポップアップを削除\n  document.querySelectorAll('.rental-popup').forEach(function(p){p.remove();});\n  var rec = rentalActiveMap[carName];\n  if (!rec) { showToast('貸出詳細が取得できません', 'error'); return; }\n  var dt = rec.reception_datetime ? new Date(rec.reception_datetime).toLocaleString('ja-JP',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-';\n  var popup = document.createElement('div');\n  popup.className = 'rental-popup';\n  popup.innerHTML = '<div class="pop-title">🚗 貸出中詳細</div>'\n    + '<div class="pop-row"><span class="pop-label">貸出先</span><span class="pop-val">'+(rec.customer_name||'-')+' 様</span></div>'\n    + '<div class="pop-row"><span class="pop-label">案件番号</span><span class="pop-val">'+(rec.note||'-')+'</span></div>'\n    + '<div class="pop-row"><span class="pop-label">貸出日時</span><span class="pop-val">'+dt+'</span></div>'\n    + '<div class="pop-row"><span class="pop-label">担当</span><span class="pop-val">'+(rec.staff||'-')+'</span></div>'\n    + '<div style="margin-top:8px;display:flex;gap:6px;">'\n    + '<button onclick="this.closest(\'.rental-popup\').remove()" style="flex:1;padding:5px;border:1px solid #ddd;border-radius:6px;background:white;cursor:pointer;font-size:11px;">閉じる</button>'
     + '<button onclick="jumpToEstimate(\''+(rec.customer_name||'')+'\',\''+(rec.note||'')+'\');this.closest(\'.rental-popup\').remove();" style="flex:2;padding:5px;border:none;border-radius:6px;background:#1a2744;color:white;cursor:pointer;font-size:11px;font-weight:700;">📋 案件を開く</button>'
     + '</div>';
   cardEl.style.position = 'relative';
@@ -1214,51 +1203,7 @@ function renderRentalCaseList() {
     try{ checklist = JSON.parse(r.checklist||'{}'); }catch(e){}
     var returnDate = checklist.rentalEnd || '';
     var billing = checklist.billing ? '¥'+Number(checklist.billing).toLocaleString() : '';
-    var rJson = JSON.stringify(r).replace(/"/g,'&quot;');
-    return '<div class="case-item" style="border-left:4px solid #e8392a;margin-bottom:8px;cursor:pointer;" onclick=\'showCaseDetail('+rJson+')\'>'
-      + '<div class="case-item-icon icon-bg-red">🚗</div>'
-      + '<div class="case-item-body">'
-      + '<div class="case-item-name" style="color:#1a2744;font-weight:700;">'+(r.customer_name||'不明')+' 様</div>'
-      + '<div class="case-item-sub">貸出車両: <b>'+(r.rental_type||r.car_model||'-')+'</b>'+(billing?' / '+billing:'')+'</div>'
-      + '<div class="case-item-sub">貸出日: '+dt+' <span style="color:'+daysColor+';font-weight:700;">('+daysStr+')</span>'+(returnDate?' → 返却予定:'+returnDate:'')+'</div>'
-      + '<div class="case-item-sub" style="color:#888;">案件番号: '+(r.note||'-')+'</div>'
-      + '</div>'
-      + '<div class="case-item-right">'
-      + '<div class="case-item-num" style="color:#e8392a;font-weight:700;margin-bottom:6px;">貸出中</div>'
-      + '<button onclick="event.stopPropagation();showReturnDialog('+rJson+')" style="background:#1565c0;color:#fff;border:none;padding:6px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">🔄 返却</button>'
-      + '</div></div>';
-  }).join('');
-}
-
-function filterCaseList() {
-  var q=(document.getElementById('caseSearchName')||{}).value||'';
-  var filtered=q?allCasesCache.filter(function(c){return(c.customer_name||'').includes(q)||(c.car_model||'').includes(q)||(c.plate||'').includes(q);}):allCasesCache;
-  var countEl=document.getElementById('caseListCount');
-  if(countEl) countEl.textContent='（'+filtered.length+'件）';
-  renderCases(filtered);
-}
-
-function caseSearchClear() {
-  var d=document.getElementById('caseSearchDate');
-  var de=document.getElementById('caseSearchDateEnd');
-  var n=document.getElementById('caseSearchName');
-  if(d)d.value=''; if(de)de.value=''; if(n)n.value='';
-  // リセット時は本日に戻す
-  if(d) d.value=new Date().toISOString().split('T')[0];
-  loadCases();
-}
-
-function renderCases(cases) {
-  var el=document.getElementById('caseList');
-  if(!cases.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--text-light);">本日の案件はありません</div>';return;}
-  var typeIcons={'レッカー':'🚛','修理入庫':'🔧','板金塗装':'🎨','車検':'📋','その他':'📝','レンタカー貸出':'🚗'};
-  var statusBadge={'受付':'badge-new','作業中':'badge-progress','完了':'badge-done'};
-  el.innerHTML=cases.map(function(c){
-    var icon=typeIcons[c.type]||'📋';
-    var time=c.reception_datetime?new Date(c.reception_datetime).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}):'--:--';
-    var status=c.status||'受付';
-    var statusCls=statusBadge[status]||'badge-new';
-    var cJson=JSON.stringify(c).replace(/"/g,'&quot;');
+    var rJson = JSON.stringify(r).replace(/"/g,'&quot;');\n    return '<div class="case-item" style="border-left:4px solid #e8392a;margin-bottom:8px;cursor:pointer;" onclick=\'showCaseDetail('+rJson+')\'>'\n      + '<div class="case-item-icon icon-bg-red">🚗</div>'\n      + '<div class="case-item-body">'\n      + '<div class="case-item-name" style="color:#1a2744;font-weight:700;">'+(r.customer_name||'不明')+' 様</div>'\n      + '<div class="case-item-sub">貸出車両: <b>'+(r.rental_type||r.car_model||'-')+'</b>'+(billing?' / '+billing:'')+'</div>'\n      + '<div class="case-item-sub">貸出日: '+dt+' <span style="color:'+daysColor+';font-weight:700;">('+daysStr+')</span>'+(returnDate?' → 返却予定:'+returnDate:'')+'</div>'\n      + '<div class="case-item-sub" style="color:#888;">案件番号: '+(r.note||'-')+'</div>'\n      + '</div>'\n      + '<div class="case-item-right">'\n      + '<div class="case-item-num" style="color:#e8392a;font-weight:700;margin-bottom:6px;">貸出中</div>'\n      + '<button onclick="event.stopPropagation();showReturnDialog('+rJson+')" style="background:#1565c0;color:#fff;border:none;padding:6px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">🔄 返却</button>'\n      + '</div></div>';\n  }).join('');\n}\n\nfunction filterCaseList() {\n  var q=(document.getElementById('caseSearchName')||{}).value||'';\n  var filtered=q?allCasesCache.filter(function(c){return(c.customer_name||'').includes(q)||(c.car_model||'').includes(q)||(c.plate||'').includes(q);}):allCasesCache;\n  var countEl=document.getElementById('caseListCount');\n  if(countEl) countEl.textContent='（'+filtered.length+'件）';\n  renderCases(filtered);\n}\n\nfunction caseSearchClear() {\n  var d=document.getElementById('caseSearchDate');\n  var de=document.getElementById('caseSearchDateEnd');\n  var n=document.getElementById('caseSearchName');\n  if(d)d.value=''; if(de)de.value=''; if(n)n.value='';\n  // リセット時は本日に戻す\n  if(d) d.value=new Date().toISOString().split('T')[0];\n  loadCases();\n}\n\nfunction renderCases(cases) {\n  var el=document.getElementById('caseList');\n  if(!cases.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--text-light);">本日の案件はありません</div>';return;}\n  var typeIcons={'レッカー':'🚛','修理入庫':'🔧','板金塗装':'🎨','車検':'📋','その他':'📝','レンタカー貸出':'🚗'};\n  var statusBadge={'受付':'badge-new','作業中':'badge-progress','完了':'badge-done'};\n  el.innerHTML=cases.map(function(c){\n    var icon=typeIcons[c.type]||'📋';\n    var time=c.reception_datetime?new Date(c.reception_datetime).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}):'--:--';\n    var status=c.status||'受付';\n    var statusCls=statusBadge[status]||'badge-new';\n    var cJson=JSON.stringify(c).replace(/"/g,'&quot;');
     return '<div class="case-item" onclick="showCaseDetail('+cJson+')" style="cursor:pointer;">'
       +'<div class="case-item-icon icon-bg-'+(c.type==='レッカー'?'red':status==='完了'?'green':'blue')+'">'+icon+'</div>'
       +'<div class="case-item-body"><div class="case-item-name">'+(c.customer_name||'')+' <span class="badge '+statusCls+'">'+status+'</span></div>'
@@ -1287,240 +1232,13 @@ function showReturnDialog(c) {
     +'<input id="returnNote" type="text" placeholder="特記事項があれば入力" style="width:100%;padding:10px;border:1px solid #d8dde8;border-radius:8px;font-size:14px;box-sizing:border-box;"></div>'
     +'<div style="display:flex;gap:10px;">'
     +'<button onclick="closeReturnDialog()" style="flex:1;padding:12px;border:2px solid #d8dde8;border-radius:8px;background:white;cursor:pointer;font-size:13px;font-weight:700;color:#6b7a99;">キャンセル</button>'
-    +'<button onclick="saveReturn('+JSON.stringify(c).replace(/"/g,'&quot;')+')" style="flex:2;padding:12px;border:none;border-radius:8px;background:#1565c0;color:white;cursor:pointer;font-size:13px;font-weight:700;">✅ 返却確定</button>'
-    +'</div>';
-  overlay.appendChild(box);
-  document.body.appendChild(overlay);
-}
-
-function showCaseDetail(c) {
-  var overlay=document.createElement('div');
-  overlay.id='caseDetailDialog';
-  overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(26,39,68,0.6);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;';
-  overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
-  var dt=c.reception_datetime?new Date(c.reception_datetime).toLocaleString('ja-JP'):'-';
-  var box=document.createElement('div');
-  box.style.cssText='background:white;border-radius:16px;padding:24px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
-  var estUrl='index.html?name='+encodeURIComponent(c.customer_name||'')+'&car='+encodeURIComponent(c.car_model||'')+'&plate='+encodeURIComponent(c.plate||'')+'&phone='+encodeURIComponent(c.phone||'')+'&note='+encodeURIComponent(c.note||'')+'&type='+encodeURIComponent(c.type||'');
-  box.innerHTML='<div style="font-size:16px;font-weight:700;color:#1a2744;margin-bottom:4px;">📋 案件詳細</div>'
-    +'<div style="font-size:11px;color:#aaa;margin-bottom:14px;">受付日時: '+dt+'</div>'
-    +'<table style="width:100%;font-size:13px;border-collapse:collapse;">'
-    +'<tr><td style="padding:5px 0;color:#888;width:80px;">顧客名</td><td style="padding:5px 0;font-weight:600;">'+(c.customer_name||'-')+' 様</td></tr>'
-    +'<tr><td style="padding:5px 0;color:#888;">電話番号</td><td style="padding:5px 0;"><a href="tel:'+(c.phone||'')+'" style="color:#1565c0;">'+(c.phone||'-')+'</a></td></tr>'
-    +'<tr><td style="padding:5px 0;color:#888;">車名</td><td style="padding:5px 0;">'+(c.car_model||'-')+'</td></tr>'
-    +'<tr><td style="padding:5px 0;color:#888;">ナンバー</td><td style="padding:5px 0;">'+(c.plate||'-')+'</td></tr>'
-    +'<tr><td style="padding:5px 0;color:#888;">受付種別</td><td style="padding:5px 0;">'+(c.type||'-')+'</td></tr>'
-    +'<tr><td style="padding:5px 0;color:#888;">担当者</td><td style="padding:5px 0;">'+(c.staff||'-')+'</td></tr>'
-    +'<tr><td style="padding:5px 0;color:#888;">問診内容</td><td style="padding:5px 0;font-size:12px;color:#555;">'+(c.note||'-')+'</td></tr>'
-    +'</table>'
-    +'<div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;">'
-    +'<a href="'+estUrl+'" style="display:block;text-align:center;padding:12px;border-radius:8px;background:linear-gradient(135deg,#6a1b9a,#8e24aa);color:white;font-size:13px;font-weight:700;text-decoration:none;">💰 見積ソフトで開く</a>'
-    +'<button onclick="editCaseStatus(&quot;'+(c.id||'')+'&quot;)" style="padding:10px;border:1.5px solid #1a2744;border-radius:8px;background:white;color:#1a2744;font-size:13px;font-weight:700;cursor:pointer;">✏️ ステータス変更</button>'
-    +'<button onclick="closeCaseDetail()" style="padding:10px;border:none;border-radius:8px;background:#f0f2f5;color:#666;font-size:13px;cursor:pointer;">閉じる</button>'
-    +'</div>';
-  overlay.appendChild(box);
-  document.body.appendChild(overlay);
-}
-
-function addSymptom(text) {
-  var el=document.getElementById('symptoms'); if(!el)return;
-  if(el.value&&!el.value.endsWith('\n')) el.value+='\n';
-  el.value+=text; el.focus();
-}
-
-function closeCaseDetail() { var el=document.getElementById('caseDetailDialog'); if(el)el.remove(); }
-
-async function editCaseStatus(id) {
-  if(!id){alert('IDがありません');return;}
-  var newStatus=prompt('新しいステータスを入力してください：\n受付 / 作業中 / 完了','作業中');
-  if(!newStatus)return;
-  try {
-    var res=await fetch(SUPABASE_URL+'/rest/v1/receptions?id=eq.'+id,{
-      method:'PATCH',
-      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
-      body:JSON.stringify({status:newStatus})
-    });
-    if(res.ok){alert('✅ ステータスを「'+newStatus+'」に変更しました');closeCaseDetail();loadCases();}
-    else alert('⚠ 更新失敗 HTTP:'+res.status);
-  }catch(e){alert('エラー: '+e.message);}
-}
-
-function closeReturnDialog() { var el=document.getElementById('returnDialog'); if(el)el.remove(); }
-
-var returnProcessing = false;
-
-async function patchRentalStatus(car, status) {
-  var carId=car.id;
-  var plate=car['登録番号']||'';
-  var tbl=encodeURIComponent('レンタカーマスタ');
-  var body={};
-  body['現在の状況']=status;
-  var bodyStr=JSON.stringify(body);
-  var headers={'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation'};
-  var url1=SUPABASE_URL+'/rest/v1/'+tbl+'?id=eq.'+carId;
-  var res1=await fetch(url1,{method:'PATCH',headers:headers,body:bodyStr});
-  var text1=await res1.text();
-  var updated=false;
-  try{updated=JSON.parse(text1).length>0;}catch(e){}
-  if(!updated&&plate){
-    var url2=SUPABASE_URL+'/rest/v1/'+tbl+'?'+encodeURIComponent('登録番号')+'=eq.'+encodeURIComponent(plate);
-    var res2=await fetch(url2,{method:'PATCH',headers:headers,body:bodyStr});
-    var text2=await res2.text();
-    try{updated=JSON.parse(text2).length>0;}catch(e){}
-  }
-  return updated;
-}
-
-async function saveReturn(c) {
-  if(returnProcessing)return;
-  returnProcessing=true;
-  var km=document.getElementById('returnKm').value;
-  var returnDate=document.getElementById('returnDate').value;
-  var note=document.getElementById('returnNote').value;
-  showLoading('返却処理中...');
-  try {
-    await supabaseQuery('receptions','POST',{
-      type:'レンタカー返却',
-      customer_name:c.customer_name||'',phone:c.phone||'',
-      car_model:c.rental_type||c.car_model||'',rental_type:c.rental_type||'',
-      staff:c.staff||'',
-      note:(c.note||'')+(km?' 返却時'+km+'km':'')+(note?' '+note:''),
-      rental_needed:false,
-      reception_datetime:returnDate?new Date(returnDate).toISOString():new Date().toISOString()
-    });
-    var carName=c.rental_type||c.car_model||'';
-    var matchCar=rentalCars.find(function(rc){return (rc['車種']||rc['め']||'')===carName;});
-    if(matchCar){
-      await patchRentalStatus(matchCar,'空き');
-      matchCar['現在の状況']='空き';
-    } else {
-      var allCars=await supabaseQuery('レンタカーマスタ');
-      var found=(allCars||[]).find(function(rc){return (rc['車種']||rc['め']||'')===carName;});
-      if(found) await patchRentalStatus(found,'空き');
-    }
-    hideLoading(); closeReturnDialog();
-    showToast('🚗 '+carName+' の返却完了 ✅','success');
-    await loadRentalCars(); loadCases();
-  } catch(e) {
-    hideLoading();
-    showToast('返却登録に失敗しました: '+e.message,'error');
-  } finally { returnProcessing=false; }
-}
-
-var searchTimer = null;
-async function searchCustomer(val) {
-  var dd=document.getElementById('customerDropdown');
-  if(!val||val.length<2){if(dd)dd.style.display='none';return;}
-  clearTimeout(searchTimer);
-  searchTimer=setTimeout(async function(){
-    try {
-      var qurl='?name=ilike.%25'+encodeURIComponent(val)+'%25&select=name,tel,customer_no&limit=8';
-      var data=await supabaseQuery('customers','GET',null,qurl);
-      if(!dd)return;
-      if(!data||data.length===0){dd.style.display='none';return;}
-      dd.innerHTML=data.map(function(c){
-        var cJson=JSON.stringify(c).replace(/"/g,'&quot;');
-        return '<div onclick="fillCustomer(this)" data-cjson="'+cJson+'" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:13px;">'
-          +'<div style="font-weight:700;color:#1a2744">'+(c.name||'')+' 様</div>'
-          +'<div style="font-size:11px;color:#6b7a99;">'+(c.tel||'')+'　'+(c.customer_no||'')+'</div></div>';
-      }).join('');
-      dd.style.display='block';
-    } catch(e){if(dd)dd.style.display='none';}
-  },300);
-}
-
-async function fillCustomer(el) {
-  var cJson=el.getAttribute('data-cjson');
-  if(!cJson)return;
-  try {
-    var c=JSON.parse(cJson.replace(/&quot;/g,'"'));
-    var set=function(id,val){var e=document.getElementById(id);if(e)e.value=val||'';};
-    set('customerName',c.name||''); set('phone',c.tel||'');
-    var dd=document.getElementById('customerDropdown'); if(dd)dd.style.display='none';
-    if(c.customer_no){
-      try {
-        // ★ 車両情報と一緒に色番号も取得
-        var vdata=await supabaseQuery('vehicles','GET',null,'?customer_id=eq.'+encodeURIComponent(c.customer_no)+'&select=name,plate,color_name,color_code&limit=1');
-        if(vdata&&vdata.length>0){
-          set('carName',vdata[0].name||'');
-          set('carNum',vdata[0].plate||'');
-          set('carColor',vdata[0].color_name||'');
-          set('colorCode',vdata[0].color_code||'');
-          if(vdata[0].color_code) lookupColorName(vdata[0].color_code);
-          showToast(c.name+' 様の情報を読み込みました ✅','success');
-        } else { showToast(c.name+' 様（車両情報なし）✅','success'); }
-      } catch(ve){ showToast(c.name+' 様を入力しました ✅','success'); }
-    } else { showToast(c.name+' 様を入力しました ✅','success'); }
-  } catch(e){console.warn('fillCustomerエラー',e);}
-}
-
-document.addEventListener('click',function(e){
-  var dd=document.getElementById('customerDropdown');
-  var inp=document.getElementById('customerName');
-  if(dd&&inp&&!inp.contains(e.target)&&!dd.contains(e.target))dd.style.display='none';
-});
-
-function cancelReception() {
-  if(!confirm('入力内容を破棄して受付をキャンセルしますか？')) return;
-  clearForm();
-  showToast('受付をキャンセルしました','success');
-}
-
-function cancelRental() {
-  if(!confirm('レンタカー貸出をキャンセルしますか？')) return;
-  selectedRentalCar=null;
-  document.querySelectorAll('.rental-car-card').forEach(function(c){c.classList.remove('selected');});
-  ['rentalCaseNum','rentalCustomer','driverName','licenseNum','driverPhone','rentalStartKm','rentalEndKm'].forEach(function(id){
-    var el=document.getElementById(id); if(el) el.value='';
-  });
-  var days=document.getElementById('rentalDays'); if(days) days.value='';
-  var billing=document.getElementById('rentalBilling'); if(billing) billing.value='';
-  clearDamages();
-  showToast('レンタカー貸出をキャンセルしました','success');
-  switchTab('reception', document.querySelectorAll('.tab-btn')[0]);
-}
-
-function clearForm() {
-  ['customerName','phone','carName','carNum','carColor','colorCode','insurance','symptoms','locationInput','destAddr','remarks'].forEach(function(id){
-    var el=document.getElementById(id); if(el)el.value='';
-  });
-  var hint=document.getElementById('colorNameHint'); if(hint)hint.style.display='none';
-  document.getElementById('arrivalDisplay').classList.remove('show');
-  document.getElementById('mapPlaceholder').style.display='flex';
-  document.getElementById('map').style.display='none';
-  selectedRentalCar=null; rentalNeeded=false;
-  document.getElementById('rentalQuick').style.display='none';
-  document.getElementById('rental-no').classList.add('active');
-  document.getElementById('rental-yes').classList.remove('active');
-}
-
-function printContract() { showToast('印刷プレビューを準備中...','success'); setTimeout(function(){window.print();},500); }
-
-function showToast(msg, type) {
-  var el=document.getElementById('toast');
-  el.textContent=msg;
-  el.className='toast'+(type?' '+type:'')+' show';
-  setTimeout(function(){el.classList.remove('show');},3500);
-}
-function showLoading(msg) { document.getElementById('loadingText').textContent=msg||'処理中...'; document.getElementById('loadingOverlay').classList.add('show'); }
-function hideLoading() { document.getElementById('loadingOverlay').classList.remove('show'); }
-
-function shareToLINE() {
-  if(!_mapCurrentAddr){showToast('先に住所を検索してください','error');return;}
-  var leg=document.getElementById('summaryDur').textContent;
-  var eta=document.getElementById('summaryETA').textContent;
-  var msg='【現場共有】\n📍 '+_mapCurrentAddr+'\n🚗 所要時間: '+leg+'\n⏰ 到着予定: '+eta
-    +'\nhttps://www.google.com/maps/search/?api=1&query='+encodeURIComponent(_mapCurrentAddr);
-  if(navigator.clipboard){
-    navigator.clipboard.writeText(msg).then(function(){
-      showToast('住所をコピーしました。LINEに貼り付けてください','success');
-      window.open('https://line.me/ti/g/dUCBJhxCE-','_blank');
-    });
-  } else {
-    window.open('https://line.me/ti/g/dUCBJhxCE-','_blank');
-  }
-}
+    +'<button onclick="saveReturn('+JSON.stringify(c).replace(/"/g,'&quot;')+')" style="flex:2;padding:12px;border:none;border-radius:8px;background:#1565c0;color:white;cursor:pointer;font-size:13px;font-weight:700;">✅ 返却確定</button>'\n    +'</div>';\n  overlay.appendChild(box);\n  document.body.appendChild(overlay);\n}\n\nfunction showCaseDetail(c) {\n  var overlay=document.createElement('div');\n  overlay.id='caseDetailDialog';\n  overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(26,39,68,0.6);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;';\n  overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};\n  var dt=c.reception_datetime?new Date(c.reception_datetime).toLocaleString('ja-JP'):'-';\n  var box=document.createElement('div');\n  box.style.cssText='background:white;border-radius:16px;padding:24px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);';\n  var estUrl='index.html?name='+encodeURIComponent(c.customer_name||'')+'&car='+encodeURIComponent(c.car_model||'')+'&plate='+encodeURIComponent(c.plate||'')+'&phone='+encodeURIComponent(c.phone||'')+'&note='+encodeURIComponent(c.note||'')+'&type='+encodeURIComponent(c.type||'');\n  box.innerHTML='<div style="font-size:16px;font-weight:700;color:#1a2744;margin-bottom:4px;">📋 案件詳細</div>'\n    +'<div style="font-size:11px;color:#aaa;margin-bottom:14px;">受付日時: '+dt+'</div>'\n    +'<table style="width:100%;font-size:13px;border-collapse:collapse;">'\n    +'<tr><td style="padding:5px 0;color:#888;width:80px;">顧客名</td><td style="padding:5px 0;font-weight:600;">'+(c.customer_name||'-')+' 様</td></tr>'\n    +'<tr><td style="padding:5px 0;color:#888;">電話番号</td><td style="padding:5px 0;"><a href="tel:'+(c.phone||'')+'" style="color:#1565c0;">'+(c.phone||'-')+'</a></td></tr>'\n    +'<tr><td style="padding:5px 0;color:#888;">車名</td><td style="padding:5px 0;">'+(c.car_model||'-')+'</td></tr>'\n    +'<tr><td style="padding:5px 0;color:#888;">ナンバー</td><td style="padding:5px 0;">'+(c.plate||'-')+'</td></tr>'\n    +'<tr><td style="padding:5px 0;color:#888;">受付種別</td><td style="padding:5px 0;">'+(c.type||'-')+'</td></tr>'\n    +'<tr><td style="padding:5px 0;color:#888;">担当者</td><td style="padding:5px 0;">'+(c.staff||'-')+'</td></tr>'\n    +'<tr><td style="padding:5px 0;color:#888;">問診内容</td><td style="padding:5px 0;font-size:12px;color:#555;">'+(c.note||'-')+'</td></tr>'\n    +'</table>'\n    +'<div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;">'\n    +'<a href="'+estUrl+'" style="display:block;text-align:center;padding:12px;border-radius:8px;background:linear-gradient(135deg,#6a1b9a,#8e24aa);color:white;font-size:13px;font-weight:700;text-decoration:none;">💰 見積ソフトで開く</a>'\n    +'<button onclick="editCaseStatus(&quot;'+(c.id||'')+'&quot;)" style="padding:10px;border:1.5px solid #1a2744;border-radius:8px;background:white;color:#1a2744;font-size:13px;font-weight:700;cursor:pointer;">✏️ ステータス変更</button>'\n    +'<button onclick="closeCaseDetail()" style="padding:10px;border:none;border-radius:8px;background:#f0f2f5;color:#666;font-size:13px;cursor:pointer;">閉じる</button>'\n    +'</div>';\n  overlay.appendChild(box);\n  document.body.appendChild(overlay);\n}\n\nfunction addSymptom(text) {\n  var el=document.getElementById('symptoms'); if(!el)return;\n  if(el.value&&!el.value.endsWith('\n')) el.value+='\n';\n  el.value+=text; el.focus();\n}\n\nfunction closeCaseDetail() { var el=document.getElementById('caseDetailDialog'); if(el)el.remove(); }\n\nasync function editCaseStatus(id) {\n  if(!id){alert('IDがありません');return;}\n  var newStatus=prompt('新しいステータスを入力してください：\n受付 / 作業中 / 完了','作業中');\n  if(!newStatus)return;\n  try {\n    var res=await fetch(SUPABASE_URL+'/rest/v1/receptions?id=eq.'+id,{\n      method:'PATCH',\n      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},\n      body:JSON.stringify({status:newStatus})\n    });\n    if(res.ok){alert('✅ ステータスを「'+newStatus+'」に変更しました');closeCaseDetail();loadCases();}\n    else alert('⚠ 更新失敗 HTTP:'+res.status);\n  }catch(e){alert('エラー: '+e.message);}\n}\n\nfunction closeReturnDialog() { var el=document.getElementById('returnDialog'); if(el)el.remove(); }\n\nvar returnProcessing = false;\n\nasync function patchRentalStatus(car, status) {\n  var carId=car.id;\n  var plate=car['登録番号']||'';\n  var tbl=encodeURIComponent('レンタカーマスタ');\n  var body={};\n  body['現在の状況']=status;\n  var bodyStr=JSON.stringify(body);\n  var headers={'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation'};\n  var url1=SUPABASE_URL+'/rest/v1/'+tbl+'?id=eq.'+carId;\n  var res1=await fetch(url1,{method:'PATCH',headers:headers,body:bodyStr});\n  var text1=await res1.text();\n  var updated=false;\n  try{updated=JSON.parse(text1).length>0;}catch(e){}\n  if(!updated&&plate){\n    var url2=SUPABASE_URL+'/rest/v1/'+tbl+'?'+encodeURIComponent('登録番号')+'=eq.'+encodeURIComponent(plate);\n    var res2=await fetch(url2,{method:'PATCH',headers:headers,body:bodyStr});\n    var text2=await res2.text();\n    try{updated=JSON.parse(text2).length>0;}catch(e){}\n  }\n  return updated;\n}\n\nasync function saveReturn(c) {\n  if(returnProcessing)return;\n  returnProcessing=true;\n  var km=document.getElementById('returnKm').value;\n  var returnDate=document.getElementById('returnDate').value;\n  var note=document.getElementById('returnNote').value;\n  showLoading('返却処理中...');\n  try {\n    await supabaseQuery('receptions','POST',{\n      type:'レンタカー返却',\n      customer_name:c.customer_name||'',phone:c.phone||'',\n      car_model:c.rental_type||c.car_model||'',rental_type:c.rental_type||'',\n      staff:c.staff||'',\n      note:(c.note||'')+(km?' 返却時'+km+'km':'')+(note?' '+note:''),\n      rental_needed:false,\n      reception_datetime:returnDate?new Date(returnDate).toISOString():new Date().toISOString()\n    });\n    var carName=c.rental_type||c.car_model||'';\n    var cl={};try{cl=JSON.parse(c.checklist||'{}');}catch(e){}\n    var cPlate=cl.carPlate||'';var cId=cl.carId||'';\n    var matchCar=null;\n    if(cId) matchCar=rentalCars.find(function(rc){return String(rc.id)===String(cId);});\n    if(!matchCar&&cPlate) matchCar=rentalCars.find(function(rc){return (rc['登録番号']||'')===cPlate;});\n    if(!matchCar) matchCar=rentalCars.find(function(rc){return (rc['車種']||rc['め']||'')===carName;});\n    if(matchCar){await patchRentalStatus(matchCar,'空き');matchCar['現在の状況']='空き';}\n    else{var allCars=await supabaseQuery('レンタカーマスタ');var found=null;\n    if(cId) found=(allCars||[]).find(function(rc){return String(rc.id)===String(cId);});\n    if(!found&&cPlate) found=(allCars||[]).find(function(rc){return (rc['登録番号']||'')===cPlate;});\n    if(!found) found=(allCars||[]).find(function(rc){return (rc['車種']||rc['め']||'')===carName;});\n    if(found) await patchRentalStatus(found,'空き');}\n    hideLoading(); closeReturnDialog();\n    showToast('🚗 '+carName+' の返却完了 ✅','success');\n    await loadRentalCars(); loadCases();\n  } catch(e) {\n    hideLoading();\n    showToast('返却登録に失敗しました: '+e.message,'error');\n  } finally { returnProcessing=false; }\n}\n\nvar searchTimer = null;\nasync function searchCustomer(val) {\n  var dd=document.getElementById('customerDropdown');\n  if(!val||val.length<2){if(dd)dd.style.display='none';return;}\n  clearTimeout(searchTimer);\n  searchTimer=setTimeout(async function(){\n    try {\n      var qurl='?name=ilike.%25'+encodeURIComponent(val)+'%25&select=name,tel,customer_no&limit=8';\n      var data=await supabaseQuery('customers','GET',null,qurl);\n      if(!dd)return;\n      if(!data||data.length===0){dd.style.display='none';return;}\n      dd.innerHTML=data.map(function(c){\n        var cJson=JSON.stringify(c).replace(/"/g,'&quot;');\n        return '<div onclick="fillCustomer(this)" data-cjson="'+cJson+'" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:13px;">'\n          +'<div style="font-weight:700;color:#1a2744">'+(c.name||'')+' 様</div>'\n          +'<div style="font-size:11px;color:#6b7a99;">'+(c.tel||'')+'　'+(c.customer_no||'')+'</div></div>';\n      }).join('');\n      dd.style.display='block';\n    } catch(e){if(dd)dd.style.display='none';}\n  },300);\n}\n\nasync function fillCustomer(el) {\n  var cJson=el.getAttribute('data-cjson');\n  if(!cJson)return;\n  try {\n    var c=JSON.parse(cJson.replace(/&quot;/g,'"'));\n    var set=function(id,val){var e=document.getElementById(id);if(e)e.value=val||'';};\n    set('customerName',c.name||''); set('phone',c.tel||'');\n    var dd=document.getElementById('customerDropdown'); if(dd)dd.style.display='none';\n    if(c.customer_no){\n      try {\n        // ★ 車両情報と一緒に色番号も取得\n        var vdata=await supabaseQuery('vehicles','GET',null,'?customer_id=eq.'+encodeURIComponent(c.customer_no)+'&select=name,plate,color_name,color_code&limit=1');\n        if(vdata&&vdata.length>0){\n          set('carName',vdata[0].name||'');\n          set('carNum',vdata[0].plate||'');\n          set('carColor',vdata[0].color_name||'');\n          set('colorCode',vdata[0].color_code||'');\n          if(vdata[0].color_code) lookupColorName(vdata[0].color_code);\n          showToast(c.name+' 様の情報を読み込みました ✅','success');\n        } else { showToast(c.name+' 様（車両情報なし）✅','success'); }\n      } catch(ve){ showToast(c.name+' 様を入力しました ✅','success'); }\n    } else { showToast(c.name+' 様を入力しました ✅','success'); }\n  } catch(e){console.warn('fillCustomerエラー',e);}\n}\n\ndocument.addEventListener('click',function(e){\n  var dd=document.getElementById('customerDropdown');\n  var inp=document.getElementById('customerName');\n  if(dd&&inp&&!inp.contains(e.target)&&!dd.contains(e.target))dd.style.display='none';\n});\n\nfunction cancelReception() {\n  if(!confirm('入力内容を破棄して受付をキャンセルしますか？')) return;\n  clearForm();\n  showToast('受付をキャンセルしました','success');\n}\n\nfunction cancelRental() {\n  if(!confirm('レンタカー貸出をキャンセルしますか？')) return;\n  selectedRentalCar=null;\n  document.querySelectorAll('.rental-car-card').forEach(function(c){c.classList.remove('selected');});\n  ['rentalCaseNum','rentalCustomer','driverName','licenseNum','driverPhone','rentalStartKm','rentalEndKm'].forEach(function(id){\n    var el=document.getElementById(id); if(el) el.value='';\n  });\n  var days=document.getElementById('rentalDays'); if(days) days.value='';\n  var billing=document.getElementById('rentalBilling'); if(billing) billing.value='';\n  clearDamages();\n  showToast('レンタカー貸出をキャンセルしました','success');\n  switchTab('reception', document.querySelectorAll('.tab-btn')[0]);\n}\n\nfunction clearForm() {\n  ['customerName','phone','carName','carNum','carColor','colorCode','insurance','symptoms','locationInput','destAddr','remarks'].forEach(function(id){\n    var el=document.getElementById(id); if(el)el.value='';\n  });\n  var hint=document.getElementById('colorNameHint'); if(hint)hint.style.display='none';\n  document.getElementById('arrivalDisplay').classList.remove('show');\n  document.getElementById('mapPlaceholder').style.display='flex';\n  document.getElementById('map').style.display='none';\n  selectedRentalCar=null; rentalNeeded=false;\n  document.getElementById('rentalQuick').style.display='none';\n  document.getElementById('rental-no').classList.add('active');\n  document.getElementById('rental-yes').classList.remove('active');\n}\n\nfunction printContract() { showToast('印刷プレビューを準備中...','success'); setTimeout(function(){window.print();},500); }\n\nfunction showToast(msg, type) {\n  var el=document.getElementById('toast');\n  el.textContent=msg;\n  el.className='toast'+(type?' '+type:'')+' show';\n  setTimeout(function(){el.classList.remove('show');},3500);\n}\nfunction showLoading(msg) { document.getElementById('loadingText').textContent=msg||'処理中...'; document.getElementById('loadingOverlay').classList.add('show'); }\nfunction hideLoading() { document.getElementById('loadingOverlay').classList.remove('show'); }\n\nfunction shareToLINE() {\n  if(!_mapCurrentAddr){showToast('先に住所を検索してください','error');return;}\n  var leg=document.getElementById('summaryDur').textContent;\n  var eta=document.getElementById('summaryETA').textContent;\n  var msg='【現場共有】\n📍 '+_mapCurrentAddr+'\n🚗 所要時間: '+leg+'\n⏰ 到着予定: '+eta\n    +'\nhttps://www.google.com/maps/search/?api=1&query='+encodeURIComponent(_mapCurrentAddr);\n  if(navigator.clipboard){\n    navigator.clipboard.writeText(msg).then(function(){\n      showToast('住所をコピーしました。LINEに貼り付けてください','success');\n      window.open('https://line.me/ti/g/dUCBJhxCE-','_blank');\n    });\n  } else {\n    window.open('https://line.me/ti/g/dUCBJhxCE-','_blank');\n  }\n}\n</script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7EOjNdQp0YdyQ9TxbYkuAJjxxyRrabnQ&callback=initMap&language=ja">
+async function renderMasterCars(){var el=document.getElementById('masterCarList');if(!el)return;el.innerHTML='<div style="text-align:center;padding:20px;color:#999;">読み込み中...</div>';try{var cars=await supabaseQuery('レンタカーマスタ');if(!cars||!cars.length){el.innerHTML='<div style="text-align:center;padding:20px;color:#999;">登録車両がありません</div>';return;}window._carCache=cars;el.innerHTML=cars.map(function(car){var st=car['現在の状況']||'空き';var sc=st==='空き'?'#2e7d32':st==='貸出中'?'#e8392a':'#e65100';var sb=st==='空き'?'#e8f5e9':st==='貸出中'?'#fff0ee':'#fff3e0';return '<div style="display:flex;align-items:center;gap:12px;padding:14px;border:1.5px solid #e0e0e0;border-radius:10px;margin-bottom:8px;background:#fff;"><div style="font-size:28px;">🚗</div><div style="flex:1;"><div style="font-weight:700;font-size:15px;">'+(car['車種']||car['め']||'不明')+'</div><div style="font-size:12px;color:#666;">📋 '+(car['登録番号']||'-')+'</div><div style="font-size:12px;color:#666;">💴 日額 ¥'+Number(car['日額']||0).toLocaleString()+'</div></div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;"><span style="background:'+sb+';color:'+sc+';border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700;">'+st+'</span><div style="display:flex;gap:4px;"><button onclick="changeCarStatus('+car.id+')" style="background:#1565c0;color:#fff;border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;">状況変更</button><button onclick="deleteCarConfirm('+car.id+')" style="background:#e8392a;color:#fff;border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;">削除</button></div></div></div>';}).join('');}catch(e){el.innerHTML='<div style="color:red;padding:20px;">エラー: '+e.message+'</div>';}}
+async function changeCarStatus(id){var cars=window._carCache||[];var car=cars.find(function(c){return c.id===id;});if(!car)return;var sts=['空き','貸出中','整備中'];var cur=car['現在の状況']||'空き';var next=sts[(sts.indexOf(cur)+1)%sts.length];if(!confirm(next+'に変更しますか？'))return;var body={};body['現在の状況']=next;try{await fetch(SUPABASE_URL+'/rest/v1/'+encodeURIComponent('レンタカーマスタ')+'?id=eq.'+id,{method:'PATCH',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(body)});showToast('「'+next+'」に変更しました','success');renderMasterCars();loadRentalCars();}catch(e){showToast('変更失敗','error');}}
+async function deleteCarConfirm(id){var cars=window._carCache||[];var car=cars.find(function(c){return c.id===id;});var nm=car?(car['車種']||car['め']||''):'';if(!confirm('「'+nm+'」を削除しますか？'))return;try{await fetch(SUPABASE_URL+'/rest/v1/'+encodeURIComponent('レンタカーマスタ')+'?id=eq.'+id,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});showToast('削除しました','success');renderMasterCars();loadRentalCars();}catch(e){showToast('削除失敗','error');}}
+function showAddCarDialog(){var box=document.getElementById('addCarDialog');if(!box){box=document.createElement('div');box.id='addCarDialog';box.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';document.body.appendChild(box);}box.style.display='flex';box.innerHTML='<div style="background:#fff;border-radius:16px;padding:24px;width:90%;max-width:400px;"><div style="font-size:18px;font-weight:700;margin-bottom:16px;">🚗 車両追加</div><div style="margin-bottom:10px;"><label style="font-size:12px;font-weight:700;color:#666;display:block;margin-bottom:4px;">車種名</label><input id="ncName" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;" placeholder="例：ムーヴ"></div><div style="margin-bottom:10px;"><label style="font-size:12px;font-weight:700;color:#666;display:block;margin-bottom:4px;">登録番号</label><input id="ncPlate" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;" placeholder="例：浜松580わ1234"></div><div style="margin-bottom:18px;"><label style="font-size:12px;font-weight:700;color:#666;display:block;margin-bottom:4px;">日額料金（円）</label><input id="ncPrice" type="number" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;"></div><div style="display:flex;gap:8px;"><button onclick="document.getElementById(String.fromCharCode(39)+String.fromCharCode(97)+String.fromCharCode(100)+String.fromCharCode(100)+String.fromCharCode(67)+String.fromCharCode(97)+String.fromCharCode(114)+String.fromCharCode(68)+String.fromCharCode(105)+String.fromCharCode(97)+String.fromCharCode(108)+String.fromCharCode(111)+String.fromCharCode(103)+String.fromCharCode(39)).style.display=String.fromCharCode(110)+String.fromCharCode(111)+String.fromCharCode(110)+String.fromCharCode(101)" style="flex:1;padding:12px;border:1.5px solid #ddd;border-radius:8px;cursor:pointer;">キャンセル</button><button onclick="saveNewCar()" style="flex:2;padding:12px;border:none;border-radius:8px;background:#1a2744;color:#fff;cursor:pointer;font-weight:700;">✅ 登録する</button></div></div>';}
+async function saveNewCar(){var name=document.getElementById('ncName').value.trim();var plate=document.getElementById('ncPlate').value.trim();var price=parseInt(document.getElementById('ncPrice').value)||0;if(!name||!plate){alert('車種名と登録番号は必須です');return;}var body={};body['車種']=name;body['登録番号']=plate;body['現在の状況']='空き';body['日額']=price;try{await fetch(SUPABASE_URL+'/rest/v1/'+encodeURIComponent('レンタカーマスタ'),{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(body)});var box=document.getElementById('addCarDialog');if(box)box.style.display='none';showToast('「'+name+'」を登録しました','success');renderMasterCars();loadRentalCars();}catch(e){showToast('登録失敗: '+e.message,'error');}}
 </script>
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7EOjNdQp0YdyQ9TxbYkuAJjxxyRrabnQ&callback=initMap&language=ja"></script>
 </body>
 </html>
