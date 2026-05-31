@@ -434,7 +434,7 @@ textarea { resize: vertical; min-height: 80px; }
 
   
   <!-- 車両管理タブ -->
-  <div class="tab-content" id="tab-master" style="display:none">
+  <div class="tab-content" id="tab-master">
     <div class="card">
       <div class="card-title"><div class="icon orange">🚗</div>車両管理（レンタカー）
         <button onclick="showAddCarDialog()" style="margin-left:auto;background:#1a2744;color:white;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">＋ 車両追加</button>
@@ -632,20 +632,25 @@ function lookupColorName(code) {
 // ★ レンタカー貸出中の詳細をSupabaseから取得
 async function loadRentalActiveInfo() {
   try {
-    var all = await supabaseQuery('receptions','GET',null,'?rental_needed=eq.true&order=reception_datetime.desc&limit=200');
-    var returnedKeys = {};
-    (all||[]).forEach(function(r) {
-      if (r.type === 'レンタカー返却') {
-        var k = r.rental_type || r.car_model || '';
-        if (k) returnedKeys[k] = true;
-      }
+    // 貸出レコード（rental_needed=true）を取得
+    var lends = await supabaseQuery('receptions','GET',null,'?rental_needed=eq.true&order=reception_datetime.desc&limit=200');
+    // 返却レコード（type=レンタカー返却）を別途取得
+    var returns = await supabaseQuery('receptions','GET',null,'?type=eq.' + encodeURIComponent('レンタカー返却') + '&order=reception_datetime.desc&limit=200');
+    // 返却済みの車種ごとの最新返却日時を記録
+    var returnTime = {};
+    (returns||[]).forEach(function(r) {
+      var k = r.rental_type || r.car_model || '';
+      if (k && !returnTime[k]) returnTime[k] = r.reception_datetime || '';
     });
     rentalActiveMap = {};
-    (all||[]).forEach(function(r) {
-      if (r.type !== 'レンタカー返却') {
-        var k = r.rental_type || r.car_model || '';
-        if (k && !returnedKeys[k] && !rentalActiveMap[k]) rentalActiveMap[k] = r;
-      }
+    (lends||[]).forEach(function(r) {
+      if (r.type === 'レンタカー返却') return;
+      var k = r.rental_type || r.car_model || '';
+      if (!k || rentalActiveMap[k]) return;
+      var lendTime = r.reception_datetime || '';
+      // 返却日時が貸出日時より後なら返却済み→除外
+      if (returnTime[k] && returnTime[k] >= lendTime) return;
+      rentalActiveMap[k] = r;
     });
   } catch(e) { console.warn('レンタカー貸出情報取得失敗:', e); }
 }
