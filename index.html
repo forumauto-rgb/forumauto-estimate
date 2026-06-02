@@ -2401,7 +2401,7 @@ function carSVG5face(){
     g+=partRect('tail_r',152,452,68,28,5,'テール右',10);
     g+=partRect('rear_bump',38,482,184,46,14,'R.バンパー',13);
   } else {
-    g+=partRect('truck_bed',50,215,160,280,5,'荷　台',14);
+    g+=partRect('荷台',50,215,160,280,5,'荷台',14);
     g+=partRect('aori_l',14,215,36,280,4,'左アオリ',8);
     g+=partRect('aori_r',210,215,36,280,4,'右アオリ',8);
     g+=partRect('aori_b',50,490,160,10,2,'後アオリ',7);
@@ -6956,6 +6956,7 @@ async function aiAnalyzePhotos(){
   // 写真必須チェック
   var photos = (customer.photoIncoming||[]).slice(0,3);
   if(!photos.length){ showNotify('📷 入庫時写真が登録されていません'); return; }
+  if(!AI_API_KEY){ showNotify('⚠ APIキーを設定してください'); return; }
   if(aiChatLoading) return;
 
   // 会話型モードに切り替え
@@ -7113,7 +7114,12 @@ function aiStartMic(){
 }
 
 async function aiChatCallAPI(){
-  // ai-proxy経由のためAPIキー不要
+  if(!AI_API_KEY){
+    showNotify('⚠ APIキーを設定してください');
+    aiChatLoading = false;
+    render();
+    return;
+  }
   // ★RAG検索：ユーザーの質問に関連するPDF抜粋を取得（5秒タイムアウト）
   var ragContext = '';
   try {
@@ -7209,12 +7215,13 @@ async function aiChatCallAPI(){
   try{
     var aiAbort = new AbortController();
     var aiTimer = setTimeout(function(){ aiAbort.abort(); }, 30000);
-    var resp = await fetch('https://uhppgdwbyrijnqpvusxw.supabase.co/functions/v1/ai-proxy', {
+    var resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': SUPABASE_KEY,
-        'Authorization': 'Bearer '+SUPABASE_KEY
+        'x-api-key': AI_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
@@ -7648,7 +7655,12 @@ async function aiAnalyze(){
     + '【損傷程度】' + aiState.level + '\n\n'
     + '【作業サンプル（参考）】\n' + JSON.stringify(taskSamples.slice(0, 30));
 
-  // ai-proxy経由のためAPIキー不要
+  if(!AI_API_KEY){
+    showNotify('⚠ APIキーを設定してください（🔑 の欄）');
+    aiState.loading = false;
+    render();
+    return;
+  }
 
   try{
     var resp = await fetch('https://uhppgdwbyrijnqpvusxw.supabase.co/functions/v1/ai-proxy', {
@@ -7689,6 +7701,7 @@ async function aiAnalyze(){
 }
 // ===== PDF部品見積書読み込み =====
 async function aiReadPdf(input){
+  if(!AI_API_KEY){ showNotify('⚠ APIキーを設定してください'); return; }
   var file = input.files[0];
   if(!file){ return; }
   var status = document.getElementById('ai-pdf-status');
