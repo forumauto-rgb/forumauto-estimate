@@ -652,7 +652,7 @@ async function loadRentalActiveInfo() {
       if (returnTime[k] && returnTime[k] >= lendTime) return;
       rentalActiveMap[k] = r;
     });
-  } catch(e) { console.warn('レンタカー貸出情報取得失敗:', e); }
+  } catch(e) { /* レンタカー貸出情報取得失敗は無視 */ }
 }
 
 async function loadRentalCars() {
@@ -663,7 +663,7 @@ async function loadRentalCars() {
     renderRentalCars('rentalCarList');
     renderRentalCars('quickRentalCars', true);
   } catch(e) {
-    showToast('車両データの読み込みに失敗しました', 'error');
+    console.log('車両データ読み込み失敗(ネットワークエラー)');  
     renderRentalCars('rentalCarList');
     renderRentalCars('quickRentalCars', true);
   }
@@ -1084,13 +1084,16 @@ function goToRentalTab() {
     set('driverName',d.name||'');
     set('driverPhone',d.phone||'');
     window.scrollTo({top:0,behavior:'smooth'});
-    // ★ 受付で選んだ車両を自動選択
+    // ★ 受付で選んだ車両を自動選択（貸出中でも強制選択）
     if(d.rentalCarId){
       var trySelect=function(retry){
-        var card=document.querySelector('[data-car-id="'+d.rentalCarId+'"]');
-        if(card){
-          card.click();
+        var car=rentalCars.find(function(c){return String(c.id)===String(d.rentalCarId);});
+        if(car){
+          selectedRentalCar=car;
+          document.querySelectorAll('.rental-car-card').forEach(function(c){c.classList.remove('selected');});
+          document.querySelectorAll('[data-car-id="'+d.rentalCarId+'"]').forEach(function(c){c.classList.add('selected');});
           showToast('🚗 '+d.rentalCarName+' を自動選択しました ✅','success');
+          calcRentalBilling();
         } else if(retry>0){
           setTimeout(function(){trySelect(retry-1);},300);
         } else {
