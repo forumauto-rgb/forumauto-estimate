@@ -1627,8 +1627,10 @@ async function deleteCarConfirm(carId) {
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
     });
     showToast('削除しました', 'success');
-    renderMasterCars();
-    loadRentalCars();
+    rentalCars = [];
+    window._carCache = [];
+    await renderMasterCars();
+    await loadRentalCars();
   } catch(e) { showToast('削除失敗', 'error'); }
 }
 
