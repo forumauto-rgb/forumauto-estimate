@@ -2395,6 +2395,11 @@ function carSVG5face(){
   g+=partRect('roof',50,237,160,80,5,'ルーフ',15);
   g+=partRect('rail_l',28,237,22,80,4,'レール左',7);
   g+=partRect('rail_r',210,237,22,80,4,'レール右',7);
+  // Bピラー（センターピラー）：乗用車共通
+  if(!isTruck){
+    g+=partRect('cpillar_l',14,277,18,20,3,'B左',7);
+    g+=partRect('cpillar_r',228,277,18,20,3,'B右',7);
+  }
   if(hasSlide){
     g+=partRect('slide_l',14,250,36,88,5,'スライド左',8);
     g+=partRect('slide_r',210,250,36,88,5,'スライド右',8);
@@ -3201,6 +3206,9 @@ function getBP(){
     rail_l:    {p:['ルーフサイドレールアウター（左）']},
     rail_r:    {p:['ルーフサイドレールアウター（右）']},
     grille:    {p:['フロントグリル']},
+    // センターピラー（Bピラーアウター）乗用車共通
+    cpillar_l: {p:['センターピラー（左）']},
+    cpillar_r: {p:['センターピラー（右）']},
   };
   if(BODY_TYPE==='suv'){
     bp.overfender_l={p:['オーバーフェンダー（左）']};
@@ -3222,7 +3230,7 @@ function getBP(){
     bp.aori_r={p:['右アオリ']};
     bp.aori_b={p:['後アオリ']};
     bp.truck_bed={p:['荷台']};
-    // センターピラー（Bピラーアウター）
+    // トラック用センターピラー（上書き）
     bp.cpillar_l = {p:['センターピラー左']};
     bp.cpillar_r = {p:['センターピラー右']};
     if(bp.door_fl) bp.door_fl.p = bp.door_fl.p.concat(['センターピラー左']);
@@ -5164,6 +5172,7 @@ function renderSelectedTasks(fullMode){
   h += '<button onclick="sortMode=\'select\';sortByProcess=false;rIP()" style="padding:3px 10px;font-size:11px;border-radius:4px;border:1px solid #aaa;cursor:pointer;background:'+(sortMode==='select'?'#1a3a6b':'#fff')+';color:'+(sortMode==='select'?'white':'#333')+';">選択順</button>';
   h += '<button onclick="sortMode=\'process\';sortByProcess=true;rIP()" style="padding:3px 10px;font-size:11px;border-radius:4px;border:1px solid #aaa;cursor:pointer;background:'+(sortMode==='process'?'#1a3a6b':'#fff')+';color:'+(sortMode==='process'?'white':'#333')+';">工程順</button>';
   h += '<button onclick="sortMode=\'work\';sortByProcess=false;rIP()" style="padding:3px 10px;font-size:11px;border-radius:4px;border:1px solid #aaa;cursor:pointer;background:'+(sortMode==='work'?'#1a3a6b':'#fff')+';color:'+(sortMode==='work'?'white':'#333')+';">作業順</button>';
+  h += (sortMode==='select'&&!sortByProcess ? '<span style="font-size:10px;color:#888;margin-left:4px;">✋ 行をドラッグして並び替え可</span>' : '<span style="font-size:10px;color:#e65100;margin-left:4px;">※ 選択順のみ並び替え可</span>');
   h += '<span style="font-size:11px;color:#aaa;margin:0 4px;">｜</span>';
   h += '<span style="font-size:11px;color:#555;font-weight:bold;">見出し：</span>';
   var hm=headerMode;
@@ -5208,9 +5217,10 @@ function renderSelectedTasks(fullMode){
     var dispName = s.name
       .replace(/（右）/g, '<span style="background:#cfe8ff;border-radius:3px;padding:1px 3px;font-weight:bold;">（右）</span>')
       .replace(/（左）/g, '<span style="background:#c8f0c8;border-radius:3px;padding:1px 3px;font-weight:bold;">（左）</span>');
-    h+='<tr draggable="true" data-idx="'+rowIdx+'" ondragstart="dS(event)" ondragover="dO(event)" ondrop="dP(event,'+rowIdx+')"';
+    var canDrag = (sortMode === 'select' && !sortByProcess);
+    h+='<tr '+(canDrag?'draggable="true"':'')+' data-idx="'+rowIdx+'" '+(canDrag?'ondragstart="dS(event)" ondragover="dO(event)" ondrop="dP(event,'+rowIdx+')"':'')+' ';
     h+=' style="border-bottom:1px solid #eee;background:#ffffff;">';
-    h+='<td style="padding:4px 6px;text-align:center;cursor:move;color:#bbb">&#8286;</td>';
+    h+='<td style="padding:4px 6px;text-align:center;cursor:'+(canDrag?'move':'default')+';color:#bbb">'+(canDrag?'&#8286;':'')+'</td>';
     h+='<td style="padding:4px 8px;border-right:1px solid #e8e8e8">';
     h+='<div style="font-weight:bold;font-size:12px">'+dispName+'</div>';
     h+='</td>';
