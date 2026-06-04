@@ -5896,13 +5896,19 @@ async function saveDraft(){
   showNotify('💾 下書き保存中...');
   try{
     // localStorageからIDを復元（ページリロード後の重複防止）
-    if(!customer._estId){
-      var savedId=localStorage.getItem('fa_last_draft_id');
-      var savedNo=localStorage.getItem('fa_last_draft_no');
-      if(savedId&&savedNo&&(!customer.no||customer.no===savedNo)){
-        customer._estId=savedId;
-        customer._draftNo=savedNo;
-        if(!customer.no) customer.no=savedNo;
+    // customer.noがDRAFT番号、またはIDが未設定の場合はlocalStorageから復元
+    var savedId=localStorage.getItem('fa_last_draft_id');
+    var savedNo=localStorage.getItem('fa_last_draft_no');
+    if(savedId && savedNo){
+      // 現在の番号がsavedNoと一致する場合（またはIDが未設定の場合）→ 既存IDを使用
+      if(!customer._estId && (
+        !customer.no ||
+        customer.no === savedNo ||
+        (customer.no.startsWith('DRAFT-'))
+      )){
+        customer._estId = savedId;
+        customer._draftNo = savedNo;
+        customer.no = savedNo;
       }
     }
     // 既存IDがあれば番号を固定（重複防止）
@@ -5928,10 +5934,13 @@ async function saveDraft(){
         estId=(await rPost.json())[0].id;
       }
     }
-    await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+    // 既存明細を削除してから新規登録（重複防止）
+    var delR=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+    if(!delR.ok){console.warn('items DELETE failed:',delR.status); throw new Error('明細削除失敗 status='+delR.status);}
     if(sel.length>0){
       var items=sel.map(function(s,i){return{estimate_id:estId,part_name:s._part||s.part||'',item_name:s.name||'',process:s.process||'',tag:s.tag||'remove',hours:s.hours||0,actual_hours:s.h||0,cost:s.cost||0,sort_order:i};});
-      await fetch(SUPABASE_URL+'/rest/v1/estimate_items',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(items)});
+      var postR=await fetch(SUPABASE_URL+'/rest/v1/estimate_items',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(items)});
+      if(!postR.ok){var errTxt=await postR.text(); throw new Error('明細登録失敗: '+errTxt);}
     }
     customer._estId=estId;
     customer._draftNo=estNo;
@@ -6007,7 +6016,7 @@ async function showDraftList(){
           +'<td style="padding:6px;">'+(e.car_name||'-')+'</td>'
           +'<td style="padding:6px;text-align:right;">&yen;'+(e.grand_total||0).toLocaleString()+'</td>'
           +'<td style="padding:6px;color:#888;font-size:11px;">'+(e.estimate_date||'')+'</td>'
-          +'<td style="padding:5px 6px;"><button onclick="loadEstimate(\''+e.id+'\',\''+e.estimate_no+'\');document.getElementById(\'draftModal\').remove();" style="background:#1a3a6b;color:white;border:none;border-radius:4px;padding:4px 12px;font-size:11px;cursor:pointer;font-weight:bold;">\u518d\u958b</button></td>'
+          +'<td style="padding:5px 6px;display:flex;gap:4px;">'          +'<button onclick="loadEstimate(\''+e.id+'\',\''+e.estimate_no+'\');document.getElementById(\'draftModal\').remove();" style="background:#1a3a6b;color:white;border:none;border-radius:4px;padding:4px 12px;font-size:11px;cursor:pointer;font-weight:bold;">\u518d\u958b</button>'          +'<button onclick="deleteEstimate(\''+e.id+'\',\''+e.estimate_no+'\')" style="background:#e53935;color:white;border:none;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:bold;">\u524a\u9664</button>'          +'</td>'
           +'</tr>';
       });
       html+='</tbody></table>';
@@ -6399,6 +6408,31 @@ async function sendToSheet(){
   }
 }
 
+
+async function deleteEstimate(estId, estNo){
+  if(!confirm('「'+estNo+'」を削除しますか？\nこの操作は元に戻せません。')){return;}
+  try{
+    await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+    await fetch(SUPABASE_URL+'/rest/v1/estimate_photos?estimate_id=eq.'+estId,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+    var r=await fetch(SUPABASE_URL+'/rest/v1/estimates?id=eq.'+estId,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+    if(r.ok){
+      showNotify('🗑 '+estNo+' を削除しました');
+      // localStorageのdraft IDもクリア
+      if(localStorage.getItem('fa_last_draft_id')===estId){
+        localStorage.removeItem('fa_last_draft_id');
+        localStorage.removeItem('fa_last_draft_no');
+      }
+      // モーダルを閉じて一覧を更新
+      var modal=document.getElementById('draftModal');
+      if(modal) modal.remove();
+      // 保存済み一覧パネルがあれば更新
+      var ep=document.getElementById('estListPanel');
+      if(ep && ep.innerHTML) showEstimateList();
+    } else {
+      showNotify('❌ 削除失敗: '+r.status);
+    }
+  }catch(e){showNotify('❌ 削除エラー: '+e.message);}
+}
 async function loadEstimateList(){
   var ok=await testConnection();
   if(!ok) return [];
@@ -6510,6 +6544,7 @@ function buildEstRows(list){
   return list.map(function(e){
     var total=(e.grand_total||0).toLocaleString();
     var oc="loadEstimate('"+e.id+"','"+e.estimate_no+"')";
+    var dc="deleteEstimate('"+e.id+"','"+e.estimate_no+"')";
     return '<tr style="border-bottom:1px solid #f0f0f0;cursor:pointer;" onmouseover="this.style.background=\'#f5f7ff\'" onmouseout="this.style.background=\'\'">'
       +'<td style="padding:5px 6px;font-weight:bold;color:#1a3a6b;">'+e.estimate_no+'</td>'
       +'<td style="padding:5px 6px;">'+(e.customer_name||'-')+'</td>'
@@ -6517,7 +6552,8 @@ function buildEstRows(list){
       +'<td style="padding:5px 6px;text-align:right;font-weight:bold;">¥'+total+'</td>'
       +'<td style="padding:5px 6px;color:#888;">'+(e.estimate_date||'')+'</td>'
       +'<td style="padding:4px 6px;">'
-      +'<button onclick="'+oc+'" style="background:#1a3a6b;color:white;border:none;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:bold;">呼出し</button>'
+      +'<button onclick="'+oc+'" style="background:#1a3a6b;color:white;border:none;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:bold;">呼出し</button> '
+      +'<button onclick="'+dc+'" style="background:#e53935;color:white;border:none;border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer;font-weight:bold;">削除</button>'
       +'</td></tr>';
   }).join('');
 }
