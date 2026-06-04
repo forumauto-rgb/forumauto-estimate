@@ -5884,20 +5884,28 @@ async function saveDraft(){
   }
   showNotify('💾 下書き保存中...');
   try{
-    var estNo=customer.no||('DRAFT-'+Date.now());
+    // 既存IDがあれば番号を固定（重複防止）
+    var estNo=customer.no||(customer._draftNo)||('DRAFT-'+Date.now());
     customer.no=estNo;
+    customer._draftNo=estNo;
     var tots=calcTotals();
     var estData={estimate_no:estNo,customer_name:customer.name||'（未入力）',customer_id:customer.cid||null,car_name:customer.car||'',plate:customer.plate||'',color_name:customer.color||'',color_code:customer.colorCode||'',estimate_date:customer.date||new Date().toISOString().split('T')[0],grade:customer.grade||'中型',grade_coef:getGradeCoef(),film_type:pc4.film,paint_type:pc4.paint,clear_type:pc4.clear,special:pc4.special,labor_total:tots.labor,parts_total:Math.round(tots.pt),mat_total:Math.round(tots.mt),subtotal:Math.round(tots.sub),tax_total:tots.tax,grand_total:Math.round(tots.sub)+tots.tax,repair_type:customer.repairType||'insurance',ins_company:customer.insCompany||'',aj_company:customer.ajCompany||'',aj_staff:customer.ajStaff||'',deductible:parseInt(customer.deductible)||0,status:'draft',repair_status:customer.repairStatus||'受付',staff_name:customer.staffName||'',delivery_date:customer.deliveryDate||'',memo:customer.estNote||''};
-    var rCheck=await fetch(SUPABASE_URL+'/rest/v1/estimates?estimate_no=eq.'+encodeURIComponent(estNo)+'&select=id',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
-    var existing=await rCheck.json();
-    var estId=null;
-    if(existing&&existing.length>0){
-      estId=existing[0].id;
+    var estId=customer._estId||null;
+    if(estId){
+      // 既存IDで上書き（重複しない）
       await fetch(SUPABASE_URL+'/rest/v1/estimates?id=eq.'+estId,{method:'PATCH',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(estData)});
     } else {
-      var rPost=await fetch(SUPABASE_URL+'/rest/v1/estimates',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(estData)});
-      if(!rPost.ok) throw new Error(await rPost.text());
-      estId=(await rPost.json())[0].id;
+      // 番号で検索して既存確認
+      var rCheck=await fetch(SUPABASE_URL+'/rest/v1/estimates?estimate_no=eq.'+encodeURIComponent(estNo)+'&select=id',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+      var existing=await rCheck.json();
+      if(existing&&existing.length>0){
+        estId=existing[0].id;
+        await fetch(SUPABASE_URL+'/rest/v1/estimates?id=eq.'+estId,{method:'PATCH',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(estData)});
+      } else {
+        var rPost=await fetch(SUPABASE_URL+'/rest/v1/estimates',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(estData)});
+        if(!rPost.ok) throw new Error(await rPost.text());
+        estId=(await rPost.json())[0].id;
+      }
     }
     await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
     if(sel.length>0){
@@ -5905,6 +5913,14 @@ async function saveDraft(){
       await fetch(SUPABASE_URL+'/rest/v1/estimate_items',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(items)});
     }
     customer._estId=estId;
+    // 写真データをlocalStorageに紐付け保存
+    try{
+      var photoData={no:estNo,id:estId,savedAt:new Date().toISOString(),
+        photoIncoming:customer.photoIncoming||[],
+        photoWork:customer.photoWork||[],
+        photoDone:customer.photoDone||[]};
+      localStorage.setItem('fa_photos_draft_'+estNo,JSON.stringify(photoData));
+    }catch(pe){console.log('写真draft保存スキップ（容量超過）:',pe.message);}
     showNotify('✅ 下書き保存完了 '+estNo);
   }catch(e){showNotify('❌ 下書き保存失敗: '+e.message);}
 }
@@ -6395,9 +6411,20 @@ async function loadEstimate(estId,estNo){
     matItems=parts2.filter(function(m){return m.item_type==='material';}).map(function(m){return{name:m.name||'',cost:m.cost||'',profit:m.profit||30};});
     if(!partsItems.length)partsItems=[{name:'',cost:'',profit:0}];
     if(!matItems.length)matItems=[{name:'',cost:'',profit:30}];
-    // 写真を復元（Supabase優先、なければlocalStorage）
+    // 写真を復元（Supabase優先、なければlocalStorageの下書き写真）
     customer.photoIncoming=[]; customer.photoWork=[]; customer.photoDone=[];
     await loadPhotosFromSupabase(estId, estNo);
+    // Supabaseに写真がなければlocalStorageの下書き写真を復元
+    if(!customer.photoIncoming.length && !customer.photoWork.length && !customer.photoDone.length){
+      try{
+        var draftPhoto=JSON.parse(localStorage.getItem('fa_photos_draft_'+estNo)||'null');
+        if(draftPhoto){
+          if(draftPhoto.photoIncoming&&draftPhoto.photoIncoming.length) customer.photoIncoming=draftPhoto.photoIncoming;
+          if(draftPhoto.photoWork&&draftPhoto.photoWork.length) customer.photoWork=draftPhoto.photoWork;
+          if(draftPhoto.photoDone&&draftPhoto.photoDone.length) customer.photoDone=draftPhoto.photoDone;
+        }
+      }catch(pe){}
+    }
     estMode='estimate';
     // 過去見積パネルを閉じる
     var ep=document.getElementById('estListPanel');
