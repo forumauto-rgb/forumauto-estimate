@@ -1295,13 +1295,13 @@ function addPhotos(input, category){
           customer.photos.push(e.target.result);
         }
         savePhotosLocal();
-        autoSavePhotosToCloud();
+       
         rIP();
       };
       img.onerror = function(){
         if(!customer[cat]) customer[cat] = [];
         customer[cat].push(e.target.result);
-        autoSavePhotosToCloud();
+       
         rIP();
       };
       img.src = e.target.result;
