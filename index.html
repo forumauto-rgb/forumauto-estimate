@@ -4179,9 +4179,9 @@ function buildSignSection(){
   var signDate = customer.signDate || new Date().toISOString().split('T')[0];
   var signDateDisp = customer.signDate || '　　年　月　日';
   var h = '';
-  h += '<div class="no-print" style="margin-bottom:6px;">';
-h += '<label style="font-size:11px;cursor:pointer;">';
-h += '<input type="checkbox" id="printSignCheck" checked onchange="document.getElementById(\'signPrintArea\').style.display=this.checked?\'block\':\'none\';"> ';
+ h += '<div class="no-print" style="margin-bottom:6px;padding:4px 8px;background:#fff9e6;border-radius:4px;">';
+h += '<label style="font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;">';
+h += '<input type="checkbox" id="printSignCheck" checked style="width:16px;height:16px;" onchange="document.getElementById(\'signPrintArea\').style.display=this.checked?\'block\':\'none\';"> ';
 h += '✍ お客様サイン欄を印刷する</label></div>';
 h += '<div id="signPrintArea">';
   h += '<div style="border:2px solid #1a3a6b;padding:8px;">';
@@ -4205,6 +4205,7 @@ h += '<div id="signPrintArea">';
   }
   h += '<div style="font-size:10px;text-align:center;color:#555;margin-top:4px;">お客様サイン</div>';
   h += '</div>';
+  h += '<div style="font-size:11px;color:#555;margin-top:4px;">署名日：' + signDateDisp + '</div>';
   h += '<div style="width:150px;">';
   h += '<div class="no-print" style="font-size:10px;color:#555;margin-bottom:4px;">署名日</div>';
   h += '<input class="no-print" type="date" value="' + signDate + '" onchange="customer.signDate=this.value" style="font-size:11px;padding:3px;border:1px solid #ccc;border-radius:4px;width:100%;margin-bottom:4px;">';
