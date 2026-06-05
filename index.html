@@ -2215,6 +2215,7 @@ function applyDamageSuggest(partKey, items){
   }
 
   autoSaveM();
+  autoSave(); // 見積自動保存（3秒debounce）
   rIP();
 }
 // ===== 損傷連動ここまで =====
@@ -4823,7 +4824,7 @@ function eH(i,v){
   if(rows[i]){const ci=rows[i].querySelectorAll('input')[1];if(ci)ci.value=sel[i].editC;}
 }
 function eC(i,v){sel[i].editC=parseFloat(v)||0;uS();}
-function rT(i){sel.splice(i,1);render();}
+function rT(i){sel.splice(i,1);render();autoSave();}
 function rIP(){const sc=document.querySelector('.content').scrollTop;render();setTimeout(()=>document.querySelector('.content').scrollTop=sc,10);}
 function dS(e){dragSrc=+e.currentTarget.dataset.idx;}
 function dO(e){e.preventDefault();}
@@ -5061,7 +5062,7 @@ function sM(){
   }catch(e){}
   alert('保存しました（'+cMaster.length+'顧客 / '+vMaster.length+'車両）');
 }
-function doPrint(){
+async function doPrint(){
   var styleId='__printStyle';
   var old=document.getElementById(styleId);
   if(old)old.remove();
@@ -5069,7 +5070,12 @@ function doPrint(){
   st.id=styleId;
   st.textContent='@media print{@page{size:A4 portrait!important;margin:10mm 12mm 10mm 12mm!important} @page:first{margin-top:10mm!important} html{-webkit-print-color-adjust:exact!important}}';
   document.head.appendChild(st);
-  // システムダイアログ（ヘッダー/フッター設定可能）で印刷
+  // 印刷前に自動保存
+  if(sel.length>0){
+    showNotify('💾 印刷前に自動保存中...');
+    await saveEstimate();
+  }
+  // 印刷実行
   try{
     var pw = window.open('','_self');
     if(pw && pw.document && pw.document.execCommand){
@@ -5080,10 +5086,6 @@ function doPrint(){
   } catch(e){
     window.print();
   }
-  // 印刷後に保存バナーを表示
-  setTimeout(function(){
-    if(!customer.no){ showSaveBanner(); }
-  }, 1500);
 }
 
 function showSaveBanner(){
@@ -5885,6 +5887,21 @@ async function generateEstimateNo(){
 }
 
 // ===== 下書き保存・再開 =====
+
+var _autoSaveTimer = null;
+function autoSave(){
+  // 作業が0件の時は保存しない
+  if(!sel || sel.length === 0) return;
+  // 3秒のdebounce（連続操作中は保存しない）
+  if(_autoSaveTimer) clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = setTimeout(async function(){
+    try{
+      await saveDraft();
+    }catch(e){
+      console.warn('自動保存失敗:', e.message);
+    }
+  }, 3000);
+}
 async function saveDraft(){
   if(!customer.name && !sel.length){showNotify('⚠ 顧客名または作業を入力してください');return;}
   var ok=await testConnection();
