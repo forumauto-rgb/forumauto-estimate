@@ -134,6 +134,7 @@ div[style*="resize:vertical"]::-webkit-scrollbar-thumb{background:#c5cae9;border
 .ep-tbl td.c{text-align:center}
 .ep-tbl td.r{text-align:right;font-weight:bold}
 .ep-tbl tbody tr:nth-child(even) td{background:#f8f9ff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+#signPrintArea.hidden-sign { display:none !important; }
 @media print{
   body > *{display:none!important}
   .app{display:block!important}
@@ -4181,7 +4182,7 @@ function buildSignSection(){
   var h = '';
  h += '<div class="no-print" style="margin-bottom:6px;padding:4px 8px;background:#fff9e6;border-radius:4px;">';
 h += '<label style="font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;">';
-h += '<input type="checkbox" id="printSignCheck" checked style="width:16px;height:16px;" onchange="document.getElementById(\'signPrintArea\').style.display=this.checked?\'block\':\'none\';"> ';
+h += '<input type="checkbox" id="printSignCheck" checked style="width:16px;height:16px;" onchange="var el=document.getElementById(\'signPrintArea\');el.style.display=this.checked?\'block\':\'none\';el.classList.toggle(\'hidden-sign\',!this.checked);"> ';
 h += '✍ お客様サイン欄を印刷する</label></div>';
 h += '<div id="signPrintArea">';
   h += '<div style="border:2px solid #1a3a6b;padding:8px;">';
