@@ -6149,8 +6149,8 @@ async function saveEstimate(){
       method:'DELETE',
       headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
     });
-    var pm=(partsItems||[]).filter(function(p){return p.name||p.cost;}).map(function(p,i){return{estimate_id:estId,item_type:'parts',name:p.name||'',part_no:p.partNo||'',cost:parseInt(p.cost)||0,profit:parseInt(p.profit)||0,sort_order:i};});
-    var mm=(matItems||[]).filter(function(m){return m.name||m.cost;}).map(function(m,i){return{estimate_id:estId,item_type:'material',name:m.name||'',cost:parseInt(m.cost)||0,profit:parseInt(m.profit)||30,sort_order:i};});
+    var pm=(partsItems||[]).filter(function(p){return p.name||p.cost;}).map(function(p,i){var qty=parseFloat(p.qty)||1;var cost=parseInt(p.cost)||0;var profit=parseInt(p.profit)||0;var sell=Math.round(cost*qty*(100+profit)/100);return{estimate_id:estId,item_type:'parts',name:(p.name||'')+(p.partNo?' ['+p.partNo+']':''),cost:cost,profit:profit,sell_price:sell,sort_order:i};});
+    var mm=(matItems||[]).filter(function(m){return m.name||m.cost;}).map(function(m,i){var cost=parseInt(m.cost)||0;var profit=parseInt(m.profit)||30;var sell=Math.round(cost*(100+profit)/100);return{estimate_id:estId,item_type:'material',name:m.name||'',cost:cost,profit:profit,sell_price:sell,sort_order:i};});
     var all=pm.concat(mm);
     if(all.length>0){
       await fetch(SUPABASE_URL+'/rest/v1/estimate_parts',{
