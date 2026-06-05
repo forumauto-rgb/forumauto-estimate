@@ -4205,18 +4205,19 @@ h += '<div id="signPrintArea">';
     h += '</div>';
     h += '<div class="print-only" style="border-bottom:2px solid #333;min-height:50px;"></div>';
   }
-  h += '<div style="font-size:10px;text-align:center;color:#555;margin-top:4px;">お客様サイン</div>';
-
-  h += '<div style="width:150px;">';
- 
-  h += '<input class="no-print" type="date" value="' + signDate + '" onchange="customer.signDate=this.value" style="font-size:11px;padding:3px;border:1px solid #ccc;border-radius:4px;width:100%;margin-bottom:4px;">';
-  h += '<div class="print-only" style="font-size:11px;">' + signDateDisp + '</div>';
-  h += '</div>';
-  h += '<div style="width:60px;">';
-  h += '<div style="border:1px solid #999;height:60px;display:flex;align-items:center;justify-content:center;">';
-  h += '<div style="font-size:9px;color:#bbb;text-align:center;">担当者印</div>';
-  h += '</div></div>';
-  h += '</div></div></div>';
+ h += '<div style="font-size:10px;text-align:center;color:#555;margin-top:4px;">お客様サイン</div>';
+h += '<div style="display:flex;gap:8px;margin-top:4px;">';
+h += '<div style="width:150px;">';
+h += '<div class="no-print" style="font-size:10px;color:#555;margin-bottom:4px;">署名日</div>';
+h += '<input class="no-print" type="date" value="' + signDate + '" onchange="customer.signDate=this.value" style="font-size:11px;padding:3px;border:1px solid #ccc;border-radius:4px;width:100%;margin-bottom:4px;">';
+h += '<div class="print-only" style="font-size:11px;">' + signDateDisp + '</div>';
+h += '</div>';
+h += '<div style="width:60px;">';
+h += '<div style="border:1px solid #999;height:60px;display:flex;align-items:center;justify-content:center;">';
+h += '<div style="font-size:9px;color:#bbb;text-align:center;">担当者印</div>';
+h += '</div></div>';
+h += '</div>';
+h += '</div>';
   return h;
 }
 
