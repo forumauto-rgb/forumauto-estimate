@@ -229,14 +229,12 @@ function renderSummary(){
   document.getElementById('s-rental-free').textContent = rentalFree;
   document.getElementById('s-ready').textContent = ready;
 }
-async function deleteCard(event, id){
+　async function deleteCard(event, id){
     event.stopPropagation();
     if (!confirm('このカードを削除しますか？')) return;
-    await sbFetch('estimates?id=eq.' + id, {
-        method: 'PATCH',
-        body: JSON.stringify({ repair_status: '削除済' })
-    });
-    await loadData();
+    await sbPatch('/rest/v1/estimates?id=eq.' + id, { repair_status: '削除済' });
+    await loadAll();
+}
 }
 function renderKanban(){
   var board = document.getElementById('kanbanBoard');
