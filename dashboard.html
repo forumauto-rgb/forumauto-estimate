@@ -250,16 +250,41 @@ function renderCard(e){
 }
 
 async function updateStatus(id, newStatus){
+  if(newStatus === '完成'){
+    var est = allEstimates.find(function(e){ return e.id === id; });
+    var estimatedAmt = est ? Math.round(est.grand_total || 0) : 0;
+    var input = prompt(
+      '【完成確認】最終金額を確認してください。\n' +
+      '見積金額：¥' + estimatedAmt.toLocaleString() + '\n\n' +
+      '値引き等がある場合は修正してください。\n' +
+      '確定金額（数字のみ）：',
+      estimatedAmt
+    );
+    if(input === null) return;
+    var confirmed = parseInt(input.replace(/,/g,''), 10);
+    if(isNaN(confirmed)){ showNotify('⚠ 金額が正しくありません'); return; }
+    var discount = estimatedAmt - confirmed;
+    var ok = await sbPatch('/rest/v1/estimates?id=eq.' + id, {
+      repair_status: '完成',
+      confirmed_amount: confirmed,
+      discount_amount: discount,
+      confirmed_at: new Date().toISOString()
+    });
+    if(ok){
+      showNotify('✅ 完成確定：¥' + confirmed.toLocaleString() + (discount !== 0 ? '（値引き¥' + discount.toLocaleString() + '）' : ''));
+      var est2 = allEstimates.find(function(e){ return e.id === id; });
+      if(est2){ est2.repair_status = '完成'; est2.confirmed_amount = confirmed; }
+      renderSummary(); renderKanban();
+    } else { showNotify('⚠ 更新失敗'); }
+    return;
+  }
   var ok = await sbPatch('/rest/v1/estimates?id=eq.' + id, {repair_status: newStatus});
   if(ok){
     showNotify('✅ ステータス更新: ' + newStatus);
     var est = allEstimates.find(function(e){ return e.id === id; });
     if(est){ est.repair_status = newStatus; }
-    renderSummary();
-    renderKanban();
-  } else {
-    showNotify('⚠ 更新失敗');
-  }
+    renderSummary(); renderKanban();
+  } else { showNotify('⚠ 更新失敗'); }
 }
 
 function renderRental(){
