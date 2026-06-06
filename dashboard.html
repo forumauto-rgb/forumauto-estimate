@@ -159,10 +159,10 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#f0f
 const SB_URL = 'https://uhppgdwbyrijnqpvusxw.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVocHBnZHdieXJpam5xcHZ1c3h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NDEyMDksImV4cCI6MjA4OTExNzIwOX0.mJ2GXQUsRZAZ-VL6XTVTz3gfG3MTNtfnWxsIPU_DK60';
 
-const STATUSES = ['受付','見積中','作業待ち','板金中','塗装中','完成','納車済'];
+const STATUSES = ['受付','見積中','作業待ち','板金中','塗装中','組付け磨き','完成','納車済'];
 const STATUS_COLORS = {
   '受付':'white','見積中':'white','作業待ち':'white',
-  '板金中':'white','塗装中':'white','完成':'white','納車済':'white'
+ '板金中':'white','塗装中':'white','組付け磨き':'white','完成':'white','納車済':'white'
 };
 
 var allEstimates = [];
@@ -229,13 +229,22 @@ function renderSummary(){
   document.getElementById('s-rental-free').textContent = rentalFree;
   document.getElementById('s-ready').textContent = ready;
 }
-
+async function deleteCard(event, id){
+    event.stopPropagation();
+    if (!confirm('このカードを削除しますか？')) return;
+    await sbFetch('estimates?id=eq.' + id, {
+        method: 'PATCH',
+        body: JSON.stringify({ repair_status: '削除済' })
+    });
+    await loadData();
+}
 function renderKanban(){
   var board = document.getElementById('kanbanBoard');
   var cols = '';
   STATUSES.forEach(function(status){
-    var cards = allEstimates.filter(function(e){
-      return (e.repair_status || '受付') === status;
+  var cards = allEstimates.filter(function(e){
+    if (e.repair_status === '削除済') return false;
+    return (e.repair_status || '受付') === status;
     });
     cols += '<div class="column">'
       + '<div class="col-header col-' + status + '" style="color:white;">'
@@ -266,7 +275,8 @@ function renderCard(e){
     + (e.staff_name ? '<span class="badge" style="background:#f3e5f5;color:#6a1b9a;">' + e.staff_name + '</span>' : '')
     + (totalStr ? '<span class="badge" style="background:#e8f5e9;color:#1b5e20;">' + totalStr + '</span>' : '')
     + '</div>'
-    + (e.delivery_date ? '<div class="cdate">納車予定: ' + e.delivery_date + '</div>' : '')
+  　+ (e.delivery_date ? '<div class="cdate">納車予定: ' + e.delivery_date + '</div>' : '')
+　　+ (e.repair_status === '納車済' ? '<button onclick="deleteCard(event,\'' + e.id + '\')" style="margin-top:6px;width:100%;padding:4px;background:#e74c3c;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;">削除</button>' : '')
     + '<select class="cstatus-sel" onchange="updateStatus(\'' + e.id + '\',this.value)" onclick="event.stopPropagation()">'
     + opts + '</select>'
     + '</div>';
