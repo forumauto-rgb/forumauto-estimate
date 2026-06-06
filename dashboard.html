@@ -234,8 +234,14 @@ function renderKanban(){
   var board = document.getElementById('kanbanBoard');
   var cols = '';
   STATUSES.forEach(function(status){
-    var cards = allEstimates.filter(function(e){
-      return (e.repair_status || '受付') === status;
+  var cards = allEstimates.filter(function(e){
+    if ((e.repair_status || '受付') !== status) return false;
+    if (e.repair_status === '納車済') {
+        var d = new Date(e.estimate_date || e.created_at || today);
+        var thisMonth = today.substring(0, 7);
+        if ((d.toISOString().split('T')[0]).substring(0, 7) < thisMonth) return false;
+    }
+    return true; 
     });
     cols += '<div class="column">'
       + '<div class="col-header col-' + status + '" style="color:white;">'
