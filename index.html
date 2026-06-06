@@ -4178,44 +4178,47 @@ function buildSignSectionInvoice(){
 }
 
 function buildSignSection(){
-  var signDate = customer.signDate || new Date().toISOString().split('T')[0];
-  var signDateDisp = customer.signDate || '　　年　月　日';
-  var h = '';
- h += '<div class="no-print" style="margin-bottom:6px;padding:4px 8px;background:#fff9e6;border-radius:4px;">';
-h += '<label style="font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;">';
-h += '<input type="checkbox" id="printSignCheck" checked style="width:16px;height:16px;" onchange="var el=document.getElementById(\'signPrintArea\');el.style.display=this.checked?\'block\':\'none\';el.classList.toggle(\'hidden-sign\',!this.checked);"> ';
-h += '✍ お客様サイン欄を印刷する</label></div>';
-h += '<div id="signPrintArea">';
-  h += '<div style="border:2px solid #1a3a6b;padding:8px;">';
-  h += '<div style="font-size:10px;font-weight:bold;color:#1a3a6b;margin-bottom:4px;">✍ お客様確認・署名</div>';
-  h += '<div style="font-size:10px;color:#444;margin-bottom:8px;line-height:1.6;">上記内容を確認し、修理作業をフォーラムオートに依頼いたします。追加作業が発生した場合は事前にご連絡いただき、承認後に作業を進めることに同意します。</div>';
-  h += '<div style="display:flex;gap:12px;align-items:flex-start;">';
-  h += '<div style="flex:1;">';
-  if(customer.signatureData){
-    h += '<div class="no-print" style="font-size:10px;color:#2e7d32;margin-bottom:4px;">✅ 署名済み</div>';
-    h += '<img src="' + customer.signatureData + '" style="width:100%;height:80px;object-fit:contain;border:1px solid #ccc;border-radius:4px;background:white;">';
-    h += '<div class="no-print" style="margin-top:4px;display:flex;gap:6px;">';
-    h += '<button onclick="openSignModal()" style="font-size:10px;padding:3px 10px;background:#1565c0;color:white;border:none;border-radius:4px;cursor:pointer;">✏ 書き直す</button>';
+    var signDate = customer.signDate || new Date().toISOString().split('T')[0];
+    var signDateDisp = customer.signDate || '　年　月　日';
+    var h = '';
+    h += '<div class="no-print" style="margin-bottom:6px;padding:4px 8px;background:#fff9e6;border-radius:4px;">';
+    h += '<label style="font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;">';
+    h += '<input type="checkbox" id="printSignCheck" checked style="width:16px;height:16px;" onchange="var el=document.getElementById(\'signPrintArea\');if(this.checked){el.style.display=\'block\';el.classList.remove(\'hidden-sign\');}else{el.style.display=\'none\';el.classList.add(\'hidden-sign\');}"> ';
+    h += '✍ お客様サイン欄を印刷する</label></div>';
+    h += '<div id="signPrintArea">';
+    h += '<div style="border:2px solid #1a3a6b;padding:8px;">';
+    h += '<div style="font-size:10px;font-weight:bold;color:#1a3a6b;margin-bottom:4px;">✍ お客様確認・署名</div>';
+    h += '<div style="font-size:10px;color:#444;margin-bottom:8px;line-height:1.6;">上記内容を確認し、修理作業をフォーラムオートに依頼いたします。追加作業が発生した場合は事前にご連絡いただき、承認後に作業を進めることに同意します。</div>';
+    h += '<div style="display:flex;gap:12px;align-items:flex-start;">';
+    h += '<div style="flex:1;">';
+    if(customer.signatureData){
+      h += '<div class="no-print" style="font-size:10px;color:#2e7d32;margin-bottom:4px;">✅ 署名済み</div>';
+      h += '<img src="' + customer.signatureData + '" style="width:100%;height:80px;object-fit:contain;border:1px solid #ccc;border-radius:4px;background:white;">';
+      h += '<div class="no-print" style="margin-top:4px;display:flex;gap:6px;">';
+      h += '<button onclick="openSignModal()" style="font-size:10px;padding:3px 10px;background:#1565c0;color:white;border:none;border-radius:4px;cursor:pointer;">✏ 書き直す</button>';
+      h += '</div>';
+    } else {
+      h += '<div class="no-print" style="border:2px dashed #1565c0;border-radius:6px;padding:12px;text-align:center;background:#f0f7ff;">';
+      h += '<div style="font-size:12px;color:#1565c0;margin-bottom:8px;">🖊 こちらにサインをお願いします</div>';
+      h += '<button onclick="openSignModal()" style="font-size:15px;font-weight:bold;padding:12px 28px;background:#1565c0;color:white;border:none;border-radius:8px;cursor:pointer;">✍ サインする</button>';
+      h += '</div>';
+      h += '<div class="print-only" style="border-bottom:2px solid #333;min-height:50px;"></div>';
+    }
+    h += '<div style="font-size:10px;text-align:center;color:#555;margin-top:4px;">お客様サイン</div>';
     h += '</div>';
-   
-  } else {
-    h += '<div class="no-print" style="border:2px dashed #1565c0;border-radius:6px;padding:12px;text-align:center;background:#f0f7ff;">';
-    h += '<div style="font-size:12px;color:#1565c0;margin-bottom:8px;">📝 こちらにサインをお願いします</div>';
-    h += '<button onclick="openSignModal()" style="font-size:15px;font-weight:bold;padding:12px 28px;background:#1565c0;color:white;border:none;border-radius:8px;cursor:pointer;">✍ サインする</button>';
+    h += '<div style="width:150px;">';
+    h += '<div class="no-print" style="font-size:10px;color:#555;margin-bottom:4px;">署名日</div>';
+    h += '<input class="no-print" type="date" value="' + signDate + '" onchange="customer.signDate=this.value" style="font-size:11px;padding:3px;border:1px solid #ccc;border-radius:4px;width:100%;margin-bottom:4px;">';
+    h += '<div class="print-only" style="font-size:11px;">' + signDateDisp + '</div>';
     h += '</div>';
-    h += '<div class="print-only" style="border-bottom:2px solid #333;min-height:50px;"></div>';
-  }
- h += '<div style="font-size:10px;text-align:center;color:#555;margin-top:4px;">お客様サイン</div>';
-h += '<div style="margin-top:4px;">';
-h += '<input class="no-print" type="date" value="' + signDate + '" onchange="customer.signDate=this.value" style="font-size:11px;padding:3px;border:1px solid #ccc;border-radius:4px;margin-bottom:4px;">';
-h += '<div class="print-only" style="font-size:11px;">署名日：' + signDateDisp + '</div>';
-h += '</div>';
-h += '<div style="width:60px;border:1px solid #999;height:60px;display:flex;align-items:center;justify-content:center;margin-top:4px;">';
-h += '<div style="font-size:9px;color:#bbb;text-align:center;">担当者印</div>';
-h += '</div>';
-h += '</div>';
-
-  return h;
+    h += '<div style="width:60px;">';
+    h += '<div style="border:1px solid #999;height:60px;display:flex;align-items:center;justify-content:center;">';
+    h += '<div style="font-size:9px;color:#bbb;text-align:center;">担当者印</div>';
+    h += '</div></div>';
+    h += '</div>';
+    h += '</div>';
+    h += '</div>';
+    return h;
 }
 
 function renderPreview(){
