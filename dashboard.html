@@ -237,19 +237,7 @@ function renderSummary(){
     await loadAll();
 }
 }
- function getStatusColor(s){
-  var colors = {
-    '受付':'linear-gradient(135deg,#5c6bc0,#7986cb)',
-    '見積中':'linear-gradient(135deg,#f57c00,#ffb74d)',
-    '作業待ち':'linear-gradient(135deg,#0288d1,#4fc3f7)',
-    '板金中':'linear-gradient(135deg,#7b1fa2,#ba68c8)',
-    '塗装中':'linear-gradient(135deg,#c62828,#ef9a9a)',
-    '組付け磨き':'linear-gradient(135deg,#00838f,#4dd0e1)',
-    '完成':'linear-gradient(135deg,#2e7d32,#66bb6a)',
-    '納車済':'linear-gradient(135deg,#455a64,#90a4ae)'
-  };
-  return colors[s] || '#888';
-} 
+
 function renderKanban(){
   var board = document.getElementById('kanbanBoard');
   var cols = '';
