@@ -134,7 +134,6 @@ div[style*="resize:vertical"]::-webkit-scrollbar-thumb{background:#c5cae9;border
 .ep-tbl td.c{text-align:center}
 .ep-tbl td.r{text-align:right;font-weight:bold}
 .ep-tbl tbody tr:nth-child(even) td{background:#f8f9ff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-
 @media print{
   body > *{display:none!important}
   .app{display:block!important}
@@ -143,7 +142,6 @@ div[style*="resize:vertical"]::-webkit-scrollbar-thumb{background:#c5cae9;border
   .body-type-grid,.shortcut-grid,.part-and-task,
   #estListPanel,.damage-suggest-overlay{display:none!important}
   .print-only{display:block!important}
-  #signPrintArea.hidden-sign { display:none !important; }
   .content{display:block!important;padding:0!important;overflow:visible!important;height:auto!important}
   .card:not(.ep-wrap):not(.wo-card){display:none!important}
   #wo-wrap{display:block!important}
@@ -1297,13 +1295,13 @@ function addPhotos(input, category){
           customer.photos.push(e.target.result);
         }
         savePhotosLocal();
-       
+        autoSavePhotosToCloud();
         rIP();
       };
       img.onerror = function(){
         if(!customer[cat]) customer[cat] = [];
         customer[cat].push(e.target.result);
-       
+        autoSavePhotosToCloud();
         rIP();
       };
       img.src = e.target.result;
@@ -4173,52 +4171,46 @@ function buildSignSectionInvoice(){
   h += '<div style="border:1px solid #999;height:60px;display:flex;align-items:center;justify-content:center;">';
   h += '<div style="font-size:9px;color:#bbb;text-align:center;">担当者印</div>';
   h += '</div></div>';
-  h += '</div>';// signPrintArea閉じ
+  h += '</div></div>';
   return h;
 }
 
 function buildSignSection(){
-    var signDate = customer.signDate || new Date().toISOString().split('T')[0];
-    var signDateDisp = customer.signDate || '　年　月　日';
-    var h = '';
-    h += '<div class="no-print" style="margin-bottom:6px;padding:4px 8px;background:#fff9e6;border-radius:4px;">';
-    h += '<label style="font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;">';
-    h += '<input type="checkbox" id="printSignCheck" checked style="width:16px;height:16px;" onchange="var el=document.getElementById(\'signPrintArea\');if(this.checked){el.style.display=\'block\';el.classList.remove(\'hidden-sign\');}else{el.style.display=\'none\';el.classList.add(\'hidden-sign\');}"> ';
-    h += '✍ お客様サイン欄を印刷する</label></div>';
-    h += '<div id="signPrintArea">';
-    h += '<div style="border:2px solid #1a3a6b;padding:8px;">';
-    h += '<div style="font-size:10px;font-weight:bold;color:#1a3a6b;margin-bottom:4px;">✍ お客様確認・署名</div>';
-    h += '<div style="font-size:10px;color:#444;margin-bottom:8px;line-height:1.6;">上記内容を確認し、修理作業をフォーラムオートに依頼いたします。追加作業が発生した場合は事前にご連絡いただき、承認後に作業を進めることに同意します。</div>';
-    h += '<div style="display:flex;gap:12px;align-items:flex-start;">';
-    h += '<div style="flex:1;">';
-    if(customer.signatureData){
-      h += '<div class="no-print" style="font-size:10px;color:#2e7d32;margin-bottom:4px;">✅ 署名済み</div>';
-      h += '<img src="' + customer.signatureData + '" style="width:100%;height:80px;object-fit:contain;border:1px solid #ccc;border-radius:4px;background:white;">';
-      h += '<div class="no-print" style="margin-top:4px;display:flex;gap:6px;">';
-      h += '<button onclick="openSignModal()" style="font-size:10px;padding:3px 10px;background:#1565c0;color:white;border:none;border-radius:4px;cursor:pointer;">✏ 書き直す</button>';
-      h += '</div>';
-    } else {
-      h += '<div class="no-print" style="border:2px dashed #1565c0;border-radius:6px;padding:12px;text-align:center;background:#f0f7ff;">';
-      h += '<div style="font-size:12px;color:#1565c0;margin-bottom:8px;">🖊 こちらにサインをお願いします</div>';
-      h += '<button onclick="openSignModal()" style="font-size:15px;font-weight:bold;padding:12px 28px;background:#1565c0;color:white;border:none;border-radius:8px;cursor:pointer;">✍ サインする</button>';
-      h += '</div>';
-      h += '<div class="print-only" style="border-bottom:2px solid #333;min-height:50px;"></div>';
-    }
-    h += '<div style="font-size:10px;text-align:center;color:#555;margin-top:4px;">お客様サイン</div>';
+  var signDate = customer.signDate || new Date().toISOString().split('T')[0];
+  var signDateDisp = customer.signDate || '　　年　月　日';
+  var h = '';
+  h += '<div style="border:2px solid #1a3a6b;padding:8px;">';
+  h += '<div style="font-size:10px;font-weight:bold;color:#1a3a6b;margin-bottom:4px;">✍ お客様確認・署名</div>';
+  h += '<div style="font-size:10px;color:#444;margin-bottom:8px;line-height:1.6;">上記内容を確認し、修理作業をフォーラムオートに依頼いたします。追加作業が発生した場合は事前にご連絡いただき、承認後に作業を進めることに同意します。</div>';
+  h += '<div style="display:flex;gap:12px;align-items:flex-start;">';
+  h += '<div style="flex:1;">';
+  if(customer.signatureData){
+    h += '<div class="no-print" style="font-size:10px;color:#2e7d32;margin-bottom:4px;">✅ 署名済み</div>';
+    h += '<img src="' + customer.signatureData + '" style="width:100%;height:80px;object-fit:contain;border:1px solid #ccc;border-radius:4px;background:white;">';
+    h += '<div class="no-print" style="margin-top:4px;display:flex;gap:6px;">';
+    h += '<button onclick="openSignModal()" style="font-size:10px;padding:3px 10px;background:#1565c0;color:white;border:none;border-radius:4px;cursor:pointer;">✏ 書き直す</button>';
     h += '</div>';
-    h += '<div style="width:150px;">';
-    h += '<div class="no-print" style="font-size:10px;color:#555;margin-bottom:4px;">署名日</div>';
-    h += '<input class="no-print" type="date" value="' + signDate + '" onchange="customer.signDate=this.value" style="font-size:11px;padding:3px;border:1px solid #ccc;border-radius:4px;width:100%;margin-bottom:4px;">';
-    h += '<div class="print-only" style="font-size:11px;">' + signDateDisp + '</div>';
+    h += '<div class="print-only" style="font-size:9px;color:#555;margin-top:2px;">署名日：' + signDateDisp + '</div>';
+  } else {
+    h += '<div class="no-print" style="border:2px dashed #1565c0;border-radius:6px;padding:12px;text-align:center;background:#f0f7ff;">';
+    h += '<div style="font-size:12px;color:#1565c0;margin-bottom:8px;">📝 こちらにサインをお願いします</div>';
+    h += '<button onclick="openSignModal()" style="font-size:15px;font-weight:bold;padding:12px 28px;background:#1565c0;color:white;border:none;border-radius:8px;cursor:pointer;">✍ サインする</button>';
     h += '</div>';
-    h += '<div style="width:60px;">';
-    h += '<div style="border:1px solid #999;height:60px;display:flex;align-items:center;justify-content:center;">';
-    h += '<div style="font-size:9px;color:#bbb;text-align:center;">担当者印</div>';
-    h += '</div></div>';
-    h += '</div>';
-    h += '</div>';
-    h += '</div>';
-    return h;
+    h += '<div class="print-only" style="border-bottom:2px solid #333;min-height:50px;"></div>';
+  }
+  h += '<div style="font-size:10px;text-align:center;color:#555;margin-top:4px;">お客様サイン</div>';
+  h += '</div>';
+  h += '<div style="width:150px;">';
+  h += '<div class="no-print" style="font-size:10px;color:#555;margin-bottom:4px;">署名日</div>';
+  h += '<input class="no-print" type="date" value="' + signDate + '" onchange="customer.signDate=this.value" style="font-size:11px;padding:3px;border:1px solid #ccc;border-radius:4px;width:100%;margin-bottom:4px;">';
+  h += '<div class="print-only" style="font-size:11px;">' + signDateDisp + '</div>';
+  h += '</div>';
+  h += '<div style="width:60px;">';
+  h += '<div style="border:1px solid #999;height:60px;display:flex;align-items:center;justify-content:center;">';
+  h += '<div style="font-size:9px;color:#bbb;text-align:center;">担当者印</div>';
+  h += '</div></div>';
+  h += '</div></div>';
+  return h;
 }
 
 function renderPreview(){
@@ -6157,8 +6149,8 @@ async function saveEstimate(){
       method:'DELETE',
       headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
     });
-    var pm=(partsItems||[]).filter(function(p){return p.name||p.cost;}).map(function(p,i){var qty=parseFloat(p.qty)||1;var cost=parseInt(p.cost)||0;var profit=parseInt(p.profit)||0;var sell=Math.round(cost*qty*(100+profit)/100);return{estimate_id:estId,item_type:'parts',name:(p.name||'')+(p.partNo?' ['+p.partNo+']':''),cost:cost,profit:profit,sell_price:sell,sort_order:i};});
-    var mm=(matItems||[]).filter(function(m){return m.name||m.cost;}).map(function(m,i){var cost=parseInt(m.cost)||0;var profit=parseInt(m.profit)||30;var sell=Math.round(cost*(100+profit)/100);return{estimate_id:estId,item_type:'material',name:m.name||'',cost:cost,profit:profit,sell_price:sell,sort_order:i};});
+    var pm=(partsItems||[]).filter(function(p){return p.name||p.cost;}).map(function(p,i){return{estimate_id:estId,item_type:'parts',name:p.name||'',part_no:p.partNo||'',cost:parseInt(p.cost)||0,profit:parseInt(p.profit)||0,sort_order:i};});
+    var mm=(matItems||[]).filter(function(m){return m.name||m.cost;}).map(function(m,i){return{estimate_id:estId,item_type:'material',name:m.name||'',cost:parseInt(m.cost)||0,profit:parseInt(m.profit)||30,sort_order:i};});
     var all=pm.concat(mm);
     if(all.length>0){
       await fetch(SUPABASE_URL+'/rest/v1/estimate_parts',{
