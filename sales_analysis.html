@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>フォーラムオート 売上分析</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#f0f2f5;min-height:100vh;font-size:14px;}
+.header{background:linear-gradient(135deg,#0b1c35,#1a3a6b);color:white;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.header h1{font-size:18px;font-weight:bold;}
+.header-right{display:flex;gap:10px;align-items:center;}
+.btn{padding:6px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:bold;}
+.btn-gold{background:#b8960c;color:white;}
+.btn-white{background:rgba(255,255,255,0.2);color:white;}
+.btn-white:hover{background:rgba(255,255,255,0.3);}
+
+/* フィルター */
+.filters{background:white;padding:14px 20px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;border-bottom:1px solid #e0e0e0;box-shadow:0 1px 4px rgba(0,0,0,0.06);}
+.filter-group{display:flex;align-items:center;gap:6px;}
+.filter-group label{font-size:12px;color:#666;white-space:nowrap;}
+.filter-group select,.filter-group input{padding:5px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;}
+.btn-filter{background:#1a3a6b;color:white;padding:6px 16px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold;}
+
+/* サマリー */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;padding:16px 20px 0;}
+.sum-card{background:white;border-radius:10px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,0.08);border-left:4px solid #b8960c;}
+.sum-card.blue{border-left-color:#1a3a6b;}
+.sum-card.green{border-left-color:#2e7d32;}
+.sum-card.red{border-left-color:#c62828;}
+.sum-card.teal{border-left-color:#00838f;}
+.sum-card .label{font-size:11px;color:#888;margin-bottom:4px;}
+.sum-card .value{font-size:22px;font-weight:bold;color:#1a3a6b;}
+.sum-card .sub{font-size:11px;color:#aaa;margin-top:2px;}
+
+/* タブ */
+.tabs{display:flex;gap:0;padding:16px 20px 0;border-bottom:2px solid #e0e0e0;margin:0 20px;}
+.tab-btn{padding:10px 18px;font-size:12px;font-weight:bold;border:none;background:none;cursor:pointer;color:#888;border-bottom:3px solid transparent;margin-bottom:-2px;}
+.tab-btn.active{color:#1a3a6b;border-bottom-color:#b8960c;}
+.tab-panel{display:none;padding:16px 20px;}
+.tab-panel.active{display:block;}
+
+/* グリッド */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+@media(max-width:900px){.grid2,.grid3{grid-template-columns:1fr;}}
+
+/* カード */
+.card{background:white;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08);}
+.card-title{font-size:13px;font-weight:bold;color:#1a3a6b;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #f0f2f5;}
+.card-title span{font-size:11px;color:#888;font-weight:normal;margin-left:8px;}
+
+/* テーブル */
+.data-table{width:100%;border-collapse:collapse;font-size:12px;}
+.data-table th{background:#f7f3ea;color:#1a3a6b;padding:8px 10px;text-align:left;border-bottom:2px solid #e0e0e0;white-space:nowrap;}
+.data-table td{padding:7px 10px;border-bottom:1px solid #f0f0f0;vertical-align:middle;}
+.data-table tr:hover td{background:#f8f9ff;}
+.data-table .num{text-align:right;}
+.plus{color:#2e7d32;font-weight:bold;}
+.minus{color:#c62828;font-weight:bold;}
+.zero{color:#888;}
+
+/* バー */
+.bar-wrap{display:flex;align-items:center;gap:8px;}
+.bar{height:12px;border-radius:6px;background:#1a3a6b;min-width:2px;}
+.bar.gold{background:#b8960c;}
+.bar.green{background:#2e7d32;}
+.bar.red{background:#c62828;}
+
+/* ローディング */
+.loading{text-align:center;padding:40px;color:#888;font-size:13px;}
+
+/* チャートコンテナ */
+.chart-wrap{position:relative;height:260px;}
+
+/* バッジ */
+.badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:bold;display:inline-block;}
+.badge-ins{background:#e3f2fd;color:#1565c0;}
+.badge-own{background:#fff3e0;color:#e65100;}
+.badge-discount{background:#fce4ec;color:#c62828;}
+.badge-ok{background:#e8f5e9;color:#2e7d32;}
+
+.section-title{font-size:15px;font-weight:bold;color:#1a3a6b;margin:16px 0 10px;padding-left:10px;border-left:4px solid #b8960c;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>📊 フォーラムオート 売上分析</h1>
+  </div>
+  <div class="header-right">
+    <a href="ダッシュボード.html" style="color:white;font-size:12px;text-decoration:none;background:rgba(255,255,255,0.2);padding:6px 12px;border-radius:8px;">🏠 ホーム</a>
+    <button class="btn btn-white" onclick="loadAll()">🔄 更新</button>
+  </div>
+</div>
+
+<!-- フィルター -->
+<div class="filters">
+  <div class="filter-group">
+    <label>期間</label>
+    <select id="f-period" onchange="onPeriodChange()">
+      <option value="this_month">今月</option>
+      <option value="last_month">先月</option>
+      <option value="3month">直近3ヶ月</option>
+      <option value="6month">直近6ヶ月</option>
+      <option value="this_year">今年度</option>
+      <option value="custom">カスタム</option>
+    </select>
+  </div>
+  <div class="filter-group" id="custom-range" style="display:none;">
+    <label>から</label>
+    <input type="date" id="f-from">
+    <label>まで</label>
+    <input type="date" id="f-to">
+  </div>
+  <div class="filter-group">
+    <label>修理種別</label>
+    <select id="f-type">
+      <option value="all">全て</option>
+      <option value="insurance">保険</option>
+      <option value="own">自費</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>担当</label>
+    <select id="f-staff">
+      <option value="all">全員</option>
+    </select>
+  </div>
+  <button class="btn-filter" onclick="applyFilter()">🔍 絞り込み</button>
+</div>
+
+<!-- サマリー -->
+<div class="summary" id="summary">
+  <div class="sum-card blue"><div class="label">対象件数</div><div class="value" id="s-count">-</div><div class="sub">件</div></div>
+  <div class="sum-card"><div class="label">確定売上合計</div><div class="value" id="s-confirmed">-</div><div class="sub">円</div></div>
+  <div class="sum-card green"><div class="label">見積金額合計</div><div class="value" id="s-estimated">-</div><div class="sub">円</div></div>
+  <div class="sum-card red"><div class="label">値引き合計</div><div class="value" id="s-discount">-</div><div class="sub">円</div></div>
+  <div class="sum-card teal"><div class="label">工数差異（合計）</div><div class="value" id="s-hours">-</div><div class="sub">時間</div></div>
+</div>
+
+<!-- タブ -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="showTab('overview',this)">📈 概要</button>
+  <button class="tab-btn" onclick="showTab('process',this)">🔧 工程別</button>
+  <button class="tab-btn" onclick="showTab('parts',this)">🔩 部品・材料別</button>
+  <button class="tab-btn" onclick="showTab('hours',this)">⏱ 工数分析</button>
+  <button class="tab-btn" onclick="showTab('cases',this)">🚗 案件別</button>
+</div>
+
+<!-- 概要 -->
+<div id="overview" class="tab-panel active">
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">月別売上推移</div>
+      <div class="chart-wrap"><canvas id="chart-monthly"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">保険 vs 自費</div>
+      <div class="chart-wrap"><canvas id="chart-type"></canvas></div>
+    </div>
+  </div>
+  <div style="margin-top:16px;" class="grid2">
+    <div class="card">
+      <div class="card-title">値引き状況</div>
+      <table class="data-table" id="tbl-discount">
+        <thead><tr><th>見積No</th><th>顧客</th><th>見積金額</th><th>確定金額</th><th>値引き</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">担当別売上</div>
+      <div class="chart-wrap"><canvas id="chart-staff"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- 工程別 -->
+<div id="process" class="tab-panel">
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">工程別売上構成</div>
+      <div class="chart-wrap"><canvas id="chart-process"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">工程別工数合計</div>
+      <div class="chart-wrap"><canvas id="chart-process-hours"></canvas></div>
+    </div>
+  </div>
+  <div style="margin-top:16px;" class="card">
+    <div class="card-title">工程別明細</div>
+    <table class="data-table" id="tbl-process">
+      <thead><tr><th>工程</th><th class="num">件数</th><th class="num">見積工数</th><th class="num">実績工数</th><th class="num">差異</th><th class="num">売上合計</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 部品・材料別 -->
+<div id="parts" class="tab-panel">
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">部品別売上TOP10</div>
+      <table class="data-table" id="tbl-parts">
+        <thead><tr><th>部品名</th><th class="num">件数</th><th class="num">原価合計</th><th class="num">売価合計</th><th class="num">粗利</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">材料別売上TOP10</div>
+      <table class="data-table" id="tbl-materials">
+        <thead><tr><th>材料名</th><th class="num">件数</th><th class="num">原価合計</th><th class="num">売価合計</th><th class="num">粗利</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+  <div style="margin-top:16px;" class="card">
+    <div class="card-title">部位別作業頻度</div>
+    <div class="chart-wrap"><canvas id="chart-partname"></canvas></div>
+  </div>
+</div>
+
+<!-- 工数分析 -->
+<div id="hours" class="tab-panel">
+  <div class="card">
+    <div class="card-title">工程別 見積工数 vs 実績工数 <span>棒グラフ（青=見積、緑=実績）</span></div>
+    <div class="chart-wrap" style="height:300px;"><canvas id="chart-hours-compare"></canvas></div>
+  </div>
+  <div style="margin-top:16px;" class="card">
+    <div class="card-title">案件別工数差異</div>
+    <table class="data-table" id="tbl-hours">
+      <thead><tr><th>見積No</th><th>顧客</th><th>部位</th><th>工程</th><th class="num">見積工数</th><th class="num">実績工数</th><th class="num">差異</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 案件別 -->
+<div id="cases" class="tab-panel">
+  <div class="card">
+    <div class="card-title">案件別詳細</div>
+    <table class="data-table" id="tbl-cases">
+      <thead><tr><th>見積No</th><th>顧客</th><th>車両</th><th>種別</th><th class="num">見積金額</th><th class="num">確定金額</th><th class="num">値引き</th><th>確定日</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const SB_URL = 'https://uhppgdwbyrijnqpvusxw.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVocHBnZHdieXJpam5xcHZ1c3h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NDEyMDksImV4cCI6MjA4OTExNzIwOX0.mJ2GXQUsRZAZ-VL6XTVTz3gfG3MTNtfnWxsIPU_DK60';
+
+var allEstimates = [];
+var allItems = [];
+var allParts = [];
+var filteredEstimates = [];
+var charts = {};
+
+async function sbFetch(path){
+  var r = await fetch(SB_URL + path, {
+    headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
+  });
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+
+function getDateRange(){
+  var period = document.getElementById('f-period').value;
+  var now = new Date();
+  var from, to;
+  to = new Date(now);
+  to.setHours(23,59,59,999);
+
+  if(period === 'this_month'){
+    from = new Date(now.getFullYear(), now.getMonth(), 1);
+  } else if(period === 'last_month'){
+    from = new Date(now.getFullYear(), now.getMonth()-1, 1);
+    to = new Date(now.getFullYear(), now.getMonth(), 0);
+  } else if(period === '3month'){
+    from = new Date(now.getFullYear(), now.getMonth()-2, 1);
+  } else if(period === '6month'){
+    from = new Date(now.getFullYear(), now.getMonth()-5, 1);
+  } else if(period === 'this_year'){
+    from = new Date(now.getFullYear(), 3, 1); // 4月始まり
+    if(now.getMonth() < 3) from = new Date(now.getFullYear()-1, 3, 1);
+  } else {
+    from = new Date(document.getElementById('f-from').value);
+    to = new Date(document.getElementById('f-to').value);
+    to.setHours(23,59,59,999);
+  }
+  return {
+    from: from.toISOString().split('T')[0],
+    to: to.toISOString().split('T')[0]
+  };
+}
+
+function onPeriodChange(){
+  var p = document.getElementById('f-period').value;
+  document.getElementById('custom-range').style.display = p === 'custom' ? 'flex' : 'none';
+}
+
+async function loadAll(){
+  try{
+    var range = getDateRange();
+    var estimates = await sbFetch('/rest/v1/estimates?confirmed_at=gte.' + range.from + 'T00:00:00&confirmed_at=lte.' + range.to + 'T23:59:59&order=confirmed_at.desc&limit=500&select=id,estimate_no,customer_name,car_name,repair_type,repair_status,staff_name,grand_total,confirmed_amount,discount_amount,confirmed_at,estimate_date');
+    allEstimates = estimates || [];
+
+    // 担当フィルター更新
+    var staffSet = {};
+    allEstimates.forEach(function(e){ if(e.staff_name) staffSet[e.staff_name] = 1; });
+    var sel = document.getElementById('f-staff');
+    var cur = sel.value;
+    sel.innerHTML = '<option value="all">全員</option>';
+    Object.keys(staffSet).forEach(function(s){
+      sel.innerHTML += '<option value="' + s + '"' + (cur===s?' selected':'') + '>' + s + '</option>';
+    });
+
+    // estimate_items取得
+    var ids = allEstimates.map(function(e){ return e.id; });
+    if(ids.length > 0){
+      var items = await sbFetch('/rest/v1/estimate_items?estimate_id=in.(' + ids.join(',') + ')&select=*&limit=2000');
+      allItems = items || [];
+    } else {
+      allItems = [];
+    }
+
+    // estimate_parts取得
+    if(ids.length > 0){
+      var parts = await sbFetch('/rest/v1/estimate_parts?estimate_id=in.(' + ids.join(',') + ')&select=*&limit=2000');
+      allParts = parts || [];
+    } else {
+      allParts = [];
+    }
+
+    applyFilter();
+  } catch(e){
+    console.error(e);
+    alert('データ読み込みエラー: ' + e.message);
+  }
+}
+
+function applyFilter(){
+  var type = document.getElementById('f-type').value;
+  var staff = document.getElementById('f-staff').value;
+  filteredEstimates = allEstimates.filter(function(e){
+    if(type !== 'all' && e.repair_type !== type) return false;
+    if(staff !== 'all' && e.staff_name !== staff) return false;
+    return true;
+  });
+  renderAll();
+}
+
+function renderAll(){
+  renderSummary();
+  renderOverview();
+  renderProcess();
+  renderParts();
+  renderHours();
+  renderCases();
+}
+
+function renderSummary(){
+  var count = filteredEstimates.length;
+  var confirmed = filteredEstimates.reduce(function(s,e){ return s + (e.confirmed_amount || e.grand_total || 0); }, 0);
+  var estimated = filteredEstimates.reduce(function(s,e){ return s + (e.grand_total || 0); }, 0);
+  var discount = filteredEstimates.reduce(function(s,e){ return s + (e.discount_amount || 0); }, 0);
+
+  var ids = filteredEstimates.map(function(e){ return e.id; });
+  var items = allItems.filter(function(i){ return ids.indexOf(i.estimate_id) >= 0; });
+  var hoursEst = items.reduce(function(s,i){ return s + (parseFloat(i.hours)||0); }, 0);
+  var hoursAct = items.reduce(function(s,i){ return s + (parseFloat(i.actual_hours)||0); }, 0);
+  var hoursDiff = hoursAct - hoursEst;
+
+  document.getElementById('s-count').textContent = count;
+  document.getElementById('s-confirmed').textContent = fmt(confirmed);
+  document.getElementById('s-estimated').textContent = fmt(estimated);
+  document.getElementById('s-discount').textContent = fmt(discount);
+  document.getElementById('s-hours').textContent = (hoursDiff >= 0 ? '+' : '') + hoursDiff.toFixed(1);
+}
+
+function renderOverview(){
+  // 月別売上
+  var monthly = {};
+  filteredEstimates.forEach(function(e){
+    var m = (e.confirmed_at || e.estimate_date || '').substring(0,7);
+    if(!m) return;
+    if(!monthly[m]) monthly[m] = {ins:0, own:0};
+    var amt = e.confirmed_amount || e.grand_total || 0;
+    if(e.repair_type === 'own') monthly[m].own += amt;
+    else monthly[m].ins += amt;
+  });
+  var months = Object.keys(monthly).sort();
+  destroyChart('chart-monthly');
+  charts['chart-monthly'] = new Chart(document.getElementById('chart-monthly'), {
+    type:'bar',
+    data:{
+      labels: months,
+      datasets:[
+        {label:'保険', data: months.map(function(m){ return monthly[m].ins; }), backgroundColor:'rgba(21,101,192,0.7)'},
+        {label:'自費', data: months.map(function(m){ return monthly[m].own; }), backgroundColor:'rgba(184,150,12,0.7)'}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:function(v){return '¥'+Math.round(v/10000)+'万';}}}}}
+  });
+
+  // 保険vs自費
+  var ins = filteredEstimates.filter(function(e){ return e.repair_type !== 'own'; });
+  var own = filteredEstimates.filter(function(e){ return e.repair_type === 'own'; });
+  var insAmt = ins.reduce(function(s,e){ return s+(e.confirmed_amount||e.grand_total||0);},0);
+  var ownAmt = own.reduce(function(s,e){ return s+(e.confirmed_amount||e.grand_total||0);},0);
+  destroyChart('chart-type');
+  charts['chart-type'] = new Chart(document.getElementById('chart-type'), {
+    type:'doughnut',
+    data:{labels:['保険（'+ins.length+'件）','自費（'+own.length+'件）'], datasets:[{data:[insAmt,ownAmt], backgroundColor:['rgba(21,101,192,0.8)','rgba(184,150,12,0.8)']}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:function(c){ return '¥'+Math.round(c.parsed).toLocaleString();}}}}}
+  });
+
+  // 値引きテーブル
+  var tbody = document.querySelector('#tbl-discount tbody');
+  var discounted = filteredEstimates.filter(function(e){ return e.discount_amount && e.discount_amount !== 0; });
+  tbody.innerHTML = discounted.length === 0
+    ? '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:16px;">値引きなし</td></tr>'
+    : discounted.map(function(e){
+        var disc = e.discount_amount || 0;
+        return '<tr>'
+          + '<td>' + (e.estimate_no||'') + '</td>'
+          + '<td>' + (e.customer_name||'') + '</td>'
+          + '<td class="num">¥' + fmt(e.grand_total||0) + '</td>'
+          + '<td class="num">¥' + fmt(e.confirmed_amount||0) + '</td>'
+          + '<td class="num ' + (disc>0?'minus':'plus') + '">▼¥' + fmt(Math.abs(disc)) + '</td>'
+          + '</tr>';
+      }).join('');
+
+  // 担当別
+  var staffMap = {};
+  filteredEstimates.forEach(function(e){
+    var s = e.staff_name || '未設定';
+    if(!staffMap[s]) staffMap[s] = 0;
+    staffMap[s] += e.confirmed_amount || e.grand_total || 0;
+  });
+  var staffNames = Object.keys(staffMap);
+  destroyChart('chart-staff');
+  charts['chart-staff'] = new Chart(document.getElementById('chart-staff'), {
+    type:'bar',
+    data:{labels:staffNames, datasets:[{label:'売上', data:staffNames.map(function(s){ return staffMap[s];}), backgroundColor:'rgba(11,28,53,0.75)'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:function(v){ return '¥'+Math.round(v/10000)+'万';}}}}}
+  });
+}
+
+function renderProcess(){
+  var ids = filteredEstimates.map(function(e){ return e.id; });
+  var items = allItems.filter(function(i){ return ids.indexOf(i.estimate_id) >= 0; });
+
+  var processMap = {};
+  items.forEach(function(i){
+    var p = i.process || 'その他';
+    if(!processMap[p]) processMap[p] = {count:0, hoursEst:0, hoursAct:0, cost:0};
+    processMap[p].count++;
+    processMap[p].hoursEst += parseFloat(i.hours)||0;
+    processMap[p].hoursAct += parseFloat(i.actual_hours)||0;
+    processMap[p].cost += parseFloat(i.cost)||0;
+  });
+
+  var procs = Object.keys(processMap).sort(function(a,b){ return processMap[b].cost - processMap[a].cost; });
+
+  // 工程別売上チャート
+  destroyChart('chart-process');
+  charts['chart-process'] = new Chart(document.getElementById('chart-process'), {
+    type:'pie',
+    data:{labels:procs, datasets:[{data:procs.map(function(p){ return processMap[p].cost;}), backgroundColor:['#1a3a6b','#b8960c','#2e7d32','#c62828','#00838f','#7b1fa2','#e65100','#455a64','#0288d1','#f57c00']}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}
+  });
+
+  // 工程別工数チャート
+  destroyChart('chart-process-hours');
+  charts['chart-process-hours'] = new Chart(document.getElementById('chart-process-hours'), {
+    type:'bar',
+    data:{labels:procs, datasets:[
+      {label:'見積工数', data:procs.map(function(p){ return processMap[p].hoursEst.toFixed(1);}), backgroundColor:'rgba(21,101,192,0.7)'},
+      {label:'実績工数', data:procs.map(function(p){ return processMap[p].hoursAct.toFixed(1);}), backgroundColor:'rgba(46,125,50,0.7)'}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{ticks:{callback:function(v){ return v+'h';}}}}}
+  });
+
+  // テーブル
+  var tbody = document.querySelector('#tbl-process tbody');
+  tbody.innerHTML = procs.length === 0
+    ? '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:16px;">データなし</td></tr>'
+    : procs.map(function(p){
+        var d = processMap[p];
+        var diff = d.hoursAct - d.hoursEst;
+        var cls = diff > 0 ? 'plus' : diff < 0 ? 'minus' : 'zero';
+        return '<tr>'
+          + '<td>' + p + '</td>'
+          + '<td class="num">' + d.count + '</td>'
+          + '<td class="num">' + d.hoursEst.toFixed(1) + 'h</td>'
+          + '<td class="num">' + d.hoursAct.toFixed(1) + 'h</td>'
+          + '<td class="num ' + cls + '">' + (diff>=0?'+':'') + diff.toFixed(1) + 'h</td>'
+          + '<td class="num">¥' + fmt(d.cost) + '</td>'
+          + '</tr>';
+      }).join('');
+}
+
+function renderParts(){
+  var ids = filteredEstimates.map(function(e){ return e.id; });
+  var parts = allParts.filter(function(p){ return ids.indexOf(p.estimate_id) >= 0; });
+
+  var partsMap = {};
+  var matsMap = {};
+  var partNameMap = {};
+
+  parts.forEach(function(p){
+    var n = p.name || '不明';
+    if(p.item_type === 'parts'){
+      if(!partsMap[n]) partsMap[n] = {count:0, cost:0, sell:0};
+      partsMap[n].count++;
+      partsMap[n].cost += parseFloat(p.cost)||0;
+      partsMap[n].sell += parseFloat(p.sell_price)||0;
+    } else if(p.item_type === 'material'){
+      if(!matsMap[n]) matsMap[n] = {count:0, cost:0, sell:0};
+      matsMap[n].count++;
+      matsMap[n].cost += parseFloat(p.cost)||0;
+      matsMap[n].sell += parseFloat(p.sell_price)||0;
+    }
+  });
+
+  // 部品テーブル
+  var pKeys = Object.keys(partsMap).sort(function(a,b){ return partsMap[b].sell - partsMap[a].sell; }).slice(0,10);
+  var tbody = document.querySelector('#tbl-parts tbody');
+  tbody.innerHTML = pKeys.length === 0
+    ? '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:16px;">データなし</td></tr>'
+    : pKeys.map(function(k){
+        var d = partsMap[k];
+        var gross = d.sell - d.cost;
+        return '<tr><td>' + k.substring(0,20) + '</td><td class="num">' + d.count + '</td><td class="num">¥' + fmt(d.cost) + '</td><td class="num">¥' + fmt(d.sell) + '</td><td class="num ' + (gross>=0?'plus':'minus') + '">¥' + fmt(gross) + '</td></tr>';
+      }).join('');
+
+  // 材料テーブル
+  var mKeys = Object.keys(matsMap).sort(function(a,b){ return matsMap[b].sell - matsMap[a].sell; }).slice(0,10);
+  var tbody2 = document.querySelector('#tbl-materials tbody');
+  tbody2.innerHTML = mKeys.length === 0
+    ? '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:16px;">データなし</td></tr>'
+    : mKeys.map(function(k){
+        var d = matsMap[k];
+        var gross = d.sell - d.cost;
+        return '<tr><td>' + k.substring(0,20) + '</td><td class="num">' + d.count + '</td><td class="num">¥' + fmt(d.cost) + '</td><td class="num">¥' + fmt(d.sell) + '</td><td class="num ' + (gross>=0?'plus':'minus') + '">¥' + fmt(gross) + '</td></tr>';
+      }).join('');
+
+  // 部位別頻度チャート
+  var items = allItems.filter(function(i){ return ids.indexOf(i.estimate_id) >= 0; });
+  var partFreq = {};
+  items.forEach(function(i){
+    var n = i.part_name || '不明';
+    partFreq[n] = (partFreq[n]||0) + 1;
+  });
+  var pfKeys = Object.keys(partFreq).sort(function(a,b){ return partFreq[b]-partFreq[a]; }).slice(0,15);
+  destroyChart('chart-partname');
+  charts['chart-partname'] = new Chart(document.getElementById('chart-partname'), {
+    type:'bar',
+    data:{labels:pfKeys, datasets:[{label:'作業件数', data:pfKeys.map(function(k){ return partFreq[k];}), backgroundColor:'rgba(184,150,12,0.75)'}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}}}
+  });
+}
+
+function renderHours(){
+  var ids = filteredEstimates.map(function(e){ return e.id; });
+  var items = allItems.filter(function(i){ return ids.indexOf(i.estimate_id) >= 0 && (parseFloat(i.hours)||0) > 0; });
+
+  // 工程別比較チャート
+  var processMap = {};
+  items.forEach(function(i){
+    var p = i.process || 'その他';
+    if(!processMap[p]) processMap[p] = {est:0, act:0};
+    processMap[p].est += parseFloat(i.hours)||0;
+    processMap[p].act += parseFloat(i.actual_hours)||0;
+  });
+  var procs = Object.keys(processMap);
+  destroyChart('chart-hours-compare');
+  charts['chart-hours-compare'] = new Chart(document.getElementById('chart-hours-compare'), {
+    type:'bar',
+    data:{labels:procs, datasets:[
+      {label:'見積工数', data:procs.map(function(p){ return parseFloat(processMap[p].est.toFixed(1));}), backgroundColor:'rgba(21,101,192,0.75)'},
+      {label:'実績工数', data:procs.map(function(p){ return parseFloat(processMap[p].act.toFixed(1));}), backgroundColor:'rgba(46,125,50,0.75)'}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{ticks:{callback:function(v){ return v+'h';}}}}}
+  });
+
+  // 案件別工数差異テーブル
+  var tbody = document.querySelector('#tbl-hours tbody');
+  var rows = items.filter(function(i){ return Math.abs((parseFloat(i.actual_hours)||0)-(parseFloat(i.hours)||0)) > 0.1; });
+  rows.sort(function(a,b){ return Math.abs((parseFloat(b.actual_hours)||0)-(parseFloat(b.hours)||0)) - Math.abs((parseFloat(a.actual_hours)||0)-(parseFloat(a.hours)||0)); });
+  tbody.innerHTML = rows.length === 0
+    ? '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:16px;">差異なし</td></tr>'
+    : rows.slice(0,50).map(function(i){
+        var est = parseFloat(i.hours)||0;
+        var act = parseFloat(i.actual_hours)||0;
+        var diff = act - est;
+        var cls = diff > 0 ? 'plus' : diff < 0 ? 'minus' : 'zero';
+        var estObj = allEstimates.find(function(e){ return e.id === i.estimate_id; }) || {};
+        return '<tr>'
+          + '<td>' + (estObj.estimate_no||'') + '</td>'
+          + '<td>' + (estObj.customer_name||'') + '</td>'
+          + '<td>' + (i.part_name||'') + '</td>'
+          + '<td>' + (i.process||'') + '</td>'
+          + '<td class="num">' + est.toFixed(1) + 'h</td>'
+          + '<td class="num">' + act.toFixed(1) + 'h</td>'
+          + '<td class="num ' + cls + '">' + (diff>=0?'+':'') + diff.toFixed(1) + 'h</td>'
+          + '</tr>';
+      }).join('');
+}
+
+function renderCases(){
+  var tbody = document.querySelector('#tbl-cases tbody');
+  tbody.innerHTML = filteredEstimates.length === 0
+    ? '<tr><td colspan="8" style="text-align:center;color:#aaa;padding:16px;">データなし</td></tr>'
+    : filteredEstimates.map(function(e){
+        var disc = e.discount_amount || 0;
+        var confirmed = e.confirmed_amount || e.grand_total || 0;
+        return '<tr>'
+          + '<td>' + (e.estimate_no||'') + '</td>'
+          + '<td>' + (e.customer_name||'') + '</td>'
+          + '<td style="font-size:11px;">' + (e.car_name||'') + '</td>'
+          + '<td><span class="badge ' + (e.repair_type==='own'?'badge-own':'badge-ins') + '">' + (e.repair_type==='own'?'自費':'保険') + '</span></td>'
+          + '<td class="num">¥' + fmt(e.grand_total||0) + '</td>'
+          + '<td class="num">¥' + fmt(confirmed) + '</td>'
+          + '<td class="num ' + (disc>0?'minus':disc<0?'plus':'zero') + '">' + (disc!==0?'▼¥'+fmt(Math.abs(disc)):'-') + '</td>'
+          + '<td style="font-size:11px;">' + ((e.confirmed_at||'').substring(0,10)) + '</td>'
+          + '</tr>';
+      }).join('');
+}
+
+function fmt(n){ return Math.round(n).toLocaleString(); }
+
+function destroyChart(id){
+  if(charts[id]){ charts[id].destroy(); delete charts[id]; }
+}
+
+function showTab(tabId, btn){
+  document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById(tabId).classList.add('active');
+  btn.classList.add('active');
+}
+
+loadAll();
+</script>
+</body>
+</html>
