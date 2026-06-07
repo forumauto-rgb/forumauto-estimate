@@ -203,9 +203,10 @@ textarea { resize: vertical; min-height: 80px; }
         <!-- ★ 色名→色番号に変更 -->
         <div class="form-group">
           <label>色番号<span style="font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;color:#888;"> ※ 塗料台帳の番号</span></label>
-          <input type="text" id="colorCode" placeholder="例：040・1F7・PAX" oninput="lookupColorName(this.value)">
+         <input type="text" id="colorCode" placeholder="例：040・1F7・PAX" oninput="lookupColorName(this.value);checkPaintDifficulty(this.value)">
           <div class="color-hint" id="colorNameHint" style="display:none;"></div>
         </div>
+　　　　　<div id="paintDifficultyAlert" style="display:none;border:2px solid #e74c3c;border-radius:8px;padding:10px 14px;margin-top:6px;"></div>
         <!-- 色名（色番号から自動補完 or 手入力） -->
         <div class="form-group">
           <label>色名<span style="font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;color:#888;"> ※ 色番号入力で自動表示</span></label>
@@ -608,8 +609,8 @@ var COLOR_MASTER = {
   'B35':'ライトブルーM','C7P':'ミスティックレッドM','E8H':'プレシャスブラック','F8S':'ダークブルーM',
   'G1U':'プレシャスシルバー','KH3':'マシーングレーP','PAX':'プラチナホワイトP','PW1':'パールホワイト',
   'QAA':'グランドホワイトP','RAA':'ピュアホワイト','NU':'チタニウムシルバーM','W24':'ブリリアントホワイトP',
-  '1C0':'シルバーM','1G0':'ダークシルバーM','Z2H':'アズライトブルーM','46G':'ソニックシルバーM',
-  '51K':'スノーフレイクホワイトP','A3F':'ダイヤモンドホワイトP','B15':'インフィニティブラック',
+ 　'1C0':'シルバーM','1G0':'ダークシルバーM','Z2H':'アズライトブルーM','46G':'マシーングレープレミアムメタリック',
+　'51K':'ソウルレッドクリスタルメタリック','A3F':'ダイヤモンドホワイトP','B15':'インフィニティブラック',
   'NBL':'ナイトブルーM','PAU':'ブリリアントホワイトP','K1X':'ドーンシルバーM'
 };
 
@@ -628,7 +629,27 @@ function lookupColorName(code) {
     hint.textContent = '⚠ 色名マスタにありません（手入力してください）';
   }
 }
-
+async function checkPaintDifficulty(code) {
+  if (!code) return;
+  var upper = code.toUpperCase().trim();
+  try {
+    var data = await supabaseQuery('paint_difficulty', 'GET', null, '?color_code=eq.' + encodeURIComponent(upper) + '&limit=1');
+    var el = document.getElementById('paintDifficultyAlert');
+    if (!el) return;
+    if (data && data.length > 0) {
+      var d = data[0];
+      var isSuper = d.difficulty === '超難易度';
+      el.style.display = 'block';
+      el.style.background = isSuper ? '#fff0f0' : '#fffbe6';
+      el.style.borderColor = isSuper ? '#e74c3c' : '#f39c12';
+      el.innerHTML = '<div style="font-weight:bold;color:' + (isSuper?'#c0392b':'#e67e22') + ';font-size:13px;">⚠️ ' + d.difficulty + '塗料：' + d.color_name + '（' + upper + '）</div>'
+        + '<div style="font-size:12px;color:#555;margin-top:4px;">' + d.customer_message + '</div>'
+        + '<div style="font-size:11px;color:#888;margin-top:4px;">調色+' + d.extra_mixing_hours + 'h　塗装+' + d.extra_paint_hours + 'h　材料費+' + Math.round(d.extra_material_rate*100) + '%</div>';
+    } else {
+      el.style.display = 'none';
+    }
+  } catch(e) { console.warn('難易度判定エラー', e); }
+}
 // ★ レンタカー貸出中の詳細をSupabaseから取得
 async function loadRentalActiveInfo() {
   try {
