@@ -1865,7 +1865,46 @@ function vAutoColorName(idx, code){
     showNotify('🎨 色番号 ' + code + ' は未登録です。色名欄に入力して登録できます');
   }
 }
+function openColorDB(idx){
+  var dbWin = document.getElementById('colorDBModal');
+  if(dbWin){ dbWin.remove(); }
+  var modal = document.createElement('div');
+  modal.id = 'colorDBModal';
+  modal.style = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML = '<div style="background:white;border-radius:12px;padding:20px;width:420px;max-height:80vh;overflow-y:auto;">'
+    + '<div style="font-weight:bold;font-size:14px;margin-bottom:10px;">🎨 色DB検索</div>'
+    + '<input id="colorDBSearch" placeholder="色番号または色名を入力..." style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:10px;font-size:13px;" oninput="filterColorDB()">'
+    + '<div id="colorDBList" style="max-height:400px;overflow-y:auto;"></div>'
+    + '<button onclick="document.getElementById(\'colorDBModal\').remove()" style="margin-top:10px;width:100%;padding:8px;background:#eee;border:none;border-radius:6px;cursor:pointer;">閉じる</button>'
+    + '</div>';
+  document.body.appendChild(modal);
+  window._colorDBIdx = idx;
+  filterColorDB();
+}
 
+function filterColorDB(){
+  var q = (document.getElementById('colorDBSearch').value||'').toUpperCase().trim();
+  var list = document.getElementById('colorDBList');
+  if(!list) return;
+  var entries = Object.entries(COLOR_CODE_DB);
+  var filtered = q ? entries.filter(function(e){ return e[0].indexOf(q)>=0 || e[1].indexOf(q)>=0; }) : entries;
+  list.innerHTML = filtered.slice(0,50).map(function(e){
+    return '<div onclick="selectColorDB(\''+e[0]+'\',\''+e[1]+'\')" style="padding:8px 10px;border-bottom:1px solid #f0f0f0;cursor:pointer;display:flex;justify-content:space-between;font-size:12px;" onmouseover="this.style.background=\'#f0f4ff\'" onmouseout="this.style.background=\'\'">'
+      + '<span style="font-family:monospace;color:#1a3a6b;font-weight:bold;">'+e[0]+'</span>'
+      + '<span style="color:#555;">'+e[1]+'</span>'
+      + '</div>';
+  }).join('');
+}
+
+function selectColorDB(code, name){
+  var idx = window._colorDBIdx;
+  vMaster[idx].colorCode = code;
+  vMaster[idx].color = name;
+  autoSaveM();
+  render();
+  document.getElementById('colorDBModal').remove();
+  showNotify('🎨 色番号 '+code+' → '+name+' を設定しました');
+}
 function saveCustomColor(code, name){
   if(!code||!name) return;
   var customDB = {};
