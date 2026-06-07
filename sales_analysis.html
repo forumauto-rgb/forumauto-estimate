@@ -22,6 +22,8 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#f0f
 .filter-group label{font-size:12px;color:#666;white-space:nowrap;}
 .filter-group select,.filter-group input{padding:5px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;}
 .btn-filter{background:#1a3a6b;color:white;padding:6px 16px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold;}
+.quick-btn{background:#f0f2f5;color:#1a3a6b;padding:4px 10px;border:1px solid #ddd;border-radius:6px;cursor:pointer;font-size:11px;font-weight:bold;}
+.quick-btn:hover{background:#e0e4f0;}
 
 /* サマリー */
 .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;padding:16px 20px 0;}
@@ -72,7 +74,17 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#f0f
 .loading{text-align:center;padding:40px;color:#888;font-size:13px;}
 
 /* チャートコンテナ */
-.chart-wrap{position:relative;height:260px;}
+.chart-wrap{position:relative;height:260px;cursor:zoom-in;}
+.chart-wrap::after{content:'🔍';position:absolute;top:6px;right:8px;font-size:16px;opacity:0.4;}
+.chart-wrap:hover::after{opacity:0.9;}
+/* モーダル */
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:white;border-radius:16px;padding:24px;width:90vw;max-width:1000px;height:80vh;display:flex;flex-direction:column;position:relative;}
+.modal-title{font-size:15px;font-weight:bold;color:#1a3a6b;margin-bottom:16px;}
+.modal-close{position:absolute;top:14px;right:16px;font-size:22px;cursor:pointer;color:#888;line-height:1;}
+.modal-close:hover{color:#1a3a6b;}
+.modal-chart-wrap{flex:1;position:relative;}
 
 /* バッジ */
 .badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:bold;display:inline-block;}
@@ -99,21 +111,26 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#f0f
 <!-- フィルター -->
 <div class="filters">
   <div class="filter-group">
-    <label>期間</label>
-    <select id="f-period" onchange="onPeriodChange()">
-      <option value="this_month">今月</option>
-      <option value="last_month">先月</option>
-      <option value="3month">直近3ヶ月</option>
-      <option value="6month">直近6ヶ月</option>
-      <option value="this_year">今年度</option>
-      <option value="custom">カスタム</option>
+    <label>基準日</label>
+    <select id="f-datetype">
+      <option value="confirmed_at">確定日</option>
+      <option value="estimate_date">見積日</option>
     </select>
   </div>
-  <div class="filter-group" id="custom-range" style="display:none;">
+  <div class="filter-group">
     <label>から</label>
     <input type="date" id="f-from">
+  </div>
+  <div class="filter-group">
     <label>まで</label>
     <input type="date" id="f-to">
+  </div>
+  <div class="filter-group" style="gap:4px;">
+    <button class="quick-btn" onclick="setQuick('this_month')">今月</button>
+    <button class="quick-btn" onclick="setQuick('last_month')">先月</button>
+    <button class="quick-btn" onclick="setQuick('3month')">3ヶ月</button>
+    <button class="quick-btn" onclick="setQuick('6month')">6ヶ月</button>
+    <button class="quick-btn" onclick="setQuick('this_year')">今年度</button>
   </div>
   <div class="filter-group">
     <label>修理種別</label>
@@ -129,7 +146,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#f0f
       <option value="all">全員</option>
     </select>
   </div>
-  <button class="btn-filter" onclick="applyFilter()">🔍 絞り込み</button>
+  <button class="btn-filter" onclick="loadAll()">🔍 検索</button>
 </div>
 
 <!-- サマリー -->
@@ -155,11 +172,11 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#f0f
   <div class="grid2">
     <div class="card">
       <div class="card-title">月別売上推移</div>
-      <div class="chart-wrap"><canvas id="chart-monthly"></canvas></div>
+      <div class="chart-wrap" onclick="openChartModal('chart-monthly','月別売上推移')"><canvas id="chart-monthly"></canvas></div>
     </div>
     <div class="card">
       <div class="card-title">保険 vs 自費</div>
-      <div class="chart-wrap"><canvas id="chart-type"></canvas></div>
+      <div class="chart-wrap" onclick="openChartModal('chart-type','保険 vs 自費')"><canvas id="chart-type"></canvas></div>
     </div>
   </div>
   <div style="margin-top:16px;" class="grid2">
@@ -172,7 +189,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#f0f
     </div>
     <div class="card">
       <div class="card-title">担当別売上</div>
-      <div class="chart-wrap"><canvas id="chart-staff"></canvas></div>
+      <div class="chart-wrap" onclick="openChartModal('chart-staff','担当別売上')"><canvas id="chart-staff"></canvas></div>
     </div>
   </div>
 </div>
@@ -182,11 +199,11 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#f0f
   <div class="grid2">
     <div class="card">
       <div class="card-title">工程別売上構成</div>
-      <div class="chart-wrap"><canvas id="chart-process"></canvas></div>
+      <div class="chart-wrap" onclick="openChartModal('chart-process','工程別売上構成')"><canvas id="chart-process"></canvas></div>
     </div>
     <div class="card">
       <div class="card-title">工程別工数合計</div>
-      <div class="chart-wrap"><canvas id="chart-process-hours"></canvas></div>
+      <div class="chart-wrap" onclick="openChartModal('chart-process-hours','工程別工数合計')"><canvas id="chart-process-hours"></canvas></div>
     </div>
   </div>
   <div style="margin-top:16px;" class="card">
@@ -218,7 +235,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#f0f
   </div>
   <div style="margin-top:16px;" class="card">
     <div class="card-title">部位別作業頻度</div>
-    <div class="chart-wrap"><canvas id="chart-partname"></canvas></div>
+    <div class="chart-wrap" onclick="openChartModal('chart-partname','部位別作業頻度')"><canvas id="chart-partname"></canvas></div>
   </div>
 </div>
 
@@ -226,7 +243,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#f0f
 <div id="hours" class="tab-panel">
   <div class="card">
     <div class="card-title">工程別 見積工数 vs 実績工数 <span>棒グラフ（青=見積、緑=実績）</span></div>
-    <div class="chart-wrap" style="height:300px;"><canvas id="chart-hours-compare"></canvas></div>
+    <div class="chart-wrap" style="height:300px;" onclick="openChartModal('chart-hours-compare','工程別 見積工数 vs 実績工数')"><canvas id="chart-hours-compare"></canvas></div>
   </div>
   <div style="margin-top:16px;" class="card">
     <div class="card-title">案件別工数差異</div>
@@ -248,6 +265,17 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#f0f
   </div>
 </div>
 
+<!-- チャート拡大モーダル -->
+<div class="modal-overlay" id="chartModal" onclick="closeModal(event)">
+  <div class="modal-box">
+    <div class="modal-title" id="modalTitle"></div>
+    <span class="modal-close" onclick="closeModalDirect()">✕</span>
+    <div class="modal-chart-wrap">
+      <canvas id="modalCanvas"></canvas>
+    </div>
+  </div>
+</div>
+
 <script>
 const SB_URL = 'https://uhppgdwbyrijnqpvusxw.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVocHBnZHdieXJpam5xcHZ1c3h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NDEyMDksImV4cCI6MjA4OTExNzIwOX0.mJ2GXQUsRZAZ-VL6XTVTz3gfG3MTNtfnWxsIPU_DK60';
@@ -257,6 +285,32 @@ var allItems = [];
 var allParts = [];
 var filteredEstimates = [];
 var charts = {};
+var modalChart = null;
+
+function openChartModal(chartId, title){
+  var src = charts[chartId];
+  if(!src) return;
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('chartModal').classList.add('show');
+  if(modalChart){ modalChart.destroy(); modalChart = null; }
+  var canvas = document.getElementById('modalCanvas');
+  modalChart = new Chart(canvas, {
+    type: src.config.type,
+    data: JSON.parse(JSON.stringify(src.config.data)),
+    options: Object.assign({}, src.config.options, {responsive:true, maintainAspectRatio:false})
+  });
+}
+
+function closeModal(event){
+  if(event.target === document.getElementById('chartModal')){
+    closeModalDirect();
+  }
+}
+
+function closeModalDirect(){
+  document.getElementById('chartModal').classList.remove('show');
+  if(modalChart){ modalChart.destroy(); modalChart = null; }
+}
 
 async function sbFetch(path){
   var r = await fetch(SB_URL + path, {
@@ -266,45 +320,40 @@ async function sbFetch(path){
   return r.json();
 }
 
-function getDateRange(){
-  var period = document.getElementById('f-period').value;
+function setQuick(type){
   var now = new Date();
   var from, to;
   to = new Date(now);
-  to.setHours(23,59,59,999);
-
-  if(period === 'this_month'){
+  if(type === 'this_month'){
     from = new Date(now.getFullYear(), now.getMonth(), 1);
-  } else if(period === 'last_month'){
+  } else if(type === 'last_month'){
     from = new Date(now.getFullYear(), now.getMonth()-1, 1);
     to = new Date(now.getFullYear(), now.getMonth(), 0);
-  } else if(period === '3month'){
+  } else if(type === '3month'){
     from = new Date(now.getFullYear(), now.getMonth()-2, 1);
-  } else if(period === '6month'){
+  } else if(type === '6month'){
     from = new Date(now.getFullYear(), now.getMonth()-5, 1);
-  } else if(period === 'this_year'){
-    from = new Date(now.getFullYear(), 3, 1); // 4月始まり
+  } else if(type === 'this_year'){
+    from = new Date(now.getFullYear(), 3, 1);
     if(now.getMonth() < 3) from = new Date(now.getFullYear()-1, 3, 1);
-  } else {
-    from = new Date(document.getElementById('f-from').value);
-    to = new Date(document.getElementById('f-to').value);
-    to.setHours(23,59,59,999);
   }
-  return {
-    from: from.toISOString().split('T')[0],
-    to: to.toISOString().split('T')[0]
-  };
-}
-
-function onPeriodChange(){
-  var p = document.getElementById('f-period').value;
-  document.getElementById('custom-range').style.display = p === 'custom' ? 'flex' : 'none';
+  document.getElementById('f-from').value = from.toISOString().split('T')[0];
+  document.getElementById('f-to').value = to.toISOString().split('T')[0];
 }
 
 async function loadAll(){
+  var fromVal = document.getElementById('f-from').value;
+  var toVal = document.getElementById('f-to').value;
+  var dateType = document.getElementById('f-datetype').value;
+
+  if(!fromVal || !toVal){
+    alert('期間を指定してください');
+    return;
+  }
+
   try{
-    var range = getDateRange();
-    var estimates = await sbFetch('/rest/v1/estimates?confirmed_at=gte.' + range.from + 'T00:00:00&confirmed_at=lte.' + range.to + 'T23:59:59&order=confirmed_at.desc&limit=500&select=id,estimate_no,customer_name,car_name,repair_type,repair_status,staff_name,grand_total,confirmed_amount,discount_amount,confirmed_at,estimate_date');
+    var col = dateType;
+    var estimates = await sbFetch('/rest/v1/estimates?' + col + '=gte.' + fromVal + 'T00:00:00&' + col + '=lte.' + toVal + 'T23:59:59&order=' + col + '.desc&limit=500&select=id,estimate_no,customer_name,car_name,repair_type,repair_status,staff_name,grand_total,confirmed_amount,discount_amount,confirmed_at,estimate_date');
     allEstimates = estimates || [];
 
     // 担当フィルター更新
@@ -644,6 +693,7 @@ function showTab(tabId, btn){
   btn.classList.add('active');
 }
 
+setQuick('this_month');
 loadAll();
 </script>
 </body>
