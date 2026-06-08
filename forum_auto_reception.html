@@ -217,14 +217,14 @@ textarea { resize: vertical; min-height: 80px; }
         <div class="form-group full">
           <label>問診内容</label>
           <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;">
-            onclick="addSymptom('フロントバンパー摺り傷・凹み');checkPanelMaterial('フロントバンパー')"
-          　 onclick="addSymptom('リアバンパー摺り傷・凹み');checkPanelMaterial('リヤバンパー')"
-          　onclick="addSymptom('左フロントドア凹み・摺り傷');checkPanelMaterial('フロントドア')"
-            onclick="addSymptom('右フロントドア凹み・摺り傷');checkPanelMaterial('フロントドア')"
-         　  onclick="addSymptom('左フロントフェンダー凹み・摺り傷');checkPanelMaterial('フロントフェンダー')"
-            onclick="addSymptom('右フロントフェンダー凹み・摺り傷');checkPanelMaterial('フロントフェンダー')"
-            onclick="addSymptom('ボンネット凹み・摺り傷');checkPanelMaterial('フード（ボンネット）')"
-           onclick="addSymptom('トランクリッド凹み');checkPanelMaterial('トランク')"
+           <button type="button" onclick="addSymptom('フロントバンパー摺り傷・凹み');checkPanelMaterial('フロントバンパー')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">フロントバンパー</button>
+<button type="button" onclick="addSymptom('リアバンパー摺り傷・凹み');checkPanelMaterial('リヤバンパー')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">リアバンパー</button>
+<button type="button" onclick="addSymptom('左フロントドア凹み・摺り傷');checkPanelMaterial('フロントドア')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">左ドア</button>
+<button type="button" onclick="addSymptom('右フロントドア凹み・摺り傷');checkPanelMaterial('フロントドア')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">右ドア</button>
+<button type="button" onclick="addSymptom('左フロントフェンダー凹み・摺り傷');checkPanelMaterial('フロントフェンダー')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">左フェンダー</button>
+<button type="button" onclick="addSymptom('右フロントフェンダー凹み・摺り傷');checkPanelMaterial('フロントフェンダー')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">右フェンダー</button>
+<button type="button" onclick="addSymptom('ボンネット凹み・摺り傷');checkPanelMaterial('フード（ボンネット）')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">ボンネット</button>
+<button type="button" onclick="addSymptom('トランクリッド凹み');checkPanelMaterial('トランク')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">トランク</button>
             <button type="button" onclick="addSymptom('保険修理対応')" style="font-size:11px;padding:4px 8px;border:1px solid #c5cae9;border-radius:6px;background:#e8eaf6;color:#3949ab;cursor:pointer;">保険対応</button>
             <button type="button" onclick="addSymptom('自費修理希望')" style="font-size:11px;padding:4px 8px;border:1px solid #c5cae9;border-radius:6px;background:#e8eaf6;color:#3949ab;cursor:pointer;">自費修理</button>
             <button type="button" onclick="document.getElementById('symptoms').value=''" style="font-size:11px;padding:4px 8px;border:1px solid #ffcdd2;border-radius:6px;background:#fff5f5;color:#c62828;cursor:pointer;">🗑 クリア</button>
