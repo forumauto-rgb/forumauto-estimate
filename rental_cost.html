@@ -222,7 +222,7 @@ function render(){
     var cardId='card-'+c['ID'];
 
     ch+='<div class="car-card" id="'+cardId+'">';
-    ch+='<div class="car-hdr"><div><div class="car-name">'+(c['め']||c['車種名']||'-')+'</div><div class="car-plate">'+(c['登録番号']||'-')+'</div></div>'+statusHtml+'</div>';
+    ch+='<div class="car-hdr"><div><div class="car-name">'+(c['車種']||'-')+'</div><div class="car-plate">'+(c['登録番号']||'-')+'</div></div>'+statusHtml+'</div>';
 
     // 料金バー
     ch+='<div class="fare-section">';
@@ -270,7 +270,7 @@ function renderAnnualTable(days){
     totalS+=annS;totalC+=annC;totalP+=annP;
     var pc=pr>=50?'g':pr>=30?'':'r';
     tbody+='<tr>';
-    tbody+='<td>'+(c['め']||'-')+'</td>';
+    tbody+='<td>'+(c['車種']||'-')+'</td>';
     tbody+='<td class="num">'+fmt(fare)+'</td>';
     tbody+='<td class="r">'+fmt(cost)+'</td>';
     tbody+='<td class="'+pc+'">'+fmt(profit)+'</td>';
