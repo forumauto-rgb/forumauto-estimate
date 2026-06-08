@@ -663,7 +663,7 @@ async function checkPaintDifficulty(code) {
   // Supabaseから検索
   try{
     var data = await supabaseQuery('panel_materials','GET',null,
-      '?model=ilike.*' + encodeURIComponent(carName) + '*&panel=ilike.*' + encodeURIComponent(panelKey) + '*&limit=1');
+      '?model=ilike.' + encodeURIComponent('*' + carName + '*') + '&panel=ilike.' + encodeURIComponent('*' + panelKey + '*') + '&limit=1');
 
     if(data && data.length > 0){
       var d = data[0];
