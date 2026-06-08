@@ -155,7 +155,7 @@ function calcDailyCost(car){
 
 async function loadData(){
   try{
-    var res=await fetch(SB+'/rest/v1/'+encodeURIComponent('レンタカーマスタ')+'?select=*&order=ID.asc',{headers:HDR});
+    fetch(SB+'/rest/v1/'+encodeURIComponent('レンタカーマスタ')+'?select=*&order=id.asc',{headers:HDR})
     if(!res.ok) throw new Error('HTTP '+res.status);
     cars=await res.json();
     render();
