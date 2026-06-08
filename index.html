@@ -1824,6 +1824,45 @@ var COLOR_CODE_DB = {
 };
 
 // 見積作成タブ（顧客パネル）の色番号自動変換
+async function checkPaintDifficultyForEstimate(code){
+  if(!code || code.length < 2) return;
+  var upper = code.toUpperCase().trim();
+  var old = document.getElementById('paint-difficulty-banner');
+  if(old) old.remove();
+  try{
+    var res = await fetch(
+      SUPABASE_URL + '/rest/v1/paint_difficulty?color_code=eq.' + encodeURIComponent(upper),
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
+    );
+    var data = await res.json();
+    if(!data || !data.length) return;
+    var rec = data[0];
+    var banner = document.createElement('div');
+    banner.id = 'paint-difficulty-banner';
+    banner.style.cssText = 'position:fixed;top:56px;left:50%;transform:translateX(-50%);z-index:9998;'
+      + 'background:linear-gradient(135deg,#b71c1c,#c62828);color:white;'
+      + 'border-radius:12px;padding:14px 20px;min-width:320px;max-width:480px;'
+      + 'box-shadow:0 4px 20px rgba(183,28,28,0.5);text-align:center;';
+    var surcharge = rec.surcharge_rate ? ('　割増率：×' + rec.surcharge_rate) : '';
+    var note = rec.note ? ('<div style="font-size:11px;margin-top:6px;opacity:0.9;">' + rec.note + '</div>') : '';
+    banner.innerHTML = '<div style="font-size:15px;font-weight:bold;margin-bottom:4px;">⚠️ 超難易度塗料</div>'
+      + '<div style="font-size:13px;">色番号：<strong>' + upper + '</strong>　' + (rec.color_name || '') + surcharge + '</div>'
+      + note
+      + '<div style="font-size:11px;margin-top:8px;opacity:0.8;">塗装工賃に割増を適用してください</div>'
+      + '<button onclick="document.getElementById(\'paint-difficulty-banner\').remove()" '
+      + 'style="margin-top:8px;background:rgba(255,255,255,0.25);border:1px solid rgba(255,255,255,0.5);'
+      + 'color:white;border-radius:6px;padding:4px 16px;cursor:pointer;font-size:12px;">閉じる</button>';
+    document.body.appendChild(banner);
+    setTimeout(function(){
+      var b = document.getElementById('paint-difficulty-banner');
+      if(b) b.remove();
+    }, 8000);
+    showNotify('⚠️ 超難易度塗料：' + upper + (surcharge ? surcharge : ''));
+  } catch(e){
+    console.warn('checkPaintDifficultyForEstimate error:', e);
+  }
+}
+
 function cAutoColorName(code){
   if(!code) return;
   var upper = code.toUpperCase().trim();
@@ -1838,6 +1877,7 @@ function cAutoColorName(code){
     }
     showNotify('🎨 色番号 ' + code + ' → ' + name);
   }
+  checkPaintDifficultyForEstimate(code);
 }
 
 function vAutoColorName(idx, code){
