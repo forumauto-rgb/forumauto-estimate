@@ -15,11 +15,36 @@
 }
 body{font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh;}
 .header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
-.header h1{font-size:15px;font-weight:600;}
+.header h1{font-size:15px;font-weight:600;}A
 .header-left{display:flex;align-items:center;gap:10px;}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block;}
 a.home-btn{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);text-decoration:none;padding:5px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);}
 .container{max-width:1000px;margin:0 auto;padding:18px 20px 50px;}
+
+/* 期間指定パネル */
+.period-panel{background:var(--surface);border:2px solid var(--blue);border-radius:var(--radius);padding:15px 18px;margin-bottom:18px;}
+.period-panel h3{font-size:13px;font-weight:600;color:var(--blue);margin-bottom:12px;}
+.period-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.period-row label{font-size:12px;color:var(--text2);white-space:nowrap;}
+.period-row input[type=date]{padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;}
+.period-row button{padding:7px 16px;border:none;border-radius:var(--radius-sm);background:var(--blue);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+.period-row button:hover{opacity:0.85;}
+.quick-btns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+.quick-btn{padding:4px 12px;border:1px solid var(--border);border-radius:20px;background:var(--bg);font-size:11px;cursor:pointer;font-family:inherit;color:var(--text2);}
+.quick-btn:hover{background:var(--blue-bg);border-color:var(--blue);color:var(--blue);}
+
+/* 実績サマリー */
+.actual-summary{background:var(--blue-bg);border:1px solid #b3cef5;border-radius:var(--radius);padding:15px 18px;margin-bottom:18px;}
+.actual-summary h3{font-size:13px;font-weight:600;color:var(--blue);margin-bottom:12px;}
+.actual-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;}
+.actual-item{background:var(--surface);border-radius:var(--radius-sm);padding:12px 14px;}
+.actual-item .a-lbl{font-size:11px;color:var(--text3);margin-bottom:3px;}
+.actual-item .a-val{font-size:18px;font-weight:700;color:var(--blue);}
+.actual-item .a-sub{font-size:11px;color:var(--text3);margin-top:2px;}
+
+/* 実績テーブル */
+.actual-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:15px;margin-bottom:18px;overflow-x:auto;}
+.actual-table-wrap h3{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px;}
 
 /* サマリー */
 .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px;}
@@ -81,6 +106,7 @@ td.g{text-align:right;font-weight:600;color:var(--green);font-variant-numeric:ta
 td.r{text-align:right;font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums;}
 .loading{text-align:center;padding:30px;color:var(--text3);}
 .err{background:var(--red-bg);color:var(--accent);border:1px solid #f5c6c6;border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;margin-bottom:14px;}
+.no-data{text-align:center;padding:20px;color:var(--text3);font-size:13px;}
 </style>
 </head>
 <body>
@@ -94,6 +120,55 @@ td.r{text-align:right;font-weight:600;color:var(--accent);font-variant-numeric:t
 
 <div class="container">
   <div id="errArea"></div>
+
+  <!-- ★ 期間指定パネル -->
+  <div class="period-panel">
+    <h3>📅 期間指定 実績集計</h3>
+    <div class="period-row">
+      <label>開始日</label>
+      <input type="date" id="dateStart">
+      <label>〜 終了日</label>
+      <input type="date" id="dateEnd">
+      <button onclick="loadActual()">🔍 集計する</button>
+    </div>
+    <div class="quick-btns">
+      <button class="quick-btn" onclick="setRange(0)">今月</button>
+      <button class="quick-btn" onclick="setRange(1)">先月</button>
+      <button class="quick-btn" onclick="setRange(3)">過去3ヶ月</button>
+      <button class="quick-btn" onclick="setRange(6)">過去6ヶ月</button>
+      <button class="quick-btn" onclick="setRange(12)">過去1年</button>
+      <button class="quick-btn" onclick="setRange(-1)">今年度</button>
+    </div>
+  </div>
+
+  <!-- ★ 実績サマリー -->
+  <div class="actual-summary" id="actualSummary" style="display:none;">
+    <h3>📊 実績集計結果</h3>
+    <div class="actual-grid" id="actualGrid"></div>
+  </div>
+
+  <!-- ★ 車両別実績テーブル -->
+  <div class="actual-table-wrap" id="actualTableWrap" style="display:none;">
+    <h3>🚗 車両別 実績一覧 <span id="actualPeriodLabel" style="font-weight:400;color:var(--text3);"></span></h3>
+    <table>
+      <thead>
+        <tr>
+          <th>車種</th>
+          <th style="text-align:right">貸出件数</th>
+          <th style="text-align:right">実稼働日数</th>
+          <th style="text-align:right">実売上</th>
+          <th style="text-align:right">1日原価</th>
+          <th style="text-align:right">期間原価</th>
+          <th style="text-align:right">実粗利</th>
+          <th style="text-align:right">粗利率</th>
+        </tr>
+      </thead>
+      <tbody id="actualBody"></tbody>
+      <tfoot id="actualFoot"></tfoot>
+    </table>
+  </div>
+
+  <!-- 試算サマリー -->
   <div class="summary" id="summaryArea"><div class="loading">読み込み中...</div></div>
 
   <!-- 稼働率シミュレーター -->
@@ -140,6 +215,161 @@ var cars=[];
 function fmt(n){return '¥'+Math.round(n).toLocaleString('ja-JP');}
 function fmtM(n){return '¥'+(Math.round(n)/10000).toFixed(1)+'万';}
 
+// ★ クイック期間セット
+function setRange(months){
+  var now=new Date();
+  var s,e;
+  if(months===0){
+    // 今月
+    s=new Date(now.getFullYear(),now.getMonth(),1);
+    e=new Date(now.getFullYear(),now.getMonth()+1,0);
+  } else if(months===1){
+    // 先月
+    s=new Date(now.getFullYear(),now.getMonth()-1,1);
+    e=new Date(now.getFullYear(),now.getMonth(),0);
+  } else if(months===-1){
+    // 今年度（4月〜）
+    var fy=now.getMonth()>=3?now.getFullYear():now.getFullYear()-1;
+    s=new Date(fy,3,1);
+    e=new Date(fy+1,2,31);
+  } else {
+    // 過去Nヶ月
+    s=new Date(now.getFullYear(),now.getMonth()-months,1);
+    e=now;
+  }
+  var fmt2=function(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+  document.getElementById('dateStart').value=fmt2(s);
+  document.getElementById('dateEnd').value=fmt2(e);
+  loadActual();
+}
+
+// ★ 実績集計
+async function loadActual(){
+  var ds=document.getElementById('dateStart').value;
+  var de=document.getElementById('dateEnd').value;
+  if(!ds||!de){alert('開始日・終了日を指定してください');return;}
+
+  var summaryEl=document.getElementById('actualSummary');
+  var tableEl=document.getElementById('actualTableWrap');
+  summaryEl.style.display='block';
+  tableEl.style.display='block';
+  document.getElementById('actualGrid').innerHTML='<div class="loading">集計中...</div>';
+  document.getElementById('actualBody').innerHTML='<tr><td colspan="8" class="no-data">集計中...</td></tr>';
+
+  try{
+    // 貸出レコード取得
+    var url=SB+'/rest/v1/receptions?rental_needed=eq.true'
+      +'&reception_datetime=gte.'+ds+'T00:00:00'
+      +'&reception_datetime=lte.'+de+'T23:59:59'
+      +'&order=reception_datetime.asc&limit=500';
+    var res=await fetch(url,{headers:HDR});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    var recs=await res.json();
+
+    // 返却レコード取得
+    var url2=SB+'/rest/v1/receptions?type=eq.'+encodeURIComponent('レンタカー返却')
+      +'&reception_datetime=gte.'+ds+'T00:00:00'
+      +'&reception_datetime=lte.'+de+'T23:59:59'
+      +'&order=reception_datetime.asc&limit=500';
+    var res2=await fetch(url2,{headers:HDR});
+    var returns=res2.ok?await res2.json():[];
+
+    // 車両別に集計
+    var carMap={};
+    cars.forEach(function(c){
+      var name=c['車種']||'';
+      carMap[name]={
+        name:name,plate:c['登録番号']||'',
+        fare:c['金額']||0,
+        cost:calcDailyCost(c),
+        count:0,days:0,sales:0
+      };
+    });
+
+    // 貸出レコードから集計（type='レンタカー貸出'のみ）
+    recs.forEach(function(r){
+      if(r.type==='レンタカー返却') return;
+      var carName=r.rental_type||r.car_model||'';
+      if(!carName) return;
+      if(!carMap[carName]){
+        carMap[carName]={name:carName,plate:'',fare:0,cost:0,count:0,days:0,sales:0};
+      }
+      carMap[carName].count++;
+
+      // checklistから日数・金額を取得
+      var cl={};
+      try{cl=JSON.parse(r.checklist||'{}');}catch(e){}
+      var d=parseInt(cl.days)||1;
+      var billing=parseInt(cl.billing)||0;
+      carMap[carName].days+=d;
+      carMap[carName].sales+=billing;
+    });
+
+    // 表示
+    var periodLabel='（'+ds+' 〜 '+de+'）';
+    document.getElementById('actualPeriodLabel').textContent=periodLabel;
+
+    var keys=Object.keys(carMap);
+    var totalCount=0,totalDays=0,totalSales=0,totalCost=0,totalProfit=0;
+    var tbody='';
+
+    keys.forEach(function(k){
+      var v=carMap[k];
+      if(v.count===0) return; // 実績なし車両は除外
+      var periodCost=Math.round(v.cost*v.days);
+      var profit=v.sales-periodCost;
+      var pr=v.sales>0?Math.round(profit/v.sales*100):0;
+      totalCount+=v.count;
+      totalDays+=v.days;
+      totalSales+=v.sales;
+      totalCost+=periodCost;
+      totalProfit+=profit;
+      var pc=pr>=50?'g':pr>=30?'':'r';
+      tbody+='<tr>';
+      tbody+='<td><div style="font-weight:600;">'+v.name+'</div><div style="font-size:11px;color:var(--text3);">'+v.plate+'</div></td>';
+      tbody+='<td class="num">'+v.count+'件</td>';
+      tbody+='<td class="num">'+v.days+'日</td>';
+      tbody+='<td class="num">'+fmt(v.sales)+'</td>';
+      tbody+='<td class="r">'+fmt(v.cost)+'/日</td>';
+      tbody+='<td class="r">'+fmt(periodCost)+'</td>';
+      tbody+='<td class="'+pc+'">'+fmt(profit)+'</td>';
+      tbody+='<td class="'+pc+'">'+pr+'%</td>';
+      tbody+='</tr>';
+    });
+
+    if(!tbody){
+      tbody='<tr><td colspan="8" class="no-data">この期間の貸出実績はありません</td></tr>';
+    }
+    document.getElementById('actualBody').innerHTML=tbody;
+
+    // フッター合計
+    var totalPr=totalSales>0?Math.round(totalProfit/totalSales*100):0;
+    document.getElementById('actualFoot').innerHTML=
+      '<tr style="font-weight:700;background:var(--blue-bg);">'
+      +'<td>合計</td>'
+      +'<td class="num">'+totalCount+'件</td>'
+      +'<td class="num">'+totalDays+'日</td>'
+      +'<td class="num">'+fmt(totalSales)+'</td>'
+      +'<td class="r">-</td>'
+      +'<td class="r">'+fmt(totalCost)+'</td>'
+      +'<td class="g">'+fmt(totalProfit)+'</td>'
+      +'<td class="g">'+totalPr+'%</td>'
+      +'</tr>';
+
+    // 実績サマリーカード
+    var avgDays=totalCount>0?(totalDays/totalCount).toFixed(1):0;
+    var grid='';
+    grid+='<div class="actual-item"><div class="a-lbl">実売上合計</div><div class="a-val">'+fmtM(totalSales)+'</div><div class="a-sub">'+periodLabel+'</div></div>';
+    grid+='<div class="actual-item"><div class="a-lbl">実粗利合計</div><div class="a-val" style="color:var(--green)">'+fmtM(totalProfit)+'</div><div class="a-sub">粗利率 '+totalPr+'%</div></div>';
+    grid+='<div class="actual-item"><div class="a-lbl">総貸出件数</div><div class="a-val">'+totalCount+'件</div><div class="a-sub">延べ '+totalDays+'日</div></div>';
+    grid+='<div class="actual-item"><div class="a-lbl">平均貸出日数</div><div class="a-val">'+avgDays+'日</div><div class="a-sub">1件あたり</div></div>';
+    document.getElementById('actualGrid').innerHTML=grid;
+
+  }catch(e){
+    document.getElementById('actualGrid').innerHTML='<div class="no-data" style="color:var(--accent);">エラー: '+e.message+'</div>';
+  }
+}
+
 // 1日原価計算
 function calcDailyCost(car){
   var price=car['購入価格']||car['purchase_price']||0;
@@ -147,7 +377,6 @@ function calcDailyCost(car){
   var annual=car['年間費用']||car['annual_cost']||0;
   var depYears=car['減価償却年数']||car['depreciation_years']||4;
   var age=new Date().getFullYear()-year;
-  // 残存価値がある間は償却、過ぎたら0
   var depDaily=age<depYears?(price/depYears/365):0;
   var maintDaily=annual/365;
   return Math.round(depDaily+maintDaily);
@@ -155,10 +384,12 @@ function calcDailyCost(car){
 
 async function loadData(){
   try{
-   var res=await fetch(SB+'/rest/v1/'+encodeURIComponent('レンタカーマスタ')+'?select=*&order=id.asc',{headers:HDR});
+    var res=await fetch(SB+'/rest/v1/'+encodeURIComponent('レンタカーマスタ')+'?select=*&order=id.asc',{headers:HDR});
     if(!res.ok) throw new Error('HTTP '+res.status);
     cars=await res.json();
     render();
+    // デフォルトで今月を集計
+    setRange(0);
   }catch(e){
     document.getElementById('errArea').innerHTML='<div class="err">データ取得エラー: '+e.message+'</div>';
     document.getElementById('summaryArea').innerHTML='';
@@ -174,7 +405,6 @@ function render(){
   document.getElementById('simDays').textContent=days+'日';
   document.getElementById('annualRateLabel').textContent=rate;
 
-  // サマリー計算
   var totalDailyFare=0,totalDailyCost=0,totalDailyProfit=0;
   cars.forEach(function(c){
     var fare=c['金額']||0;
@@ -187,7 +417,6 @@ function render(){
   var annualProfit=Math.round(totalDailyProfit*days);
   var profitRate=annualSales>0?Math.round(annualProfit/annualSales*100):0;
 
-  // サマリーカード
   var sh='';
   sh+='<div class="sum-card hl"><div class="s-lbl">年間粗利（試算）</div><div class="s-val g">'+fmtM(annualProfit)+'</div><div class="s-sub">稼働率'+rate+'%</div></div>';
   sh+='<div class="sum-card"><div class="s-lbl">粗利率</div><div class="s-val g">'+profitRate+'%</div><div class="s-sub">全台平均</div></div>';
@@ -197,7 +426,6 @@ function render(){
   sh+='<div class="sum-card"><div class="s-lbl">全台1日粗利</div><div class="s-val g">'+fmt(totalDailyProfit)+'</div><div class="s-sub">全台稼働時</div></div>';
   document.getElementById('summaryArea').innerHTML=sh;
 
-  // シミュレーター結果
   var sr='';
   sr+='<div class="sim-item"><div class="si-lbl">年間売上</div><div class="si-val" style="color:var(--blue)">'+fmtM(annualSales)+'</div></div>';
   sr+='<div class="sim-item"><div class="si-lbl">年間粗利</div><div class="si-val">'+fmtM(annualProfit)+'</div></div>';
@@ -205,7 +433,6 @@ function render(){
   sr+='<div class="sim-item"><div class="si-lbl">1台あたり年間粗利</div><div class="si-val">'+fmtM(annualProfit/Math.max(cars.length,1))+'</div></div>';
   document.getElementById('simResult').innerHTML=sr;
 
-  // 車両カード
   var ch='';
   cars.forEach(function(c){
     var fare=c['金額']||0;
@@ -216,15 +443,10 @@ function render(){
     var status=c['現在の状況']||'';
     var isOut=status.indexOf('貸出')>=0||status.indexOf('out')>=0;
     var statusHtml=isOut?'<span class="status-badge s-out">貸出中</span>':'<span class="status-badge s-ok">空き</span>';
-
-    // 個別稼働日数入力欄のデフォルト
     var defDays=days;
-    var cardId='card-'+c['ID'];
-
+    var cardId='card-'+c['id'];
     ch+='<div class="car-card" id="'+cardId+'">';
     ch+='<div class="car-hdr"><div><div class="car-name">'+(c['車種']||'-')+'</div><div class="car-plate">'+(c['登録番号']||'-')+'</div></div>'+statusHtml+'</div>';
-
-    // 料金バー
     ch+='<div class="fare-section">';
     ch+='<div class="fare-row"><span class="fare-lbl">日額料金</span><span class="fare-val">'+fmt(fare)+'</span></div>';
     ch+='<div class="fare-row"><span class="fare-lbl">1日原価</span><span class="fare-val" style="color:var(--accent)">'+fmt(cost)+'</span></div>';
@@ -234,19 +456,16 @@ function render(){
     ch+='<div class="bar-profit" style="left:'+barCostW+'%;width:'+(100-barCostW)+'%"></div>';
     ch+='</div>';
     ch+='</div>';
-
-    // 稼働日数入力
     ch+='<div class="days-row">';
     ch+='<label>稼働日数</label>';
-    ch+='<input type="number" min="0" max="365" value="'+defDays+'" id="days-'+c['ID']+'" onchange="updateCard('+c['ID']+','+fare+','+cost+')">';
+    ch+='<input type="number" min="0" max="365" value="'+defDays+'" id="days-'+c['id']+'" onchange="updateCard('+c['id']+','+fare+','+cost+')">';
     ch+='<label>日</label>';
-    ch+='<span class="period-profit" id="pp-'+c['ID']+'">'+fmt(profit*defDays)+'</span>';
+    ch+='<span class="period-profit" id="pp-'+c['id']+'">'+fmt(profit*defDays)+'</span>';
     ch+='</div>';
     ch+='</div>';
   });
   document.getElementById('carsArea').innerHTML=ch;
 
-  // 年間テーブル
   renderAnnualTable(days);
   document.getElementById('annualCard').style.display='block';
 }
@@ -282,13 +501,12 @@ function renderAnnualTable(days){
   document.getElementById('annualBody').innerHTML=tbody;
   var totalPr=totalS>0?Math.round(totalP/totalS*100):0;
   document.getElementById('annualFoot').innerHTML=
-    '<tr style="font-weight:600;background:var(--bg)">'+
-    '<td>合計</td><td class="num">'+fmt(totalS/Math.max(days,1))+'</td><td class="r">'+fmt(totalC/Math.max(days,1))+'</td>'+
-    '<td class="g">'+fmt(totalP/Math.max(days,1))+'</td><td class="g">'+totalPr+'%</td>'+
-    '<td class="num">'+fmtM(totalS)+'</td><td class="g">'+fmtM(totalP)+'</td></tr>';
+    '<tr style="font-weight:600;background:var(--bg)">'
+    +'<td>合計</td><td class="num">'+fmt(totalS/Math.max(days,1))+'</td><td class="r">'+fmt(totalC/Math.max(days,1))+'</td>'
+    +'<td class="g">'+fmt(totalP/Math.max(days,1))+'</td><td class="g">'+totalPr+'%</td>'
+    +'<td class="num">'+fmtM(totalS)+'</td><td class="g">'+fmtM(totalP)+'</td></tr>';
 }
 
-// スライダー
 document.getElementById('simRate').addEventListener('input',function(){
   document.getElementById('simRateVal').textContent=this.value+'%';
   if(cars.length) render();
