@@ -162,10 +162,13 @@ td.r{text-align:right;font-weight:600;color:var(--accent);font-variant-numeric:t
             <th>車種</th>
             <th style="text-align:right">貸出件数</th>
             <th style="text-align:right">実稼働日数</th>
+            <th style="text-align:right">稼働率</th>
+            <th style="text-align:right">空き日数</th>
+            <th style="text-align:right">機会損失</th>
             <th style="text-align:right">実売上</th>
             <th style="text-align:right">期間原価</th>
-            <th style="text-align:right">実粗利</th>
-            <th style="text-align:right">粗利率</th>
+            <th style="text-align:right">純利益</th>
+            <th style="text-align:right">利益率</th>
           </tr>
         </thead>
         <tbody id="actualBody"></tbody>
@@ -335,7 +338,7 @@ async function loadActual(){
   summaryEl.style.display='block';
   tableEl.style.display='block';
   document.getElementById('actualGrid').innerHTML='<div class="loading">集計中...</div>';
-  document.getElementById('actualBody').innerHTML='<tr><td colspan="7" class="no-data">集計中...</td></tr>';
+  document.getElementById('actualBody').innerHTML='<tr><td colspan="10" class="no-data">集計中...</td></tr>';
   try{
     var url=SB+'/rest/v1/receptions?rental_needed=eq.true'
       +'&reception_datetime=gte.'+ds+'T00:00:00'
@@ -345,10 +348,20 @@ async function loadActual(){
     if(!res.ok) throw new Error('HTTP '+res.status);
     var recs=await res.json();
 
+    // 期間日数
+    var periodDays=Math.max(1,Math.round((new Date(de)-new Date(ds))/86400000)+1);
+    var annualExp=getAnnualExpense();
+    var periodExp=Math.round(annualExp*periodDays/365);
+
+    // 車両別マップ初期化（全車両）
     var carMap={};
     cars.forEach(function(c){
       var name=c['車種']||'';
-      carMap[name]={name:name,plate:c['登録番号']||'',fare:c['金額']||0,cost:calcDailyCost(c),count:0,days:0,sales:0};
+      carMap[name]={
+        name:name, plate:c['登録番号']||'',
+        fare:c['金額']||0, cost:calcDailyCost(c),
+        count:0, days:0, sales:0
+      };
     });
 
     recs.forEach(function(r){
@@ -366,52 +379,78 @@ async function loadActual(){
     var periodLabel='（'+ds+' 〜 '+de+'）';
     document.getElementById('actualPeriodLabel').textContent=periodLabel;
 
-    // 期間日数（経費按分用）
-    var periodDays=Math.max(1,Math.round((new Date(de)-new Date(ds))/86400000)+1);
-    var annualExp=getAnnualExpense();
-    var periodExp=Math.round(annualExp*periodDays/365);
-
     var keys=Object.keys(carMap);
-    var totalCount=0,totalDays=0,totalSales=0,totalCost=0,totalProfit=0;
+    var totalCount=0,totalDays=0,totalSales=0,totalCost=0,totalProfit=0,totalLoss=0;
     var tbody='';
+
+    // 実績あり車両を先に、なし車両を後に表示
+    keys.sort(function(a,b){return carMap[b].count-carMap[a].count;});
+
     keys.forEach(function(k){
       var v=carMap[k];
-      if(v.count===0) return;
       var periodCost=Math.round(v.cost*v.days);
-      // 経費を車両数で按分
       var expShare=cars.length>0?Math.round(periodExp/cars.length):0;
       var profit=v.sales-periodCost-expShare;
       var pr=v.sales>0?Math.round(profit/v.sales*100):0;
-      totalCount+=v.count;totalDays+=v.days;totalSales+=v.sales;
-      totalCost+=(periodCost+expShare);totalProfit+=profit;
+      // 稼働率
+      var occupancy=Math.round(v.days/periodDays*100);
+      var emptyDays=periodDays-v.days;
+      var lostSales=Math.round(emptyDays*(v.fare||0));
+
+      if(v.count>0){
+        totalCount+=v.count;totalDays+=v.days;totalSales+=v.sales;
+        totalCost+=(periodCost+expShare);totalProfit+=profit;
+      }
+      totalLoss+=lostSales;
+
       var pc=pr>=50?'g':pr>=30?'':'r';
-      tbody+='<tr>';
+      var occColor=occupancy>=70?'var(--green)':occupancy>=40?'var(--amber)':'var(--accent)';
+      var rowStyle=v.count===0?'opacity:0.5;background:#fafaf8;':'';
+
+      tbody+='<tr style="'+rowStyle+'">';
       tbody+='<td><div style="font-weight:600;">'+v.name+'</div><div style="font-size:11px;color:var(--text3);">'+v.plate+'</div></td>';
-      tbody+='<td class="num">'+v.count+'件</td>';
-      tbody+='<td class="num">'+v.days+'日</td>';
-      tbody+='<td class="num">'+fmt(v.sales)+'</td>';
-      tbody+='<td class="r">'+fmt(periodCost+expShare)+'</td>';
-      tbody+='<td class="'+pc+'">'+fmt(profit)+'</td>';
-      tbody+='<td class="'+pc+'">'+pr+'%</td>';
+      tbody+='<td class="num">'+(v.count>0?v.count+'件':'－')+'</td>';
+      tbody+='<td class="num">'+(v.days>0?v.days+'日':'0日')+'</td>';
+      tbody+='<td class="num"><span style="font-weight:700;color:'+occColor+';">'+occupancy+'%</span>'
+        +'<div style="background:#e8e8e8;border-radius:3px;height:4px;margin-top:3px;min-width:60px;">'
+        +'<div style="background:'+occColor+';height:4px;border-radius:3px;width:'+Math.min(occupancy,100)+'%;"></div></div></td>';
+      tbody+='<td class="num" style="color:var(--text3);">'+emptyDays+'日</td>';
+      tbody+='<td class="r" style="font-size:12px;">'+fmt(lostSales)+'</td>';
+      tbody+='<td class="num">'+(v.sales>0?fmt(v.sales):'－')+'</td>';
+      tbody+='<td class="r">'+(v.count>0?fmt(periodCost+expShare):'－')+'</td>';
+      tbody+='<td class="'+(v.count>0?pc:'')+'">'+( v.count>0?fmt(profit):'－')+'</td>';
+      tbody+='<td class="'+(v.count>0?pc:'')+'">'+( v.count>0?pr+'%':'－')+'</td>';
       tbody+='</tr>';
     });
-    if(!tbody) tbody='<tr><td colspan="7" class="no-data">この期間の貸出実績はありません</td></tr>';
+
+    if(!tbody) tbody='<tr><td colspan="10" class="no-data">この期間の貸出実績はありません</td></tr>';
     document.getElementById('actualBody').innerHTML=tbody;
 
     var totalPr=totalSales>0?Math.round(totalProfit/totalSales*100):0;
+    var totalOcc=Math.round(totalDays/(periodDays*Math.max(cars.length,1))*100);
     document.getElementById('actualFoot').innerHTML=
       '<tr style="font-weight:700;background:var(--blue-bg);">'
-      +'<td>合計</td><td class="num">'+totalCount+'件</td><td class="num">'+totalDays+'日</td>'
-      +'<td class="num">'+fmt(totalSales)+'</td><td class="r">'+fmt(totalCost)+'</td>'
-      +'<td class="g">'+fmt(totalProfit)+'</td><td class="g">'+totalPr+'%</td></tr>';
+      +'<td>合計</td>'
+      +'<td class="num">'+totalCount+'件</td>'
+      +'<td class="num">'+totalDays+'日</td>'
+      +'<td class="num" style="color:var(--blue);">'+totalOcc+'%</td>'
+      +'<td class="num" style="color:var(--text3);">'+(periodDays*cars.length-totalDays)+'日</td>'
+      +'<td class="r">'+fmt(totalLoss)+'</td>'
+      +'<td class="num">'+fmt(totalSales)+'</td>'
+      +'<td class="r">'+fmt(totalCost)+'</td>'
+      +'<td class="g">'+fmt(totalProfit)+'</td>'
+      +'<td class="g">'+totalPr+'%</td>'
+      +'</tr>';
 
+    // サマリーカード
     var avgDays=totalCount>0?(totalDays/totalCount).toFixed(1):0;
     var grid='';
     grid+='<div class="actual-item"><div class="a-lbl">実売上合計</div><div class="a-val">'+fmtM(totalSales)+'</div><div class="a-sub">'+periodLabel+'</div></div>';
     grid+='<div class="actual-item"><div class="a-lbl">経費込み純利益</div><div class="a-val '+(totalProfit>=0?'green':'red')+'">'+fmtM(totalProfit)+'</div><div class="a-sub">純利益率 '+totalPr+'%</div></div>';
-    grid+='<div class="actual-item"><div class="a-lbl">総貸出件数</div><div class="a-val">'+totalCount+'件</div><div class="a-sub">延べ '+totalDays+'日</div></div>';
-    grid+='<div class="actual-item"><div class="a-lbl">平均貸出日数</div><div class="a-val">'+avgDays+'日</div><div class="a-sub">1件あたり</div></div>';
-    grid+='<div class="actual-item"><div class="a-lbl">期間経費（按分）</div><div class="a-val red">'+fmtM(periodExp)+'</div><div class="a-sub">'+periodDays+'日分</div></div>';
+    grid+='<div class="actual-item"><div class="a-lbl">全台平均稼働率</div><div class="a-val" style="color:'+(totalOcc>=50?'var(--green)':'var(--accent)')+';">'+totalOcc+'%</div><div class="a-sub">延べ '+totalDays+'日 / '+periodDays*cars.length+'日</div></div>';
+    grid+='<div class="actual-item"><div class="a-lbl">総貸出件数</div><div class="a-val">'+totalCount+'件</div><div class="a-sub">平均 '+avgDays+'日/件</div></div>';
+    grid+='<div class="actual-item"><div class="a-lbl">機会損失合計</div><div class="a-val red">'+fmtM(totalLoss)+'</div><div class="a-sub">空き日数×日額の合計</div></div>';
+    grid+='<div class="actual-item"><div class="a-lbl">期間経費</div><div class="a-val red">'+fmtM(periodExp)+'</div><div class="a-sub">'+periodDays+'日分按分</div></div>';
     document.getElementById('actualGrid').innerHTML=grid;
   }catch(e){
     document.getElementById('actualGrid').innerHTML='<div class="no-data" style="color:var(--accent);">エラー: '+e.message+'</div>';
