@@ -1863,19 +1863,30 @@ async function checkPaintDifficultyForEstimate(code){
   }
 }
 
-function cAutoColorName(code){
+async function cAutoColorName(code){
   if(!code) return;
   var upper = code.toUpperCase().trim();
-  var name = COLOR_CODE_DB[upper] || COLOR_CODE_DB[code.trim()];
-  if(name){
-    customer.color = name;
-    var el = document.getElementById('cCol');
-    if(el){
-      el.value = name;
-      el.style.background = '#e8f5e9';
-      setTimeout(function(){ el.style.background = ''; }, 1500);
+  try{
+    var res = await fetch(
+      SUPABASE_URL + '/rest/v1/paint_colors?color_code=eq.' + encodeURIComponent(upper) + '&limit=1',
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
+    );
+    var data = await res.json();
+    if(data && data.length){
+      var name = data[0].color_name;
+      customer.color = name;
+      var el = document.getElementById('cCol');
+      if(el){
+        el.value = name;
+        el.style.background = '#e8f5e9';
+        setTimeout(function(){ el.style.background = ''; }, 1500);
+      }
+      showNotify('🎨 色番号 ' + code + ' → ' + name);
+    } else {
+      showNotify('⚠️ 色番号 ' + upper + ' は未登録です');
     }
-    showNotify('🎨 色番号 ' + code + ' → ' + name);
+  } catch(e){
+    console.warn('cAutoColorName error:', e);
   }
   checkPaintDifficultyForEstimate(code);
 }
