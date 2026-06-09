@@ -1044,13 +1044,14 @@ async function woLoadFromCloud(estId,estNo){
     var h=hdrs&&hdrs[0]?hdrs[0]:{};
     var r1=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId+'&order=sort_order.asc',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
     var items=await r1.json();
-    var selData=items.map(function(t){return{name:t.item_name||'',process:t.process||'',tag:t.tag||'remove',
-      hours:t.hours||0,h:t.actual_hours||0,cost:t.cost||0,price:t.cost||0,
-      part:t.part_name||'',_part:t.part_name||'',_actualH:t.actual_hours||0,
-      _staff:t.staff_name||'',_viewTab:t.view_tab||'exterior',id:t.id||(Date.now()+Math.random())};});
-    woCurrentEst={id:estId,no:estNo,customerName:h.customer_name||'',car:h.car_name||'',
-      plate:h.plate||'',color:h.color_name||'',colorCode:h.color_code||'',
-      grade:h.grade||'中型',date:h.estimate_date||'',selSnapshot:selData,_estId:estId};
+   var selData=items.filter(function(t){return t.tag!='parts';}).map(function(t){return{name:t.item_name||'',process:t.process||'',tag:t.tag||'remove',
+          hours:t.hours||0,h:t.actual_hours||0,cost:t.cost||0,price:t.cost||0,
+          part:t.part_name||'',_part:t.part_name||'',_actualH:t.actual_hours||0,
+          _staff:t.staff_name||'',_viewTab:t.view_tab||'exterior',id:t.id||(Date.now()+Math.random())};});
+        partsItems=items.filter(function(t){return t.tag=='parts';}).map(function(t){return{name:t.item_name||'',partNo:t.part_name?t.part_name.replace('[部品]','').replace(/^\[|\]$/g,''):'',cost:t.cost||0,profit:0,qty:1};});
+        woCurrentEst={id:estId,no:estNo,customerName:h.customer_name||'',car:h.car_name||'',
+          plate:h.plate||'',color:h.color_name||'',colorCode:h.color_code||'',
+          grade:h.grade||'中型',date:h.estimate_date||'',selSnapshot:selData,_estId:estId};
     woMode='view';render();
     showNotify('✅ '+estNo+'\n'+(h.customer_name||'')+'　様の指示書を開きました');
   }catch(e){showNotify('❌ 読込失敗: '+e.message);}
