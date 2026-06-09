@@ -6057,6 +6057,11 @@ async function saveDraft(){
       var items=sel.map(function(s,i){return{estimate_id:estId,part_name:s._part||s.part||'',item_name:s.name||'',process:s.process||'',tag:s.tag||'remove',hours:s.hours||0,actual_hours:s.h||0,cost:s.cost||0,sort_order:i};});
       var postR=await fetch(SUPABASE_URL+'/rest/v1/estimate_items',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(items)});
       if(!postR.ok){var errTxt=await postR.text(); throw new Error('明細登録失敗: '+errTxt);}
+     if(partsItems && partsItems.length>0){
+          var pItems=partsItems.map(function(p,i){return{estimate_id:estId,part_name:'[部品]'+(p.name||''),item_name:p.name||'',process:'部品',tag:'parts',hours:0,actual_hours:0,cost:p.cost||0,sort_order:1000+i};});
+          var postP=await fetch(SUPABASE_URL+'/rest/v1/estimate_items',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(pItems)});
+          if(!postP.ok){var errP=await postP.text(); throw new Error('部品保存失敗: '+errP);}
+        } 
     }
     customer._estId=estId;
     customer._draftNo=estNo;
