@@ -1299,15 +1299,28 @@ function setSearchRange(days) {
   var eEl = document.getElementById('caseSearchDateEnd');
   if(sEl) sEl.value = fmt(start);
   if(eEl) eEl.value = fmt(today);
+  // ハイライト更新
+  ['btn-range-0','btn-range-7','btn-range-30','btn-range-90','btn-range-365','btn-range-all'].forEach(function(id){
+    var b=document.getElementById(id);
+    if(b){b.style.background='#e8eaf6';b.style.color='#3949ab';b.style.borderColor='#c5cae9';}
+  });
+  var active=document.getElementById('btn-range-'+days);
+  if(active){active.style.background='#e8392a';active.style.color='white';active.style.borderColor='#e8392a';}
   loadCases();
 }
 
-// ★ 全期間検索
 function searchAllCases() {
   var sEl = document.getElementById('caseSearchDate');
   var eEl = document.getElementById('caseSearchDateEnd');
   if(sEl) sEl.value = '';
   if(eEl) eEl.value = '';
+  // ハイライト更新
+  ['btn-range-0','btn-range-7','btn-range-30','btn-range-90','btn-range-365','btn-range-all'].forEach(function(id){
+    var b=document.getElementById(id);
+    if(b){b.style.background='#e8eaf6';b.style.color='#3949ab';b.style.borderColor='#c5cae9';}
+  });
+  var active=document.getElementById('btn-range-all');
+  if(active){active.style.background='#e8392a';active.style.color='white';active.style.borderColor='#e8392a';}
   loadCases();
 }
 
