@@ -508,10 +508,10 @@ async function loadCases() {
   var tb = document.getElementById('cases-tbody');
   tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--txt3);padding:20px;">読み込み中...</td></tr>';
   try {
-    var url = SB_URL + '/rest/v1/estimates'
-      + '?select=estimate_no,customer_name,car_name,repair_status,estimate_date,plate'
-      + '&repair_status=neq.完成&repair_status=neq.納車済&repair_status=neq.キャンセル'
-      + '&order=estimate_date.desc&limit=50';
+  var url = SB_URL + '/rest/v1/estimates'
+          + '?select=estimate_no,customer_name,car_name,repair_status,estimate_date,plate'
+          + '&repair_status=not.in.(完成,納車済,キャンセル)'
+          + '&order=estimate_date.desc&limit=50';
     var res  = await fetch(url, { headers: SB_H });
     var data = await res.json();
     if (!Array.isArray(data) || !data.length) {
