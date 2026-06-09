@@ -461,12 +461,12 @@ textarea { resize: vertical; min-height: 80px; }
       <!-- ★ クイック期間ボタン -->
       <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
         <span style="font-size:11px;color:var(--text-light);line-height:2;font-weight:700;">過去案件：</span>
-        <button onclick="setSearchRange(0)" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">本日</button>
-        <button onclick="setSearchRange(7)" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">過去7日</button>
-        <button onclick="setSearchRange(30)" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">過去30日</button>
-        <button onclick="setSearchRange(90)" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">過去3ヶ月</button>
-        <button onclick="setSearchRange(365)" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">過去1年</button>
-        <button onclick="searchAllCases()" style="padding:4px 12px;border:1.5px solid #e8392a;border-radius:20px;font-size:11px;background:#fff0ee;color:#e8392a;cursor:pointer;font-weight:700;">🔍 全期間</button>
+       <button onclick="setSearchRange(0)" id="btn-range-0" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">本日</button>
+          <button onclick="setSearchRange(7)" id="btn-range-7" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">過去7日</button>
+          <button onclick="setSearchRange(30)" id="btn-range-30" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">過去30日</button>
+          <button onclick="setSearchRange(90)" id="btn-range-90" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">過去3ヶ月</button>
+          <button onclick="setSearchRange(365)" id="btn-range-365" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">過去1年</button>
+          <button onclick="searchAllCases()" id="btn-range-all" style="padding:4px 12px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">🔍 全期間</button>
       </div>
     </div>
     <div class="card">
