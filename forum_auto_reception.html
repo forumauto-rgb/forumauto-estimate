@@ -603,31 +603,32 @@ async function supabaseQuery(table, method, body, filter) {
   return method === 'DELETE' ? null : res.json();
 }
 
-// ★ 色番号から色名を自動表示（よく使う色コードのマスタ）
-var COLOR_MASTER = {
-  '040':'スーパーホワイトII','1F7':'ホワイトパールクリスタルシャイン','202':'ブラック','1G3':'グレーメタリック',
-  '1H6':'ダークグレーマイカ','3R3':'スーパーレッド','6T7':'ライトブルーマイカメタリック','8X8':'ダークブルーマイカ',
-  'B35':'ライトブルーM','C7P':'ミスティックレッドM','E8H':'プレシャスブラック','F8S':'ダークブルーM',
-  'G1U':'プレシャスシルバー','KH3':'マシーングレーP','PAX':'プラチナホワイトP','PW1':'パールホワイト',
-  'QAA':'グランドホワイトP','RAA':'ピュアホワイト','NU':'チタニウムシルバーM','W24':'ブリリアントホワイトP',
- 　'1C0':'シルバーM','1G0':'ダークシルバーM','Z2H':'アズライトブルーM','46G':'マシーングレープレミアムメタリック',
-　'51K':'ソウルレッドクリスタルメタリック','A3F':'ダイヤモンドホワイトP','B15':'インフィニティブラック',
-  'NBL':'ナイトブルーM','PAU':'ブリリアントホワイトP','K1X':'ドーンシルバーM'
-};
 
-function lookupColorName(code) {
+// ★ 色番号から色名を自動表示（Supabase paint_colorsテーブル参照）
+async function lookupColorName(code) {
   var hint = document.getElementById('colorNameHint');
   var colorEl = document.getElementById('carColor');
   var upper = (code||'').toUpperCase().trim();
-  if (!upper) { hint.style.display='none'; return; }
-  var name = COLOR_MASTER[upper] || COLOR_MASTER[code.trim()];
-  if (name) {
+  if(!upper){ hint.style.display='none'; return; }
+  try{
+    var res = await fetch(
+      SUPABASE_URL + '/rest/v1/paint_colors?color_code=eq.' + encodeURIComponent(upper) + '&limit=1',
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
+    );
+    var data = await res.json();
+    if(data && data.length){
+      var name = data[0].color_name;
+      hint.style.display = 'block';
+      hint.textContent = '💡 ' + name;
+      colorEl.value = name;
+    } else {
+      hint.style.display = 'block';
+      hint.textContent = '⚠️ 色名マスタにありません（手入力してください）';
+    }
+  } catch(e){
     hint.style.display = 'block';
-    hint.textContent = '💡 ' + name;
-    colorEl.value = name;
-  } else {
-    hint.style.display = 'block';
-    hint.textContent = '⚠ 色名マスタにありません（手入力してください）';
+    hint.textContent = '⚠️ 色名マスタにありません（手入力してください）';
+    console.warn('lookupColorName error:', e);
   }
 }
 async function checkPaintDifficulty(code) {
