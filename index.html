@@ -3603,7 +3603,7 @@ function renderPaint(){
   var h='';
   h+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:relative;z-index:10">';
   h+='<div><div style="font-size:12px;font-weight:bold;color:'+(isLinked?'#2e7d32':'#f57f17')+'">';
-  h+=isLinked?'🔗 現在の紐付け車両：'+linkedCar:'⚠ 車両が選択されていません';
+　h+='<div><div style="font-size:14px;font-weight:bold;color:'+(isLinked?'#1b5e20':'#f57f17')+';background:'+(isLinked?'#c8e6c9':'#fff8e1')+';padding:4px 12px;border-radius:6px;border:2px solid '+(isLinked?'#4caf50':'#ffb300')+'">';
   h+='</div></div>';
   h+='<div style="display:flex;gap:8px;align-items:center">';
   if(isLinked) h+='<button class="btn btn-g" onclick="savePaintToVehicle()" style="font-size:12px">💾 設定を車両に登録</button>';
