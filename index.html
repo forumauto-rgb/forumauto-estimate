@@ -6834,11 +6834,10 @@ function autoSaveM(){
     });
   }, 3000);
 }
-function savePaintToVehicle(){
+async function savePaintToVehicle(){
   if(!customer.plate&&!customer.car){alert('見積作成タブで車両を選択してください');return;}
   const vi=vMaster.findIndex(v=>v.plate===customer.plate||(v.name===customer.car&&!customer.plate));
   if(vi<0){
-    // 新規登録
     const g=GRADE_MASTER.find(x=>x.name===customer.grade)||{coef:1.1,foreign:1.0};
     const newVid='V'+(vMaster.length+1).toString().padStart(4,'0');
     vMaster.unshift({id:newVid,cid:'',plate:customer.plate||'',maker:'',name:customer.car||'',vin:'',year:'',drive:'2WD',
@@ -6852,6 +6851,12 @@ function savePaintToVehicle(){
     try{localStorage.setItem('fa_v6',JSON.stringify(vMaster));}catch(e){}
     showNotify('✅ 塗装係数を車両マスターに登録しました\n'+customer.car+' '+customer.plate+'\n塗膜：'+pc4.film+'\n塗料：'+pc4.paint+'\nクリヤー：'+pc4.clear+'\n特殊：'+pc4.special);
   }
+  // Supabaseにも保存
+  try{
+    const vId=vMaster[vi<0?0:vi].id;
+    const res=await fetch(SUPABASE_URL+'/rest/v1/vehicles?vehicle_no=eq.'+encodeURIComponent(vId),{method:'PATCH',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({film_type:pc4.film,paint_type:pc4.paint,clear_type:pc4.clear,special:pc4.special})});
+    if(res.ok)showNotify('☁️ Supabaseにも保存しました');
+  }catch(e){console.warn('Supabase保存失敗:',e);}
   render();
 }
 function showNotify(msg){
