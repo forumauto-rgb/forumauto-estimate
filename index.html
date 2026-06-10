@@ -3601,8 +3601,7 @@ function renderPaint(){
   var adjSign=adjH>=0?'+':'-';
 
   var h='';
-  h+='<div class="card" style="padding:10px 14px;background:'+(isLinked?'#e8f5e9':'#fff8e1')+';border:1px solid '+(isLinked?'#a5d6a7':'#ffe082')+';border-radius:10px;margin-bottom:10px">';
-  h+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:relative;z-index:10">';
   h+='<div><div style="font-size:12px;font-weight:bold;color:'+(isLinked?'#2e7d32':'#f57f17')+'">';
   h+=isLinked?'🔗 現在の紐付け車両：'+linkedCar:'⚠ 車両が選択されていません';
   h+='</div></div>';
