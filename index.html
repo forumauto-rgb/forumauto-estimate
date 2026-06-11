@@ -5035,7 +5035,8 @@ async function loadReceptionData(name, tel) {
     if (rec.car_model && !customer.car) customer.car   = rec.car_model;
     if (rec.note)     customer.diagnosis  = rec.note;
     if (rec.staff)    customer.staff      = rec.staff;
-
+　if (rec.color_code && !customer.colorCode) customer.colorCode = rec.color_code;
+    if (rec.color_name && !customer.color)     customer.color     = rec.color_name;
     // 受付IDを紐付け
     customer.receptionId = rec.id;
 
