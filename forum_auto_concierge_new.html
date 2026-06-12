@@ -862,7 +862,7 @@ async function sendMsg() {
   try {
     const res = await fetch(CLAUDE_API, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVocHBnZHdieXJpam5xcHZ1c3h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI1MzI4NzIsImV4cCI6MjA1ODEwODg3Mn0.gKjBJFSRBNwDK60'},
+      headers: {'Content-Type':'application/json','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVocHBnZHdieXJpam5xcHZ1c3h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI1MzI4NzIsImV4cCI6MjA1ODEwODg3Mn0.gKjBJFSRBNwDK60','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVocHBnZHdieXJpam5xcHZ1c3h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI1MzI4NzIsImV4cCI6MjA1ODEwODg3Mn0.gKjBJFSRBNwDK60'},
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
@@ -871,13 +871,7 @@ async function sendMsg() {
       })
     });
     const data = await res.json();
-    let reply = '';
-    if(data.result){
-      reply = data.result;
-    } else if(data.content && data.content.length){
-      data.content.forEach(function(c){ if(c.type==='text') reply += c.text; });
-    }
-    if(!reply) reply = 'すみません、もう一度お願いできますか？';
+    const reply = (data.content && data.content[0]) ? data.content[0].text : '';
 
     removeTyping();
     addStaffMsg(reply, TAKASHI_AV, TAKASHI_IC);
