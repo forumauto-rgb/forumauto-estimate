@@ -604,3 +604,26 @@ loadWorks();
 </script>
 </body>
 </html>
+
+<!-- ===== AIコンシェルジュ フローティングボタン ===== -->
+<style>
+.float-consierge{position:fixed;bottom:24px;right:20px;z-index:9999;display:flex;flex-direction:column;align-items:flex-end;gap:10px;}
+.float-balloon{background:#fff;border:1.5px solid #e0d0c8;border-radius:16px 16px 0 16px;padding:10px 14px;font-size:13px;color:#333;box-shadow:0 2px 12px rgba(0,0,0,0.12);white-space:nowrap;animation:fadeInBalloon 0.4s ease;}
+.float-balloon span{font-size:15px;}
+@keyframes fadeInBalloon{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.float-btn{width:62px;height:62px;background:linear-gradient(135deg,#c0392b,#e74c3c);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(192,57,43,0.45);cursor:pointer;text-decoration:none;transition:transform 0.2s,box-shadow 0.2s;animation:popIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275);}
+.float-btn:hover{transform:scale(1.08);box-shadow:0 6px 20px rgba(192,57,43,0.55);}
+.float-btn:active{transform:scale(0.95);}
+.float-btn span{font-size:28px;}
+@keyframes popIn{from{opacity:0;transform:scale(0.5)}to{opacity:1;transform:scale(1)}}
+</style>
+<div class="float-consierge">
+  <div class="float-balloon" id="floatBalloon"><span>👩</span> AIスタッフに相談する</div>
+  <a class="float-btn" href="https://forumauto-rgb.github.io/forumauto-estimate/forum_auto_concierge_new.html" title="AIスタッフに相談する"><span>💬</span></a>
+</div>
+<script>
+setTimeout(function(){
+  var b=document.getElementById('floatBalloon');
+  if(b){b.style.transition='opacity 0.5s';b.style.opacity='0';setTimeout(function(){b.style.display='none';},500);}
+},5000);
+</script>
