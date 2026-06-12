@@ -442,6 +442,40 @@ async function speak(text) {
     .replace(/[\u{2600}-\u{27FF}]/gu, '')
     .replace(/😊|😢|💦|👍|🙏|📷|💬|📞/g, '')
     .replace(/\n/g, '。')
+    // ===== 漢字読み仮名変換 =====
+    .replace(/お車/g, 'おくるま')
+    .replace(/車両/g, 'しゃりょう')
+    .replace(/傷/g, 'きず')
+    .replace(/キズ/g, 'きず')
+    .replace(/修理/g, 'しゅうり')
+    .replace(/板金/g, 'ばんきん')
+    .replace(/塗装/g, 'とそう')
+    .replace(/部品/g, 'ぶひん')
+    .replace(/費用/g, 'ひよう')
+    .replace(/保険/g, 'ほけん')
+    .replace(/使用/g, 'しよう')
+    .replace(/ご使用/g, 'ごしよう')
+    .replace(/車体/g, 'しゃたい')
+    .replace(/鈑金/g, 'ばんきん')
+    .replace(/概算/g, 'がいさん')
+    .replace(/自費/g, 'じひ')
+    .replace(/等級/g, 'とうきゅう')
+    .replace(/見積/g, 'みつもり')
+    .replace(/損傷/g, 'そんしょう')
+    .replace(/交換/g, 'こうかん')
+    .replace(/対応/g, 'たいおう')
+    .replace(/加入/g, 'かにゅう')
+    .replace(/更新/g, 'こうしん')
+    .replace(/請求/g, 'せいきゅう')
+    .replace(/事故/g, 'じこ')
+    .replace(/物損/g, 'ぶっそん')
+    .replace(/届け出/g, 'とどけで')
+    .replace(/来店/g, 'らいてん')
+    .replace(/予約/g, 'よやく')
+    .replace(/状態/g, 'じょうたい')
+    .replace(/程度/g, 'ていど')
+    .replace(/負担/g, 'ふたん')
+    .replace(/提案/g, 'ていあん')
     .trim();
   try {
     const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + TAKASHI_VOICE_ID, {
@@ -452,13 +486,13 @@ async function speak(text) {
       },
       body: JSON.stringify({
         text: clean,
-        model_id: 'eleven_multilingual_v2',
+        model_id: 'eleven_turbo_v2_5',
         voice_settings: {
-          stability: 0.80,
+          stability: 0.55,
           similarity_boost: 0.80,
-          style: 0.15,
+          style: 0.35,
           use_speaker_boost: true,
-          speed: 0.90
+          speed: 0.88
         }
       })
     });
@@ -766,7 +800,7 @@ function handleA_insurance(ans) {
 // ============================================================
 const TAKASHI_AV = 'takashi';
 const TAKASHI_IC = '👨';
-const CLAUDE_API = 'https://api.anthropic.com/v1/messages';
+const CLAUDE_API = 'https://uhppgdwbyrijnqpvusxw.supabase.co/functions/v1/ai-proxy';
 
 const TAKASHI_SYSTEM = `あなたはフォーラムオート（静岡県袋井市下山梨545）のスタッフ「タカシ」です。
 40代の気さくなベテランスタッフで、お客様に親しみやすく温かく接します。
@@ -828,7 +862,7 @@ async function sendMsg() {
   try {
     const res = await fetch(CLAUDE_API, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVocHBnZHdieXJpam5xcHZ1c3h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI1MzI4NzIsImV4cCI6MjA1ODEwODg3Mn0.gKjBJFSRBNwDK60'},
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
