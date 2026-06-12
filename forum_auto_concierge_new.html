@@ -443,6 +443,15 @@ async function speak(text) {
     .replace(/😊|😢|💦|👍|🙏|📷|💬|📞/g, '')
     .replace(/\n/g, '。')
     // ===== 漢字読み仮名変換 =====
+    .replace(/お首/g, 'おくび')
+    .replace(/お体/g, 'おからだ')
+    .replace(/診て/g, 'みて')
+    .replace(/診察/g, 'しんさつ')
+    .replace(/相手方/g, 'あいてがた')
+    .replace(/相手/g, 'あいて')
+    .replace(/保険が使える/g, 'ほけんがつかえる')
+    .replace(/使える/g, 'つかえる')
+    .replace(/使えない/g, 'つかえない')
     .replace(/お車/g, 'おくるま')
     .replace(/車両/g, 'しゃりょう')
     .replace(/傷/g, 'きず')
@@ -492,7 +501,7 @@ async function speak(text) {
           similarity_boost: 0.80,
           style: 0.35,
           use_speaker_boost: true,
-          speed: 1.05
+          speed: 1.1
         }
       })
     });
