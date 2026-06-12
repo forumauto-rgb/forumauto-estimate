@@ -872,7 +872,9 @@ async function sendMsg() {
     });
     const data = await res.json();
     let reply = '';
-    if(data.content && data.content.length){
+    if(data.result){
+      reply = data.result;
+    } else if(data.content && data.content.length){
       data.content.forEach(function(c){ if(c.type==='text') reply += c.text; });
     }
     if(!reply) reply = 'すみません、もう一度お願いできますか？';
