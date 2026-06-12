@@ -3434,8 +3434,8 @@ function renderCustomerPanel(){
           <button onclick="customer.repairType='own';rIP()" style="padding:4px 10px;border-radius:5px;border:1.5px solid ${customer.repairType==='own'?'#43a047':'#ccc'};background:${customer.repairType==='own'?'#43a047':'white'};color:${customer.repairType==='own'?'white':'#555'};font-size:11px;font-weight:bold;cursor:pointer;">💴 自費</button>
           ${customer.repairType!=='own'?`
           <input placeholder="保険会社名" value="${customer.insCompany||''}" list="ins-list-main" oninput="customer.insCompany=this.value" style="padding:3px 6px;border:1px solid #ccc;border-radius:4px;font-size:11px;width:110px;"><datalist id="ins-list-main">${INS_LIST.map(function(s){return'<option value="'+s+'">'}).join('')}</datalist>
-          <input placeholder="AJ社名" value="${customer.ajCompany||''}" oninput="customer.ajCompany=this.value" style="padding:3px 6px;border:1px solid #ccc;border-radius:4px;font-size:11px;width:70px;">
-          <input placeholder="担当AJ名" value="${customer.ajStaff||''}" oninput="customer.ajStaff=this.value" style="padding:3px 6px;border:1px solid #ccc;border-radius:4px;font-size:11px;width:70px;">
+          <input placeholder="AJ・鑑定会社" value="${customer.ajCompany||''}" oninput="customer.ajCompany=this.value" style="padding:3px 6px;border:1px solid #ccc;border-radius:4px;font-size:11px;width:70px;">
+          <input placeholder="支払担当者" value="${customer.ajStaff||''}" oninput="customer.ajStaff=this.value" style="padding:3px 6px;border:1px solid #ccc;border-radius:4px;font-size:11px;width:70px;">
           <input type="number" placeholder="免責額" value="${customer.deductible||''}" oninput="customer.deductible=this.value" style="padding:3px 6px;border:1px solid #ccc;border-radius:4px;font-size:11px;width:65px;">
           `:''}
         </div>
@@ -4495,8 +4495,8 @@ function renderPreview(){
     +'<tr><td style="color:#666;padding:3.5px 7px;border-bottom:0.5px solid #eee;font-size:9.5px;">走行距離</td><td style="padding:6px 8px;border-bottom:0.5px solid #eee;font-size:10px;color:#333;">'+(customer.mileage?customer.mileage+' km':'')+'</td></tr>'
     +'<tr><td style="color:#666;padding:3.5px 7px;border-bottom:0.5px solid #eee;font-size:9.5px;">修理区分</td><td style="padding:6px 8px;border-bottom:0.5px solid #eee;font-size:10px;font-weight:600;color:#222;">'+(customer.repairType==='own'?'自費修理':'保険修理')+'</td></tr>'
     +(customer.insCompany?'<tr><td style="color:#666;padding:3.5px 7px;border-bottom:0.5px solid #eee;font-size:9.5px;">保険会社</td><td style="padding:6px 8px;border-bottom:0.5px solid #eee;font-size:10px;color:#333;">'+customer.insCompany+'</td></tr>':'')
-    +(customer.ajCompany?'<tr><td style="color:#666;padding:3.5px 7px;border-bottom:0.5px solid #eee;font-size:9.5px;">AJ会社</td><td style="padding:6px 8px;border-bottom:0.5px solid #eee;font-size:10px;color:#333;">'+customer.ajCompany+'</td></tr>':'')
-    +(customer.ajStaff?'<tr><td style="color:#666;padding:3.5px 7px;border-bottom:0.5px solid #eee;font-size:9.5px;">AJ担当</td><td style="padding:6px 8px;border-bottom:0.5px solid #eee;font-size:10px;color:#333;">'+customer.ajStaff+'</td></tr>':'')
+    +(customer.ajCompany?'<tr><td style="color:#666;padding:3.5px 7px;border-bottom:0.5px solid #eee;font-size:9.5px;">AJ・鑑定会社</td><td style="padding:6px 8px;border-bottom:0.5px solid #eee;font-size:10px;color:#333;">'+customer.ajCompany+'</td></tr>':'')
+    +(customer.ajStaff?'<tr><td style="color:#666;padding:3.5px 7px;border-bottom:0.5px solid #eee;font-size:9.5px;">支払担当者</td><td style="padding:6px 8px;border-bottom:0.5px solid #eee;font-size:10px;color:#333;">'+customer.ajStaff+'</td></tr>':'')
     +(customer.deductible?'<tr><td style="color:#666;padding:3.5px 7px;border-bottom:0.5px solid #eee;font-size:9.5px;">免責金額</td><td style="padding:6px 8px;border-bottom:0.5px solid #eee;font-size:10px;color:#333;">¥'+parseInt(customer.deductible).toLocaleString()+'</td></tr>':'')
     +'</table></div>'
 
