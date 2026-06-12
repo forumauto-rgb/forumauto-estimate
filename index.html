@@ -4963,8 +4963,7 @@ customer={name:'',car:'',plate:'',color:'',grade:'中型',date:customer.date,no:
     toso:{check:false,staff:'',date:''},
     noshamen:{check:false,staff:'',date:''}
   },
-  finalSign:{uketsuke:'',bankin:'',toso:'',nosha:''},
-chk1:'',chk2:'',chk3:'',chk4:'',chk5:'',chk6:''
+  finalSign:{uketsuke:'',bankin:'',toso:'',nosha:''}
 };render();}
 // ===== 受付一覧から案件選択 =====
 var _recCache = [];
@@ -6038,7 +6037,7 @@ async function saveDraft(){
     customer.no=estNo;
     customer._draftNo=estNo;
     var tots=calcTotals();
-    payment_memo:customer.paymentMemo||'',chk1:customer.chk1||'',chk2:customer.chk2||'',chk3:customer.chk3||'',chk4:customer.chk4||'',chk5:customer.chk5||'',chk6:customer.chk6||''};
+    var estData={estimate_no:estNo,customer_name:customer.name||'（未入力）',customer_id:customer.cid||null,car_name:customer.car||'',plate:customer.plate||'',color_name:customer.color||'',color_code:customer.colorCode||'',estimate_date:customer.date||new Date().toISOString().split('T')[0],grade:customer.grade||'中型',grade_coef:getGradeCoef(),film_type:pc4.film,paint_type:pc4.paint,clear_type:pc4.clear,special:pc4.special,labor_total:tots.labor,parts_total:Math.round(tots.pt),mat_total:Math.round(tots.mt),subtotal:Math.round(tots.sub),tax_total:tots.tax,grand_total:Math.round(tots.sub)+tots.tax,repair_type:customer.repairType||'insurance',ins_company:customer.insCompany||'',aj_company:customer.ajCompany||'',aj_staff:customer.ajStaff||'',deductible:parseInt(customer.deductible)||0,status:'draft',repair_status:customer.repairStatus||'受付',staff_name:customer.staffName||'',delivery_date:customer.deliveryDate||'',memo:customer.estNote||'',payment_memo:customer.paymentMemo||''};
     var estId=customer._estId||null;
     if(estId){
       // 既存IDで上書き（重複しない）
@@ -6591,7 +6590,7 @@ async function loadEstimate(estId,estNo){
       customer.insCompany=h.ins_company||'';
       customer.ajCompany=h.aj_company||'';
       customer.ajStaff=h.aj_staff||'';
-      customer.paymentMemo=h.payment_memo||'';customer.chk1=h.chk1||'';customer.chk2=h.chk2||'';customer.chk3=h.chk3||'';customer.chk4=h.chk4||'';customer.chk5=h.chk5||'';customer.chk6=h.chk6||'';
+      customer.paymentMemo=h.payment_memo||'';
     }
     var r1=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId+'&order=sort_order.asc',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
     var items=await r1.json();
