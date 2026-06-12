@@ -3454,8 +3454,9 @@ function renderCustomerPanel(){
           <span style="font-size:11px;color:#555;margin-left:8px;">走行距離</span>
           <input type="number" value="${customer.mileage||''}" oninput="customer.mileage=this.value" placeholder="km" style="padding:3px 6px;border:1px solid #ccc;border-radius:4px;font-size:11px;width:80px;">
           <span style="font-size:11px;color:#888;">km</span>
-        </div>
-        h+='<div style="margin-top:8px;"><textarea oninput="customer.paymentMemo=this.value" placeholder="AJ交渉経緯・過失割合・覚書など..." style="width:100%;font-size:11px;padding:8px;border:1px solid #c5cae9;border-radius:6px;resize:vertical;min-height:60px;background:#fffde7;font-family:inherit;box-sizing:border-box;">'+(customer.paymentMemo||'')+'</textarea></div>';
+       </div>
+            <div style="margin-top:8px;"><textarea oninput="customer.paymentMemo=this.value" placeholder="AJ交渉経緯・過失割合・覚書など..." style="width:100%;font-size:11px;padding:8px;border:1px solid #c5cae9;border-radius:6px;resize:vertical;min-height:60px;background:#fffde7;font-family:inherit;box-sizing:border-box;">${customer.paymentMemo||''}</textarea></div>
+        
       </div>
  
       <div style="margin-top:14px;display:flex;gap:6px">
