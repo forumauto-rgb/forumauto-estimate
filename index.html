@@ -3456,9 +3456,7 @@ function renderCustomerPanel(){
           <span style="font-size:11px;color:#888;">km</span>
         </div>
       </div>
-   　　　h+='<div style="margin-top:6px;">';
-　h+='<textarea placeholder="📝 入金管理メモ（AJ交渉経緯・過失割合・覚書など）" oninput="customer.paymentMemo=this.value" style="width:100%;font-size:11px;padding:6px 8px;border:1px solid #c5cae9;border-radius:6px;resize:vertical;min-height:60px;background:#fffde7;font-family:inherit;">'+(customer.paymentMemo||'')+'</textarea>';
-　h+='</div>';
+ 
       <div style="margin-top:14px;display:flex;gap:6px">
         <span style="font-size:11px;color:#2e7d32;font-weight:bold;">✅ 保存・転記ボタンで自動登録</span>
         <button class="btn btn-sm" onclick="clearC()">クリア</button>
@@ -3467,7 +3465,11 @@ function renderCustomerPanel(){
 
   </div>`;
 }
-
+h+='<div style="margin-top:8px;padding:0 12px 12px;">';
+h+='<div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:4px;">📝 入金管理メモ</div>';
+h+='<textarea oninput="customer.paymentMemo=this.value" placeholder="AJ交渉経緯・過失割合・覚書など..." style="width:100%;font-size:11px;padding:8px;border:1px solid #c5cae9;border-radius:6px;resize:vertical;min-height:70px;background:#fffde7;font-family:inherit;box-sizing:border-box;">'+(customer.paymentMemo||'')+'</textarea>';
+h+='</div>';
+h+='</div>';
 // ====== 見積作成タブ ======
 function renderEstimate(){
   const toggle='<div class="toggle-panel-bar">'
