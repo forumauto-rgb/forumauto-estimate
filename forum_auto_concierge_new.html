@@ -492,7 +492,7 @@ async function speak(text) {
           similarity_boost: 0.80,
           style: 0.35,
           use_speaker_boost: true,
-          speed: 0.88
+          speed: 1.05
         }
       })
     });
@@ -871,7 +871,11 @@ async function sendMsg() {
       })
     });
     const data = await res.json();
-    const reply = (data.content || []).map(b => b.text || '').join('') || 'すみません、もう一度お願いできますか？';
+    let reply = '';
+    if(data.content && data.content.length){
+      data.content.forEach(function(c){ if(c.type==='text') reply += c.text; });
+    }
+    if(!reply) reply = 'すみません、もう一度お願いできますか？';
 
     removeTyping();
     addStaffMsg(reply, TAKASHI_AV, TAKASHI_IC);
