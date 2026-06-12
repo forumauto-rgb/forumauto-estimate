@@ -6515,7 +6515,8 @@ async function sendToSheet(){
       deductible:parseFloat(customer.deductible)||0,
       discount:parseFloat(customer.discount)||0,discount_type:customer.discountType||'loss',
       paymentDueDate:customer.paymentDue||'',
-      mileage:customer.mileage||''
+     mileage:customer.mileage||'',
+        paymentMemo:customer.paymentMemo||''
     };
     var res=await fetch(GAS_URL,{
       method:'POST',
