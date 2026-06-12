@@ -880,7 +880,10 @@ async function sendMsg() {
       })
     });
     const data = await res.json();
-    const reply = (data.content && data.content[0]) ? data.content[0].text : '';
+    let reply = '';
+    if(data.result){ reply = data.result; }
+    else if(data.content && data.content[0]){ reply = data.content[0].text || ''; }
+    if(!reply) reply = 'すみません、もう一度お願いできますか？';
 
     removeTyping();
     addStaffMsg(reply, TAKASHI_AV, TAKASHI_IC);
