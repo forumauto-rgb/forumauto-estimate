@@ -31,7 +31,21 @@
   --shadow-md: 0 6px 32px rgba(13,31,60,0.14);
   --shadow-lg: 0 16px 64px rgba(13,31,60,0.18);
 }
+/* ふりがな非表示（音声読み上げ専用） */
+ruby rt { font-size: 0; color: transparent; line-height: 0; }
 
+/* 相談バッジ */
+.agent-badge {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 12px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+.badge-reiko { background: #e6edf5; color: #0b1c35; }
+.badge-aika  { background: #f1efea; color: #5a5a5a; }
+.badge-mako  { background: #e8f5e0; color: #1a6640; }
 /* ══════════════════════════════════════
    リセット・基本
 ══════════════════════════════════════ */
