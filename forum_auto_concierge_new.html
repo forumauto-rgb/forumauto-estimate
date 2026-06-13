@@ -491,6 +491,14 @@ async function speak(text) {
     .replace(/程度/g, 'ていど')
     .replace(/負担/g, 'ふたん')
     .replace(/提案/g, 'ていあん')
+    .replace(/破損/g,'はそん').replace(/亀裂/g,'きれつ').replace(/変形/g,'へんけい')
+    .replace(/金額/g,'きんがく').replace(/高額/g,'こうがく').replace(/補償/g,'ほしょう')
+    .replace(/賠償/g,'ばいしょう').replace(/示談/g,'じだん').replace(/義務/g,'ぎむ')
+    .replace(/根拠/g,'こんきょ').replace(/お怪我/g,'おけが').replace(/担当/g,'たんとう')
+    .replace(/提供/g,'ていきょう').replace(/確認/g,'かくにん').replace(/説明/g,'せつめい')
+    .replace(/ご説明/g,'ごせつめい').replace(/ご連絡/g,'ごれんらく').replace(/ご相談/g,'ごそうだん')
+    .replace(/ご来店/g,'ごらいてん').replace(/丁寧/g,'ていねい').replace(/仕上/g,'しあげ')
+    .replace(/LINE/g,'ライン')
     .trim();
   try {
     const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + TAKASHI_VOICE_ID, {
