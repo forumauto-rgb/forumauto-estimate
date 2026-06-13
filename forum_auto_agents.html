@@ -261,7 +261,7 @@ body{background:var(--cream);font-family:'Hiragino Kaku Gothic Pro','Yu Gothic',
   <div class="cta-label">— 直接ご連絡・ご来店もお気軽にどうぞ —</div>
   <div class="cta-main">
     <a class="cta-btn-main c-tel" href="tel:0538490632">📞 お電話<span class="cta-s">0538-49-0632</span></a>
-    <a class="cta-btn-main c-line" href="https://line.me/ti/g/dUCBJhxCE-" target="_blank" rel="noopener">💬 LINE相談<span class="cta-s">写真・動画もOK</span></a>
+    <a class="cta-btn-main c-line" href="https://line.me/R/ti/p/@forum-auto" target="_blank" rel="noopener">💬 LINE相談<span class="cta-s">写真・動画もOK</span></a>
   </div>
   <div class="cta-sub">
     <a class="cta-btn-sub" href="https://www.youtube.com/@forumauto" target="_blank" rel="noopener"><span class="cta-icon">▶️</span>YouTube<span class="cta-ss">修理動画</span></a>
@@ -382,7 +382,7 @@ async function speakEl(text,key){
     const r=await fetch(CONFIG.SUPABASE_URL+'/functions/v1/voice-proxy',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+CONFIG.SUPABASE_KEY},
-      body:JSON.stringify({text:text.slice(0,400),voiceId:vid,modelId:'eleven_multilingual_v2',voiceSettings:CHARS[key].elevenSettings}),
+      body:JSON.stringify({text:text.slice(0,400),voiceId:vid,modelId:'eleven_turbo_v2_5',voiceSettings:CHARS[key].elevenSettings}),
     });
     if(!r.ok)throw new Error('voice-proxy '+r.status);
     await playBlob(await r.blob(),key);
