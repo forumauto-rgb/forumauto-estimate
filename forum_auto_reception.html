@@ -203,10 +203,9 @@ textarea { resize: vertical; min-height: 80px; }
         <!-- ★ 色名→色番号に変更 -->
         <div class="form-group">
           <label>色番号<span style="font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;color:#888;"> ※ 塗料台帳の番号</span></label>
-         <input type="text" id="colorCode" placeholder="例：040・1F7・PAX" oninput="lookupColorName(this.value);checkPaintDifficulty(this.value)">
+          <input type="text" id="colorCode" placeholder="例：040・1F7・PAX" oninput="lookupColorName(this.value)">
           <div class="color-hint" id="colorNameHint" style="display:none;"></div>
         </div>
-　　　　　<div id="paintDifficultyAlert" style="display:none;border:2px solid #e74c3c;border-radius:8px;padding:10px 14px;margin-top:6px;"></div>
         <!-- 色名（色番号から自動補完 or 手入力） -->
         <div class="form-group">
           <label>色名<span style="font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;color:#888;"> ※ 色番号入力で自動表示</span></label>
@@ -217,20 +216,19 @@ textarea { resize: vertical; min-height: 80px; }
         <div class="form-group full">
           <label>問診内容</label>
           <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;">
-           <button type="button" onclick="addSymptom('フロントバンパー摺り傷・凹み');checkPanelMaterial('フロントバンパー')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">フロントバンパー</button>
-<button type="button" onclick="addSymptom('リアバンパー摺り傷・凹み');checkPanelMaterial('リヤバンパー')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">リアバンパー</button>
-<button type="button" onclick="addSymptom('左フロントドア凹み・摺り傷');checkPanelMaterial('フロントドア')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">左ドア</button>
-<button type="button" onclick="addSymptom('右フロントドア凹み・摺り傷');checkPanelMaterial('フロントドア')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">右ドア</button>
-<button type="button" onclick="addSymptom('左フロントフェンダー凹み・摺り傷');checkPanelMaterial('フロントフェンダー')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">左フェンダー</button>
-<button type="button" onclick="addSymptom('右フロントフェンダー凹み・摺り傷');checkPanelMaterial('フロントフェンダー')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">右フェンダー</button>
-<button type="button" onclick="addSymptom('ボンネット凹み・摺り傷');checkPanelMaterial('フード（ボンネット）')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">ボンネット</button>
-<button type="button" onclick="addSymptom('トランクリッド凹み');checkPanelMaterial('トランク')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">トランク</button>
+            <button type="button" onclick="addSymptom('フロントバンパー擦り傷・凹み')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">フロントバンパー</button>
+            <button type="button" onclick="addSymptom('リアバンパー擦り傷・凹み')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">リアバンパー</button>
+            <button type="button" onclick="addSymptom('左フロントドア凹み・擦り傷')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">左ドア</button>
+            <button type="button" onclick="addSymptom('右フロントドア凹み・擦り傷')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">右ドア</button>
+            <button type="button" onclick="addSymptom('左フロントフェンダー凹み・擦り傷')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">左フェンダー</button>
+            <button type="button" onclick="addSymptom('右フロントフェンダー凹み・擦り傷')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">右フェンダー</button>
+            <button type="button" onclick="addSymptom('ボンネット凹み・擦り傷')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">ボンネット</button>
+            <button type="button" onclick="addSymptom('トランクリッド凹み')" style="font-size:11px;padding:4px 8px;border:1px solid #d8dde8;border-radius:6px;background:#f0f4ff;color:#1a2744;cursor:pointer;">トランク</button>
             <button type="button" onclick="addSymptom('保険修理対応')" style="font-size:11px;padding:4px 8px;border:1px solid #c5cae9;border-radius:6px;background:#e8eaf6;color:#3949ab;cursor:pointer;">保険対応</button>
             <button type="button" onclick="addSymptom('自費修理希望')" style="font-size:11px;padding:4px 8px;border:1px solid #c5cae9;border-radius:6px;background:#e8eaf6;color:#3949ab;cursor:pointer;">自費修理</button>
             <button type="button" onclick="document.getElementById('symptoms').value=''" style="font-size:11px;padding:4px 8px;border:1px solid #ffcdd2;border-radius:6px;background:#fff5f5;color:#c62828;cursor:pointer;">🗑 クリア</button>
           </div>
-        　<textarea id="symptoms" placeholder="事故状況・症状・お客様からのご要望など" style="min-height:90px;"></textarea>
-　　　　　<div id="panelMaterialAlert" style="display:none;margin-top:8px;"></div>
+          <textarea id="symptoms" placeholder="事故状況・症状・お客様からのご要望など" style="min-height:90px;"></textarea>
         </div>
       </div>
     </div>
@@ -461,12 +459,12 @@ textarea { resize: vertical; min-height: 80px; }
       <!-- ★ クイック期間ボタン -->
       <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
         <span style="font-size:11px;color:var(--text-light);line-height:2;font-weight:700;">過去案件：</span>
-       <button onclick="setSearchRange(0)" id="btn-range-0" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">本日</button>
-          <button onclick="setSearchRange(7)" id="btn-range-7" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">過去7日</button>
-          <button onclick="setSearchRange(30)" id="btn-range-30" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">過去30日</button>
-          <button onclick="setSearchRange(90)" id="btn-range-90" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">過去3ヶ月</button>
-          <button onclick="setSearchRange(365)" id="btn-range-365" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">過去1年</button>
-          <button onclick="searchAllCases()" id="btn-range-all" style="padding:4px 12px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">🔍 全期間</button>
+        <button onclick="setSearchRange(0)" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">本日</button>
+        <button onclick="setSearchRange(7)" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">過去7日</button>
+        <button onclick="setSearchRange(30)" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">過去30日</button>
+        <button onclick="setSearchRange(90)" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">過去3ヶ月</button>
+        <button onclick="setSearchRange(365)" style="padding:4px 10px;border:1.5px solid #c5cae9;border-radius:20px;font-size:11px;background:#e8eaf6;color:#3949ab;cursor:pointer;font-weight:700;">過去1年</button>
+        <button onclick="searchAllCases()" style="padding:4px 12px;border:1.5px solid #e8392a;border-radius:20px;font-size:11px;background:#fff0ee;color:#e8392a;cursor:pointer;font-weight:700;">🔍 全期間</button>
       </div>
     </div>
     <div class="card">
@@ -603,154 +601,34 @@ async function supabaseQuery(table, method, body, filter) {
   return method === 'DELETE' ? null : res.json();
 }
 
+// ★ 色番号から色名を自動表示（よく使う色コードのマスタ）
+var COLOR_MASTER = {
+  '040':'スーパーホワイトII','1F7':'ホワイトパールクリスタルシャイン','202':'ブラック','1G3':'グレーメタリック',
+  '1H6':'ダークグレーマイカ','3R3':'スーパーレッド','6T7':'ライトブルーマイカメタリック','8X8':'ダークブルーマイカ',
+  'B35':'ライトブルーM','C7P':'ミスティックレッドM','E8H':'プレシャスブラック','F8S':'ダークブルーM',
+  'G1U':'プレシャスシルバー','KH3':'マシーングレーP','PAX':'プラチナホワイトP','PW1':'パールホワイト',
+  'QAA':'グランドホワイトP','RAA':'ピュアホワイト','NU':'チタニウムシルバーM','W24':'ブリリアントホワイトP',
+  '1C0':'シルバーM','1G0':'ダークシルバーM','Z2H':'アズライトブルーM','46G':'ソニックシルバーM',
+  '51K':'スノーフレイクホワイトP','A3F':'ダイヤモンドホワイトP','B15':'インフィニティブラック',
+  'NBL':'ナイトブルーM','PAU':'ブリリアントホワイトP','K1X':'ドーンシルバーM'
+};
 
-// ★ 色番号から色名を自動表示（Supabase paint_colorsテーブル参照）
-async function lookupColorName(code) {
+function lookupColorName(code) {
   var hint = document.getElementById('colorNameHint');
   var colorEl = document.getElementById('carColor');
   var upper = (code||'').toUpperCase().trim();
-  if(!upper){ hint.style.display='none'; return; }
-  try{
-    var res = await fetch(
-      SUPABASE_URL + '/rest/v1/paint_colors?color_code=eq.' + encodeURIComponent(upper) + '&limit=1',
-      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
-    );
-    var data = await res.json();
-    if(data && data.length){
-      var name = data[0].color_name;
-      hint.style.display = 'block';
-      hint.textContent = '💡 ' + name;
-      colorEl.value = name;
-    } else {
-      hint.style.display = 'block';
-      hint.textContent = '⚠️ 色名マスタにありません（手入力してください）';
-    }
-  } catch(e){
+  if (!upper) { hint.style.display='none'; return; }
+  var name = COLOR_MASTER[upper] || COLOR_MASTER[code.trim()];
+  if (name) {
     hint.style.display = 'block';
-    hint.textContent = '⚠️ 色名マスタにありません（手入力してください）';
-    console.warn('lookupColorName error:', e);
-  }
-}
-async function checkPaintDifficulty(code) {
-  if (!code) return;
-  var upper = code.toUpperCase().trim();
-  try {
-    var data = await supabaseQuery('paint_difficulty', 'GET', null, '?color_code=eq.' + encodeURIComponent(upper) + '&limit=1');
-    var el = document.getElementById('paintDifficultyAlert');
-    if (!el) return;
-    if (data && data.length > 0) {
-      var d = data[0];
-      var isSuper = d.difficulty === '超難易度';
-      el.style.display = 'block';
-      el.style.background = isSuper ? '#fff0f0' : '#fffbe6';
-      el.style.borderColor = isSuper ? '#e74c3c' : '#f39c12';
-      el.innerHTML = '<div style="font-weight:bold;color:' + (isSuper?'#c0392b':'#e67e22') + ';font-size:13px;">⚠️ ' + d.difficulty + '塗料：' + d.color_name + '（' + upper + '）</div>'
-        + '<div style="font-size:12px;color:#555;margin-top:4px;">' + d.customer_message + '</div>'
-        + '<div style="font-size:11px;color:#888;margin-top:4px;">調色+' + d.extra_mixing_hours + 'h　塗装+' + d.extra_paint_hours + 'h　材料費+' + Math.round(d.extra_material_rate*100) + '%</div>';
-    } else {
-      el.style.display = 'none';
-    }
-  } catch(e) { console.warn('難易度判定エラー', e); }
-}
-  async function checkPanelMaterial(panel){
-  var carName = (document.getElementById('carName').value||'').trim();
-  if(!carName || !panel) return;
-  var el = document.getElementById('panelMaterialAlert');
-  if(!el) return;
-
-  // パネル名を正規化
-  var panelKey = panel.replace('凹み・擦り傷','').replace('摺り傷','').trim();
-
-  // Supabaseから検索
-  try{
-    var data = await supabaseQuery('panel_materials','GET',null,
-      '?model=ilike.' + encodeURIComponent('*' + carName + '*') + '&panel=ilike.' + encodeURIComponent('*' + panelKey + '*') + '&limit=1');
-
-    if(data && data.length > 0){
-      var d = data[0];
-      var isAlum = d.material.indexOf('アルミ') >= 0;
-      var color = isAlum ? '#e67e22' : '#1a3a6b';
-      var bg = isAlum ? '#fff3e0' : '#e8f5e9';
-      var verified = d.verified ? '✅ 修理実績あり' : '⚠️ AI推定';
-      el.style.display = 'block';
-      el.innerHTML = '<div style="border:2px solid ' + color + ';border-radius:8px;padding:10px 14px;background:' + bg + ';">'
-        + '<div style="font-weight:bold;color:' + color + ';font-size:13px;">🔩 ' + d.panel + '：' + d.material + '　' + verified + '</div>'
-        + '<div style="font-size:12px;margin-top:4px;color:#333;">' + d.caution + '</div>'
-        + '<div style="font-size:12px;margin-top:4px;color:#555;border-top:1px solid #ddd;padding-top:4px;">'
-        + '🔧 修理方法：' + d.repair_method + '</div>'
-        + '<div style="font-size:11px;margin-top:4px;color:#888;">'
-        + (d.stud_ok ? '✅スタッド可　' : '❌スタッド不可　')
-        + (d.stud_aluminum_ok ? '✅アルミスタッド可　' : '')
-        + (d.spot_weld_ok ? '✅スポット溶接可　' : '❌スポット溶接不可　')
-        + (d.heat_ok ? '✅加熱可' : '❌加熱不可')
-        + '</div></div>';
-    } else {
-      // DBになければAIで推定
-      el.style.display = 'block';
-      el.innerHTML = '<div style="border:2px solid #aaa;border-radius:8px;padding:10px 14px;background:#f9f9f9;">'
-        + '<div style="font-weight:bold;color:#888;font-size:13px;">🔍 ' + carName + ' ' + panelKey + ' の鋼板情報を検索中...</div>'
-        + '</div>';
-      await checkPanelMaterialAI(carName, panelKey, el);
-    }
-  } catch(e){ console.warn('鋼板判定エラー',e); }
-}
-
-async function checkPanelMaterialAI(carName, panel, el){
-  try{
-    var prompt = 'あなたは自動車修理の専門家です。以下の車両・部位の鋼板種類と修理方法を簡潔に教えてください。\n'
-      + '車名：' + carName + '\n部位：' + panel + '\n\n'
-      + '以下の形式でJSON（日本語）で回答してください：\n'
-      + '{"material":"鋼板種類","stud_ok":true/false,"stud_aluminum_ok":true/false,"spot_weld_ok":true/false,"heat_ok":true/false,"repair_method":"修理方法の注意点","caution":"警告文","customer_message":"お客様向け説明文"}';
-
-    var res = await fetch('https://uhppgdwbyrijnqpvusxw.supabase.co/functions/v1/ai-proxy', {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVocHBnZHdieXJpam5xcHZ1c3h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NDEyMDksImV4cCI6MjA4OTExNzIwOX0.mJ2GXQUsRZAZ-VL6XTVTz3gfG3MTNtfnWxsIPU_DK60'},
-      body:JSON.stringify({message: prompt})
-    });
-    var json = await res.json();
-    var text = json.content || json.response || '';
-    var clean = text.replace(/```json|```/g,'').trim();
-    var d = JSON.parse(clean);
-    var isAlum = (d.material||'').indexOf('アルミ') >= 0;
-    var color = isAlum ? '#e67e22' : '#666';
-    var bg = isAlum ? '#fff3e0' : '#f5f5f5';
-    el.innerHTML = '<div style="border:2px solid ' + color + ';border-radius:8px;padding:10px 14px;background:' + bg + ';">'
-      + '<div style="font-weight:bold;color:' + color + ';font-size:13px;">🤖 AI推定：' + (d.material||'不明') + '　⚠️ 要確認</div>'
-      + '<div style="font-size:12px;margin-top:4px;color:#333;">' + (d.caution||'') + '</div>'
-      + '<div style="font-size:12px;margin-top:4px;color:#555;border-top:1px solid #ddd;padding-top:4px;">'
-      + '🔧 ' + (d.repair_method||'') + '</div>'
-      + '<div style="font-size:11px;margin-top:4px;color:#888;">'
-      + (d.stud_ok ? '✅スタッド可　' : '❌スタッド不可　')
-      + (d.stud_aluminum_ok ? '✅アルミスタッド可　' : '')
-      + (d.spot_weld_ok ? '✅スポット溶接可　' : '❌スポット溶接不可　')
-      + (d.heat_ok ? '✅加熱可' : '❌加熱不可')
-      + '</div>'
-      + '<button onclick="registerPanelMaterial(' + JSON.stringify(d).replace(/"/g,"'") + ',\'' + carName + '\',\'' + panel + '\')" '
-      + 'style="margin-top:8px;padding:4px 12px;background:#1a3a6b;color:white;border:none;border-radius:6px;cursor:pointer;font-size:11px;">✅ 正式登録</button>'
-      + '</div>';
-  } catch(e){
-    el.innerHTML = '<div style="border:2px solid #ccc;border-radius:8px;padding:10px;background:#f9f9f9;color:#888;font-size:12px;">AI推定できませんでした。手動で確認してください。</div>';
+    hint.textContent = '💡 ' + name;
+    colorEl.value = name;
+  } else {
+    hint.style.display = 'block';
+    hint.textContent = '⚠ 色名マスタにありません（手入力してください）';
   }
 }
 
-async function registerPanelMaterial(d, carName, panel){
-  if(!confirm('この情報を正式登録しますか？')) return;
-  await supabaseQuery('panel_materials','POST',{
-    maker: '', model: carName, panel: panel,
-    material: d.material||'',
-    stud_ok: d.stud_ok||false,
-    stud_aluminum_ok: d.stud_aluminum_ok||false,
-    spot_weld_ok: d.spot_weld_ok||false,
-    mig_weld_ok: false,
-    heat_ok: d.heat_ok||true,
-    repair_method: d.repair_method||'',
-    caution: d.caution||'',
-    customer_message: d.customer_message||'',
-    source: 'AI推定→正式登録',
-    verified: true
-  });
-  showToast('✅ 正式登録しました。次回から正確な情報が表示されます。','success');
-}
 // ★ レンタカー貸出中の詳細をSupabaseから取得
 async function loadRentalActiveInfo() {
   try {
@@ -857,7 +735,7 @@ function showRentalDetail(carName, cardEl) {
     + '<div class="pop-row"><span class="pop-label">担当</span><span class="pop-val">'+(rec.staff||'-')+'</span></div>'
     + '<div style="margin-top:8px;display:flex;gap:6px;">'
     + '<button onclick="this.closest(\'.rental-popup\').remove()" style="flex:1;padding:5px;border:1px solid #ddd;border-radius:6px;background:white;cursor:pointer;font-size:11px;">閉じる</button>'
-    + '<button onclick="jumpToEstimate(\''+(rec.customer_name||'')+'\',\''+(rec.note||'')+'\',\''+(rec.plate||'')+'\',\''+(rec.car_model||'')+'\',\''+(rec.id||'')+'\')" style="flex:2;padding:5px;border:none;border-radius:6px;background:#1a2744;color:white;cursor:pointer;font-size:11px;font-weight:700;">📋 案件を開く</button>'
+    + '<button onclick="jumpToEstimate(\''+(rec.customer_name||'')+'\',\''+(rec.note||'')+'\');this.closest(\'.rental-popup\').remove();" style="flex:2;padding:5px;border:none;border-radius:6px;background:#1a2744;color:white;cursor:pointer;font-size:11px;font-weight:700;">📋 案件を開く</button>'
     + '</div>';
   cardEl.style.position = 'relative';
   cardEl.appendChild(popup);
@@ -870,12 +748,8 @@ function showRentalDetail(carName, cardEl) {
 }
 
 // ★ 見積ソフトに飛ぶ
-function jumpToEstimate(name, caseNum, plate, car, receptionId) {
-  var url = 'index.html?name=' + encodeURIComponent(name||'')
-    + '&note=' + encodeURIComponent(caseNum||'')
-    + '&plate=' + encodeURIComponent(plate||'')
-    + '&car=' + encodeURIComponent(car||'')
-    + '&reception_id=' + encodeURIComponent(receptionId||'');
+function jumpToEstimate(name, caseNum) {
+  var url = 'index.html?name=' + encodeURIComponent(name) + '&note=' + encodeURIComponent(caseNum);
   window.location.href = url;
 }
 
@@ -1120,23 +994,26 @@ async function saveReception() {
     reception_datetime: new Date().toISOString()
   };
   try {
-   var recResult = await supabaseQuery('receptions','POST',payload);
-var recId = (recResult && recResult[0]) ? recResult[0].id : null;
-    // 色番号・色名をpaint_colorsに未登録なら自動登録
-      if(colorCode && carColor){
-        try{
-          var existing = await fetch(SUPABASE_URL+'/rest/v1/paint_colors?color_code=eq.'+encodeURIComponent(colorCode.toUpperCase())+'&limit=1',
-            {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
-          var exData = await existing.json();
-          if(!exData||exData.length===0){
-            await fetch(SUPABASE_URL+'/rest/v1/paint_colors',{
-              method:'POST',
-              headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
-              body:JSON.stringify({color_code:colorCode.toUpperCase(),color_name:carColor,maker:'',difficulty:'標準'})
-            });
-          }
-        }catch(e){console.warn('色登録エラー:',e);}
-      }
+    // ★ バグ修正①: recResultを変数で受け取る（recId取得のため）
+    var recResult = await supabaseQuery('receptions','POST',payload);
+    var recId = (recResult && recResult[0]) ? recResult[0].id : null;
+
+    // ★ バグ修正②: paint_colors自動登録（欠落していたコードを復元）
+    if(colorCode && carColor){
+      try{
+        var existPC = await fetch(SUPABASE_URL+'/rest/v1/paint_colors?color_code=eq.'+encodeURIComponent(colorCode.toUpperCase())+'&limit=1',
+          {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+        var exPCData = await existPC.json();
+        if(!exPCData||exPCData.length===0){
+          await fetch(SUPABASE_URL+'/rest/v1/paint_colors',{
+            method:'POST',
+            headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+            body:JSON.stringify({color_code:colorCode.toUpperCase(),color_name:carColor,maker:'',difficulty:'標準'})
+          });
+        }
+      }catch(pe){console.warn('色登録エラー:',pe);}
+    }
+
     // ★ 顧客マスター・車両マスターへ自動登録（色番号含む）
     try {
       var existing = await supabaseQuery('customers','GET',null,'?name=eq.'+encodeURIComponent(name)+'&limit=1');
@@ -1147,49 +1024,51 @@ var recId = (recResult && recResult[0]) ? recResult[0].id : null;
       } else {
         custNo = existing[0].customer_no || existing[0].id || '';
       }
-      var carName=document.getElementById('carName').value||'';
-      var carNum=document.getElementById('carNum').value||'';
-      if(carName||carNum){
-        // 車両が既存かチェック
-        var existV = await supabaseQuery('vehicles','GET',null,'?plate=eq.'+encodeURIComponent(carNum)+'&limit=1');
+      var carName2=document.getElementById('carName').value||'';
+      var carNum2=document.getElementById('carNum').value||'';
+      if(carName2||carNum2){
+        var existV = await supabaseQuery('vehicles','GET',null,'?plate=eq.'+encodeURIComponent(carNum2)+'&limit=1');
         if(!existV||existV.length===0){
           await supabaseQuery('vehicles','POST',{
-            name:carName, plate:carNum,
+            name:carName2, plate:carNum2,
             color_name:carColor,
-            color_code:colorCode,  // ★ 色番号を保存
+            color_code:colorCode,
             customer_id:custNo,
             vehicle_no:'V'+String(Date.now()).slice(-6)
           });
         } else {
-          // 既存車両に色番号を更新
           if(colorCode){
-            await fetch(SUPABASE_URL+'/rest/v1/vehicles?plate=eq.'+encodeURIComponent(carNum),{
+            await fetch(SUPABASE_URL+'/rest/v1/vehicles?plate=eq.'+encodeURIComponent(carNum2),{
               method:'PATCH',
               headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
               body:JSON.stringify({color_code:colorCode,color_name:carColor})
             });
           }
         }
- } // if(carName||carNum) 終わり
-        // ★ reception に vehicle_no / customer_no を紐づけ
-        try {
-          var latestV2 = carNum ? await supabaseQuery('vehicles','GET',null,'?plate=eq.'+encodeURIComponent(carNum)+'&limit=1') : null;
-          var vNo2 = (latestV2 && latestV2[0]) ? latestV2[0].vehicle_no||'' : '';
-          var vId2 = (latestV2 && latestV2[0]) ? latestV2[0].id||'' : '';
-          if(recId){
-            await fetch(SUPABASE_URL+'/rest/v1/receptions?id=eq.'+recId,{
-              method:'PATCH',
-              headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
-              body:JSON.stringify({customer_no:custNo||'',vehicle_no:vNo2,vehicle_id:vId2})
-            });
-          }
-        } catch(ve){ console.warn('受付紐づけエラー:',ve); }
+      }
+      // ★ receptionにvehicle_no/customer_noを紐づけ
+      try {
+        var latestV2 = carNum2 ? await supabaseQuery('vehicles','GET',null,'?plate=eq.'+encodeURIComponent(carNum2)+'&limit=1') : null;
+        var vNo2 = (latestV2 && latestV2[0]) ? latestV2[0].vehicle_no||'' : '';
+        var vId2 = (latestV2 && latestV2[0]) ? latestV2[0].id||'' : '';
+        if(recId){
+          await fetch(SUPABASE_URL+'/rest/v1/receptions?id=eq.'+recId,{
+            method:'PATCH',
+            headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+            body:JSON.stringify({customer_no:custNo||'',vehicle_no:vNo2,vehicle_id:vId2})
+          });
+        }
+      } catch(ve){ console.warn('受付紐づけエラー:',ve); }
+    } catch(ce){ console.warn('顧客自動登録エラー:',ce); }
+
     hideLoading();
+    // ★ バグ修正③: afterReceptionSavedを確実に呼ぶ（tryブロック閉じ漏れを修正）
     afterReceptionSaved(caseNum, name, rentalNeeded, selectedRentalCar);
   } catch(e) {
     hideLoading();
     showToast('登録に失敗しました: '+e.message,'error');
   }
+}
 
 function afterReceptionSaved(caseNum, name, needRental, rentalCar) {
   if (needRental) {
@@ -1327,28 +1206,15 @@ function setSearchRange(days) {
   var eEl = document.getElementById('caseSearchDateEnd');
   if(sEl) sEl.value = fmt(start);
   if(eEl) eEl.value = fmt(today);
-  // ハイライト更新
-  ['btn-range-0','btn-range-7','btn-range-30','btn-range-90','btn-range-365','btn-range-all'].forEach(function(id){
-    var b=document.getElementById(id);
-    if(b){b.style.background='#e8eaf6';b.style.color='#3949ab';b.style.borderColor='#c5cae9';}
-  });
-  var active=document.getElementById('btn-range-'+days);
-  if(active){active.style.background='#e8392a';active.style.color='white';active.style.borderColor='#e8392a';}
   loadCases();
 }
 
+// ★ 全期間検索
 function searchAllCases() {
   var sEl = document.getElementById('caseSearchDate');
   var eEl = document.getElementById('caseSearchDateEnd');
   if(sEl) sEl.value = '';
   if(eEl) eEl.value = '';
-  // ハイライト更新
-  ['btn-range-0','btn-range-7','btn-range-30','btn-range-90','btn-range-365','btn-range-all'].forEach(function(id){
-    var b=document.getElementById(id);
-    if(b){b.style.background='#e8eaf6';b.style.color='#3949ab';b.style.borderColor='#c5cae9';}
-  });
-  var active=document.getElementById('btn-range-all');
-  if(active){active.style.background='#e8392a';active.style.color='white';active.style.borderColor='#e8392a';}
   loadCases();
 }
 
