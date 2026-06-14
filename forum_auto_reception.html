@@ -857,7 +857,7 @@ function showRentalDetail(carName, cardEl) {
     + '<div class="pop-row"><span class="pop-label">担当</span><span class="pop-val">'+(rec.staff||'-')+'</span></div>'
     + '<div style="margin-top:8px;display:flex;gap:6px;">'
     + '<button onclick="this.closest(\'.rental-popup\').remove()" style="flex:1;padding:5px;border:1px solid #ddd;border-radius:6px;background:white;cursor:pointer;font-size:11px;">閉じる</button>'
-    + '<button onclick="jumpToEstimate(\''+(rec.customer_name||'')+'\',\''+(rec.note||'')+'\',\''+(rec.plate||'')+'\',\''+(rec.car_model||'')+'\')" style="flex:2;padding:5px;border:none;border-radius:6px;background:#1a2744;color:white;cursor:pointer;font-size:11px;font-weight:700;">📋 案件を開く</button>'
+    + '<button onclick="jumpToEstimate(\''+(rec.customer_name||'')+'\',\''+(rec.note||'')+'\',\''+(rec.plate||'')+'\',\''+(rec.car_model||'')+'\',\''+(rec.id||'')+'\')" style="flex:2;padding:5px;border:none;border-radius:6px;background:#1a2744;color:white;cursor:pointer;font-size:11px;font-weight:700;">📋 案件を開く</button>'
     + '</div>';
   cardEl.style.position = 'relative';
   cardEl.appendChild(popup);
@@ -870,12 +870,14 @@ function showRentalDetail(carName, cardEl) {
 }
 
 // ★ 見積ソフトに飛ぶ
-function jumpToEstimate(name, caseNum, plate, car) {
-    var url = 'index.html?name=' + encodeURIComponent(name||'')
-      + '&note=' + encodeURIComponent(caseNum||'')
-      + '&plate=' + encodeURIComponent(plate||'')
-      + '&car=' + encodeURIComponent(car||'');
-    window.location.href = url;
+function jumpToEstimate(name, caseNum, plate, car, receptionId) {
+  var url = 'index.html?name=' + encodeURIComponent(name||'')
+    + '&note=' + encodeURIComponent(caseNum||'')
+    + '&plate=' + encodeURIComponent(plate||'')
+    + '&car=' + encodeURIComponent(car||'')
+    + '&reception_id=' + encodeURIComponent(receptionId||'');
+  window.location.href = url;
+}
   }
 
 function selectRentalCar(id, el) {
