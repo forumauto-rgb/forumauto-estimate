@@ -6204,7 +6204,9 @@ async function saveEstimate(){
       repair_status:customer.repairStatus||'受付',
       staff_name:customer.staffName||'',
       delivery_date:customer.deliveryDate||'',
-      memo:customer.estNote||''
+      memo:customer.estNote||'',
+　　　reception_id:customer.receptionId||null
+};
     };
     // 既存見積を検索
     var rCheck=await fetch(SUPABASE_URL+'/rest/v1/estimates?estimate_no=eq.'+encodeURIComponent(estNo)+'&select=id',{
