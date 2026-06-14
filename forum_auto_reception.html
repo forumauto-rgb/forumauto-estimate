@@ -878,7 +878,7 @@ function jumpToEstimate(name, caseNum, plate, car, receptionId) {
     + '&reception_id=' + encodeURIComponent(receptionId||'');
   window.location.href = url;
 }
-  }
+
 
 function selectRentalCar(id, el) {
   var car = rentalCars.find(function(c){return String(c.id)===String(id);});
