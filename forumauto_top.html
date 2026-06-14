@@ -1473,27 +1473,27 @@ a { text-decoration:none; color:inherit; }
   els.forEach(function(el) { obs.observe(el); });
 })();
 
-// キャラクターの声（Web Speech API）
+// ===== ElevenLabs 高品質音声 =====
+// テキストはひらがな混じりで漢字読み違いをゼロにする
 var VOICES = {
   reiko: {
-    text: 'いらっしゃいませ。フォーラムオートへようこそ。私は法務担当の麗子です。保険会社との交渉や、権利に関するご相談は、どうぞ遠慮なく。法律の根拠を持って、あなたのお力になります。',
-    pitch: 0.85,
-    rate: 0.88,
-    volume: 1.0
+    label: '麗子',
+    text: 'いらっしゃいませ。フォーラムオートへ ようこそ。わたしは ほうむたんとうの れいこです。ほけんがいしゃとの こうしょうや、けんりに かんするご そうだんは、どうぞ えんりょなく。ほうりつの こんきょを もって、あなたの おちからに なります。',
+    voiceKey: 'reiko'
   },
   aika: {
-    text: 'いらっしゃいませ、フォーラムオートへようこそ！受付担当の愛華です。何から話せばいいか分からなくても、大丈夫ですよ。最初の一言から、一緒に整理しましょうね。',
-    pitch: 1.2,
-    rate: 0.95,
-    volume: 1.0
+    label: '愛華',
+    text: 'いらっしゃいませ、フォーラムオートへ ようこそ！うけつけたんとうの あいかです。なにから はなせばいいか、わからなくても だいじょうぶですよ。さいしょの ひとことから、いっしょに せいりしましょうね。',
+    voiceKey: 'aika'
   },
   mako: {
-    text: 'いらっしゃいませ。技術担当の真子です。お車の損傷状態、数字できちんと証明します。フレームの歪みも、塗装の問題も、感覚ではなくデータでお伝えします。',
-    pitch: 1.0,
-    rate: 1.0,
-    volume: 1.0
+    label: '真子',
+    text: 'いらっしゃいませ。ぎじゅつたんとうの まこです。おくるまの そんしょうじょうたい、すうじで きちんと しょうめいします。フレームの ゆがみも、とそうの もんだいも、かんかくではなく データで おつたえします。',
+    voiceKey: 'mako'
   }
 };
+var VOICE_PROXY_URL = 'https://uhppgdwbyrijnqpvusxw.supabase.co/functions/v1/voice-proxy';
+var currentAudio = null;
 
 // ===== AIチャット機能 =====
 var chatAgent = 'aika';
@@ -1693,24 +1693,73 @@ async function sendChat() {
   }
 }
 // ===== AIチャット機能ここまで =====
-  if (!window.speechSynthesis) {
-    alert('このブラウザは音声読み上げに対応していません');
-    return;
-  }
-  window.speechSynthesis.cancel();
+
+// ===== ElevenLabs 音声再生 =====
+async function speak(agent) {
   var v = VOICES[agent];
-  var utt = new SpeechSynthesisUtterance(v.text);
-  utt.lang    = 'ja-JP';
-  utt.pitch   = v.pitch;
-  utt.rate    = v.rate;
-  utt.volume  = v.volume;
+  if (!v) return;
 
-  // 日本語音声を優先して選択
-  var voices = window.speechSynthesis.getVoices();
-  var jaVoice = voices.find(function(v) { return v.lang === 'ja-JP'; });
-  if (jaVoice) utt.voice = jaVoice;
+  // ボタンをローディング状態にする
+  var btns = document.querySelectorAll('.voice-btn');
+  btns.forEach(function(b){ b.disabled = true; b.style.opacity = '0.6'; });
+  var activeBtn = document.querySelector('.' + agent + '-voice');
+  if (activeBtn) activeBtn.textContent = '⏳ 読み込み中...';
 
-  window.speechSynthesis.speak(utt);
+  // 再生中の音声を停止
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio = null;
+  }
+
+  try {
+    var resp = await fetch(VOICE_PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        character: v.voiceKey,
+        text: v.text
+      })
+    });
+
+    if (!resp.ok) throw new Error('voice-proxy error: ' + resp.status);
+
+    var arrayBuffer = await resp.arrayBuffer();
+    var blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
+    var url = URL.createObjectURL(blob);
+
+    currentAudio = new Audio(url);
+    currentAudio.play();
+
+    currentAudio.onended = function() {
+      URL.revokeObjectURL(url);
+      resetVoiceBtns();
+    };
+    currentAudio.onerror = function() {
+      resetVoiceBtns();
+    };
+
+  } catch(e) {
+    console.error('ElevenLabs error:', e);
+    // フォールバック：Web Speech API
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      var utt = new SpeechSynthesisUtterance(v.text);
+      utt.lang = 'ja-JP';
+      window.speechSynthesis.speak(utt);
+    }
+    resetVoiceBtns();
+  }
+}
+
+function resetVoiceBtns() {
+  var btns = document.querySelectorAll('.voice-btn');
+  btns.forEach(function(b){ b.disabled = false; b.style.opacity = '1'; });
+  var rBtn = document.querySelector('.reiko-voice');
+  var aBtn = document.querySelector('.aika-voice');
+  var mBtn = document.querySelector('.mako-voice');
+  if (rBtn) rBtn.innerHTML = '🔊 <ruby>麗子<rt>れいこ</rt></ruby>の<ruby>声<rt>こえ</rt></ruby>を<ruby>聞<rt>き</rt></ruby>く';
+  if (aBtn) aBtn.innerHTML = '🔊 <ruby>愛華<rt>あいか</rt></ruby>の<ruby>声<rt>こえ</rt></ruby>を<ruby>聞<rt>き</rt></ruby>く';
+  if (mBtn) mBtn.innerHTML = '🔊 <ruby>真子<rt>まこ</rt></ruby>の<ruby>声<rt>こえ</rt></ruby>を<ruby>聞<rt>き</rt></ruby>く';
 }
 </script>
 </body>
