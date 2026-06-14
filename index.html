@@ -6708,10 +6708,12 @@ function applyReceptionParams() {
   const car   = params.get('car');
   const type  = params.get('type');
   const note  = params.get('note');
+　const receptionId = params.get('reception_id');
 
   if (!name) return; // パラメータがなければ何もしない
 
   // customerオブジェクトに反映
+  customer.receptionId = receptionId || '';
   customer.name  = name  || '';
   customer.plate = plate || '';
   customer.car   = car   || '';
