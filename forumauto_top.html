@@ -1441,12 +1441,7 @@ a { text-decoration:none; color:inherit; }
     <!-- メッセージエリア -->
     <div id="chatMessages" style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px;"></div>
 
-    <!-- APIキー入力（初回のみ） -->
-    <div id="apiKeyArea" style="padding:10px 20px;background:#fff8e1;border-top:1px solid #ffe082;display:flex;gap:8px;align-items:center;flex-shrink:0;">
-      <input id="apiKeyInput" type="password" placeholder="Anthropic APIキーを入力（sk-ant-...）"
-        style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:'Noto Sans JP',sans-serif;">
-      <button onclick="saveApiKey()" style="background:#b8960c;color:#fff;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;font-family:'Noto Sans JP',sans-serif;">設定</button>
-    </div>
+    <!-- APIキー入力欄：ai-proxy経由のため不要 -->
 
     <!-- 入力エリア -->
     <div style="padding:12px 20px 20px;border-top:1px solid #eee;display:flex;gap:10px;flex-shrink:0;">
@@ -1498,7 +1493,8 @@ var currentAudio = null;
 // ===== AIチャット機能 =====
 var chatAgent = 'aika';
 var chatHistory = [];
-var AI_API_KEY_TOP = localStorage.getItem('forumAutoApiKey') || '';
+var SUPABASE_URL = 'https://uhppgdwbyrijnqpvusxw.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVocHBnZHdieXJpam5xcHZ1c3h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDk3MDY5NzMsImV4cCI6MjAyNTI4Mjk3M30.aRaNTr_nEVFCBFmFIJgg4dZDUzXnY2a5X9ZsXb_DK60';
 
 var AGENTS = {
   reiko: {
@@ -1631,58 +1627,37 @@ function removeTyping() {
   if (el) el.remove();
 }
 
-function checkApiKeyArea() {
-  var area = document.getElementById('apiKeyArea');
-  AI_API_KEY_TOP = localStorage.getItem('forumAutoApiKey') || '';
-  area.style.display = AI_API_KEY_TOP ? 'none' : 'flex';
-}
+function checkApiKeyArea() { /* ai-proxy使用のため不要 */ }
 
-function saveApiKey() {
-  var key = document.getElementById('apiKeyInput').value.trim();
-  if (!key) { alert('APIキーを入力してください'); return; }
-  localStorage.setItem('forumAutoApiKey', key);
-  AI_API_KEY_TOP = key;
-  document.getElementById('apiKeyArea').style.display = 'none';
-}
+function saveApiKey() { /* ai-proxy使用のため不要 */ }
 
 async function sendChat() {
   var input = document.getElementById('chatInput');
   var text = input.value.trim();
   if (!text) return;
-  AI_API_KEY_TOP = localStorage.getItem('forumAutoApiKey') || '';
-  if (!AI_API_KEY_TOP) {
-    document.getElementById('apiKeyArea').style.display = 'flex';
-    return;
-  }
   input.value = '';
   appendMessage('user', text);
   chatHistory.push({ role: 'user', content: text });
   appendTyping();
 
   try {
-    var resp = await fetch('https://api.anthropic.com/v1/messages', {
+    var resp = await fetch(SUPABASE_URL + '/functions/v1/ai-proxy', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': AI_API_KEY_TOP,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
+        'Authorization': 'Bearer ' + SUPABASE_KEY
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
+        provider: 'claude',
         system: AGENTS[chatAgent].system,
-        messages: chatHistory
+        messages: chatHistory,
+        max_tokens: 600
       })
     });
     var data = await resp.json();
     removeTyping();
-    var reply = '';
-    if (data.content && data.content.length) {
-      data.content.forEach(function(c) { if (c.type === 'text') reply += c.text; });
-    } else if (data.error) {
-      reply = '⚠ エラー: ' + data.error.message;
-    }
+    var reply = data.result || '';
+    if (!reply && data.error) reply = '⚠ エラーが発生しました。しばらくしてから再度お試しください。';
     if (reply) {
       chatHistory.push({ role: 'assistant', content: reply });
       appendMessage('assistant', reply);
