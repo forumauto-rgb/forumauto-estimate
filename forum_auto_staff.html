@@ -102,6 +102,9 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 .tab-content{display:none;}
 .tab-content.active{display:block;}
 .empty{text-align:center;padding:40px;color:var(--text-light);}
+.dept-btn{padding:5px 12px;border:1.5px solid var(--border);border-radius:20px;background:white;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:12px;font-weight:700;color:var(--text-light);transition:all 0.2s;}
+.dept-btn.active{background:var(--primary);color:white;border-color:var(--primary);}
+.dept-btn:hover{border-color:var(--primary);color:var(--primary);}
 @media(max-width:600px){.form-grid{grid-template-columns:1fr;}.staff-grid{grid-template-columns:1fr;}.stats{grid-template-columns:repeat(2,1fr);}}
 @media print{.header,.tab-nav,.toolbar,.card-actions,.btn,.no-print{display:none!important;}.main{padding:0;}.card{box-shadow:none;border:1px solid #ddd;}}
 </style>
@@ -134,13 +137,14 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
     <div class="card">
       <div class="toolbar">
         <input type="text" id="searchInput" placeholder="名前・部署・役職で検索..." oninput="filterStaff()">
-        <select id="deptFilter" onchange="filterStaff()">
-          <option value="">すべての部署</option>
-          <option>板金・塗装</option>
-          <option>フロント</option>
-          <option>事務・保険</option>
-          <option>管理</option>
-        </select>
+        <div id="deptFilter" style="display:flex;flex-wrap:wrap;gap:5px;">
+          <button class="dept-btn active" data-dept="" onclick="toggleDeptFilter(this)">すべて</button>
+          <button class="dept-btn" data-dept="板金・塗装" onclick="toggleDeptFilter(this)">板金・塗装</button>
+          <button class="dept-btn" data-dept="整備" onclick="toggleDeptFilter(this)">整備</button>
+          <button class="dept-btn" data-dept="フロント" onclick="toggleDeptFilter(this)">フロント</button>
+          <button class="dept-btn" data-dept="事務・保険" onclick="toggleDeptFilter(this)">事務・保険</button>
+          <button class="dept-btn" data-dept="管理" onclick="toggleDeptFilter(this)">管理</button>
+        </div>
         <select id="statusFilter" onchange="filterStaff()">
           <option value="">すべてのステータス</option>
           <option>在籍</option>
@@ -216,6 +220,7 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
         <label>部署</label>
         <select id="fDept">
           <option>板金・塗装</option>
+          <option>整備</option>
           <option>フロント</option>
           <option>事務・保険</option>
           <option>管理</option>
@@ -405,13 +410,34 @@ function renderStats() {
 }
 
 // ========== フィルター・表示 ==========
+function toggleDeptFilter(btn) {
+  var dept = btn.getAttribute('data-dept');
+  if (dept === '') {
+    // 「すべて」を押したら全部解除してすべてだけON
+    document.querySelectorAll('.dept-btn').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+  } else {
+    // 「すべて」ボタンをOFF
+    var allBtn = document.querySelector('.dept-btn[data-dept=""]');
+    if (allBtn) allBtn.classList.remove('active');
+    btn.classList.toggle('active');
+    // 何も選択されていなければ「すべて」に戻す
+    var anyActive = document.querySelectorAll('.dept-btn.active').length > 0;
+    if (!anyActive && allBtn) allBtn.classList.add('active');
+  }
+  filterStaff();
+}
+
 function filterStaff() {
   var q = (document.getElementById('searchInput').value||'').toLowerCase();
-  var dept = document.getElementById('deptFilter').value;
+  // 選択中の部署を複数取得
+  var activeDepts = Array.from(document.querySelectorAll('.dept-btn.active'))
+    .map(function(b){ return b.getAttribute('data-dept'); })
+    .filter(function(d){ return d !== ''; });
   var st = document.getElementById('statusFilter').value;
   var filtered = allStaff.filter(function(s){
     var match = !q || (s.name||'').toLowerCase().includes(q) || (s.dept||'').includes(q) || (s.role||'').includes(q) || (s.name_kana||'').includes(q);
-    var dMatch = !dept || s.dept === dept;
+    var dMatch = activeDepts.length === 0 || activeDepts.indexOf(s.dept) >= 0;
     var sMatch = !st || s.status === st;
     return match && dMatch && sMatch;
   });
