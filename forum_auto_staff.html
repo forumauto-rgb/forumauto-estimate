@@ -324,7 +324,9 @@ async function sbQuery(table, method, body, filter) {
   if (body) opts.body = JSON.stringify(body);
   var res = await fetch(url, opts);
   if (!res.ok) throw new Error(await res.text());
-  return method === 'DELETE' ? null : res.json();
+  // PATCH・DELETEはレスポンスボディが空なのでjson()を呼ばない
+  if (method === 'DELETE' || method === 'PATCH') return null;
+  return res.json();
 }
 
 // ========== 勤続年数計算 ==========
