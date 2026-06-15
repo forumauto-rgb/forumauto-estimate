@@ -171,16 +171,27 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
   <!-- 予定表タブ -->
   <div class="tab-content" id="tab-calendar">
     <div class="card">
-      <div class="cal-header">
-        <button class="cal-nav" onclick="calPrev()">◀</button>
-        <div style="font-size:18px;font-weight:700;" id="calTitle"></div>
-        <button class="cal-nav" onclick="calNext()">▶</button>
+      <div class="card-title"><div class="icon icon-green">📅</div>フォーラムオート 社内カレンダー
+        <button onclick="refreshCalendar()" style="margin-left:auto;background:var(--primary);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer;">🔄 更新</button>
       </div>
-      <div class="cal-grid" id="calGrid"></div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+        <button onclick="openGoogleCal()" style="background:#4285f4;color:white;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;">📅 Googleカレンダーで開く</button>
+        <button onclick="addEvent()" style="background:var(--accent);color:white;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;">＋ 予定を追加</button>
+      </div>
+      <!-- Googleカレンダー埋め込み -->
+      <div style="border-radius:10px;overflow:hidden;border:1.5px solid var(--border);">
+        <iframe id="gcalIframe"
+          src="https://calendar.google.com/calendar/embed?src=c_3203387bbac9311a212cf7f50d243c0cbdffd02278ecd10014b23280d92ccdf9%40group.calendar.google.com&ctz=Asia%2FTokyo&hl=ja&mode=MONTH&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=1&showCalendars=0&showTz=0&bgcolor=%23ffffff"
+          style="border:0;width:100%;height:600px;display:block;"
+          frameborder="0" scrolling="no">
+        </iframe>
+      </div>
     </div>
     <div class="card">
-      <div class="card-title"><div class="icon icon-green">📅</div>今月の予定</div>
-      <div id="eventList"><div class="empty">予定なし</div></div>
+      <div class="card-title"><div class="icon icon-primary">📋</div>直近の予定
+        <span id="eventsLoadStatus" style="font-size:11px;font-weight:400;color:var(--text-light);margin-left:8px;"></span>
+      </div>
+      <div id="upcomingEvents"><div class="empty">読み込み中...</div></div>
     </div>
   </div>
 
@@ -278,9 +289,6 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 var allStaff = [];
 var editingId = null;
-var calYear = new Date().getFullYear();
-var calMonth = new Date().getMonth();
-
 // ========== 時計 ==========
 function updateTime() {
   var now = new Date();
@@ -581,58 +589,97 @@ function renderCerts() {
   document.getElementById('expiringCerts').innerHTML = '<div class="empty" style="color:var(--success);">✅ 現在期限切れ間近の資格はありません</div>';
 }
 
-// ========== カレンダー ==========
-var calEvents = [];
-
-function buildCalEvents() {
-  calEvents = [];
-  var today = new Date();
-  allStaff.forEach(function(s) {
-    // 入社記念日
-    if (s.join_date) {
-      var join = new Date(s.join_date);
-      var anniv = new Date(today.getFullYear(), join.getMonth(), join.getDate());
-      calEvents.push({date:anniv, label:s.name+' 入社記念日', type:'anniversary'});
-    }
-  });
-}
+// ========== Googleカレンダー連携 ==========
+var GCAL_API_KEY = 'AIzaSyDSYtJFo8rBD4ibV82uWPZTC65hIN3x3_A';
+var GCAL_ID = 'c_3203387bbac9311a212cf7f50d243c0cbdffd02278ecd10014b23280d92ccdf9@group.calendar.google.com';
 
 function renderCalendar() {
-  buildCalEvents();
-  var title = calYear+'年'+(calMonth+1)+'月';
-  document.getElementById('calTitle').textContent = title;
-  var first = new Date(calYear, calMonth, 1);
-  var last = new Date(calYear, calMonth+1, 0);
-  var startDay = first.getDay();
-  var today = new Date();
-  var h = '';
-  ['日','月','火','水','木','金','土'].forEach(function(d){ h+='<div class="cal-day-label">'+d+'</div>'; });
-  for (var i=0; i<startDay; i++) h += '<div class="cal-cell other-month"></div>';
-  for (var d=1; d<=last.getDate(); d++) {
-    var isToday = today.getFullYear()===calYear && today.getMonth()===calMonth && today.getDate()===d;
-    var dayEvents = calEvents.filter(function(e){ return e.date.getMonth()===calMonth && e.date.getDate()===d && e.date.getFullYear()===calYear; });
-    h += '<div class="cal-cell'+(isToday?' today':'')+'"><div class="cal-date">'+d+'</div>';
-    dayEvents.forEach(function(e){ h+='<div class="cal-event cert">'+e.label+'</div>'; });
-    h += '</div>';
-  }
-  document.getElementById('calGrid').innerHTML = h;
-  var monthEvents = calEvents.filter(function(e){ return e.date.getMonth()===calMonth && e.date.getFullYear()===calYear; });
-  if (!monthEvents.length) {
-    document.getElementById('eventList').innerHTML='<div class="empty">今月の予定はありません</div>';
-  } else {
-    document.getElementById('eventList').innerHTML = monthEvents.sort(function(a,b){return a.date-b.date;}).map(function(e){
-      return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--bg);">'+
-        '<div style="font-size:20px;width:36px;height:36px;background:var(--bg);border-radius:8px;display:flex;align-items:center;justify-content:center;">🎉</div>'+
-        '<div><div style="font-size:13px;font-weight:700;">'+e.label+'</div>'+
-        '<div style="font-size:12px;color:var(--text-light);">'+(calMonth+1)+'月'+e.date.getDate()+'日</div></div>'+
-      '</div>';
+  loadUpcomingEvents();
+}
+
+function refreshCalendar() {
+  var iframe = document.getElementById('gcalIframe');
+  if (iframe) { iframe.src = iframe.src; }
+  loadUpcomingEvents();
+  showToast('カレンダーを更新しました', 'success');
+}
+
+function openGoogleCal() {
+  window.open('https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(GCAL_ID), '_blank');
+}
+
+function addEvent() {
+  window.open('https://calendar.google.com/calendar/r/eventedit?cid=' + encodeURIComponent(GCAL_ID), '_blank');
+}
+
+async function loadUpcomingEvents() {
+  var statusEl = document.getElementById('eventsLoadStatus');
+  var listEl = document.getElementById('upcomingEvents');
+  if (statusEl) statusEl.textContent = '読み込み中...';
+  var now = new Date();
+  var future = new Date(now.getTime() + 30*24*60*60*1000);
+  var timeMin = now.toISOString();
+  var timeMax = future.toISOString();
+  var url = 'https://www.googleapis.com/calendar/v3/calendars/'
+    + encodeURIComponent(GCAL_ID)
+    + '/events?key=' + GCAL_API_KEY
+    + '&timeMin=' + encodeURIComponent(timeMin)
+    + '&timeMax=' + encodeURIComponent(timeMax)
+    + '&singleEvents=true&orderBy=startTime&maxResults=20';
+  try {
+    var res = await fetch(url);
+    if (!res.ok) {
+      var err = await res.json();
+      throw new Error(err.error ? err.error.message : 'APIエラー');
+    }
+    var data = await res.json();
+    var items = data.items || [];
+    if (statusEl) statusEl.textContent = items.length + '件';
+    if (!items.length) {
+      listEl.innerHTML = '<div class="empty">直近30日間の予定はありません</div>';
+      return;
+    }
+    listEl.innerHTML = items.map(function(ev) {
+      var start = ev.start.dateTime || ev.start.date;
+      var dt = new Date(start);
+      var isAllDay = !ev.start.dateTime;
+      var dateStr = dt.toLocaleDateString('ja-JP',{month:'long',day:'numeric',weekday:'short'});
+      var timeStr = isAllDay ? '終日' : dt.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+      var today = new Date();
+      var isToday = dt.toDateString() === today.toDateString();
+      var isTomorrow = dt.toDateString() === new Date(today.getTime()+86400000).toDateString();
+      var dayLabel = isToday ? '<span style="background:var(--accent);color:white;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:4px;">今日</span>'
+                   : isTomorrow ? '<span style="background:var(--accent2);color:white;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:4px;">明日</span>' : '';
+      return '<div style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--bg);">'
+        + '<div style="min-width:48px;height:48px;background:'+(isToday?'var(--accent)':'var(--primary)')+';color:white;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;">'
+        + '<div style="font-size:16px;font-weight:700;line-height:1;">'+dt.getDate()+'</div>'
+        + '<div style="font-size:10px;opacity:0.8;">'+(dt.getMonth()+1)+'月</div>'
+        + '</div>'
+        + '<div style="flex:1;">'
+        + '<div style="font-size:14px;font-weight:700;color:var(--text);">'+(ev.summary||'（タイトルなし）')+dayLabel+'</div>'
+        + '<div style="font-size:12px;color:var(--text-light);margin-top:3px;">📅 '+dateStr+'　⏰ '+timeStr+'</div>'
+        + (ev.location ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px;">📍 '+ev.location+'</div>' : '')
+        + (ev.description ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px;white-space:pre-line;">'+ev.description.slice(0,80)+'</div>' : '')
+        + '</div>'
+        + '<button onclick="openEvent(this)" data-url="' + (ev.htmlLink||'') + '" style="background:var(--bg);border:none;border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer;flex-shrink:0;">詳細</button>'
+        + '</div>';
     }).join('');
+  } catch(e) {
+    if (statusEl) statusEl.textContent = 'エラー';
+    listEl.innerHTML = '<div style="padding:16px;background:#fff0ee;border-radius:8px;font-size:13px;color:var(--accent);">'
+      + '⚠️ カレンダーの読み込みに失敗しました<br>'
+      + '<span style="font-size:12px;color:#888;">' + e.message + '</span><br><br>'
+      + '<span style="font-size:12px;color:#555;">カレンダーを「一般公開」に設定するか、APIキーの制限を確認してください。</span>'
+      + '</div>';
   }
 }
-function calPrev() { calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
-function calNext() { calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); }
 
 // ========== ユーティリティ ==========
+function openEvent(btn) {
+  var url = btn.getAttribute('data-url');
+  if (url) window.open(url, '_blank');
+}
+
 function showToast(msg, type) {
   var el=document.getElementById('toast');
   el.textContent=msg; el.className='toast'+(type?' '+type:'')+' show';
