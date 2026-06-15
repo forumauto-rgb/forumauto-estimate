@@ -535,19 +535,21 @@ async function saveStaff() {
     notes: document.getElementById('fNotes').value.trim()
   };
   showLoading('保存中...');
+  showLoading('保存中...');
   try {
     if (editingId) {
       await sbQuery('staff', 'PATCH', payload, '?id=eq.'+editingId);
-      showToast(name+' を更新しました ✅', 'success');
     } else {
       await sbQuery('staff', 'POST', payload);
-      showToast(name+' を登録しました ✅', 'success');
     }
     closeModal();
-    await loadStaff();
+    showToast(name+(editingId?' を更新しました ✅':' を登録しました ✅'), 'success');
   } catch(e) {
     showToast('保存失敗: '+e.message, 'error');
-  } finally { hideLoading(); }
+  } finally {
+    hideLoading();
+    await loadStaff();
+  }
 }
 
 async function deleteStaff(id, name) {
