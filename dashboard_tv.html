@@ -30,7 +30,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0f1e;color:white;
 /* メインエリア: カンバン + レンタカーパネル */
 .main-wrap{display:flex;gap:8px;padding:8px 12px;height:calc(100vh - 66px - 62px - 46px);overflow:hidden;}
 /* カンバン（左側・可変幅） */
-.kanban-wrap{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;flex:1;overflow:hidden;}
+.kanban-wrap{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;flex:1;overflow:hidden;}
 /* ★ レンタカーパネル（右側） */
 .rental-panel{width:230px;flex-shrink:0;display:flex;flex-direction:column;gap:6px;overflow:hidden;}
 .rental-panel-header{background:linear-gradient(135deg,#e65100,#ff6d00);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:bold;display:flex;align-items:center;justify-content:space-between;}
@@ -58,6 +58,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0f1e;color:white;
 .h-作業待ち{background:linear-gradient(135deg,#01579b,#0288d1);}
 .h-板金中{background:linear-gradient(135deg,#6a1b9a,#8e24aa);}
 .h-塗装中{background:linear-gradient(135deg,#b71c1c,#d32f2f);}
+.h-組付け磨き{background:linear-gradient(135deg,#00838f,#4dd0e1);}
 .h-完成{background:linear-gradient(135deg,#1b5e20,#2e7d32);}
 .h-納車済{background:linear-gradient(135deg,#37474f,#546e7a);}
 .case-card{background:#111d3a;border:1px solid #1e2d5a;border-left:4px solid #2196f3;border-radius:5px;padding:6px 8px;margin-bottom:5px;}
@@ -113,6 +114,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0f1e;color:white;
   <div class="sum-item"><div class="sum-label">本日受付</div><div class="sum-value sum-warn" id="s-today">-</div><div class="sum-unit">台</div></div>
   <div class="sum-item"><div class="sum-label">板金中</div><div class="sum-value" style="color:#ce93d8" id="s-bankin">-</div><div class="sum-unit">台</div></div>
   <div class="sum-item"><div class="sum-label">塗装中</div><div class="sum-value" style="color:#ef9a9a" id="s-tosou">-</div><div class="sum-unit">台</div></div>
+  <div class="sum-item"><div class="sum-label">組付け磨き</div><div class="sum-value" style="color:#4dd0e1" id="s-kumitsuke">-</div><div class="sum-unit">台</div></div>
   <div class="sum-item"><div class="sum-label">完成・納車待ち</div><div class="sum-value sum-ok" id="s-ready">-</div><div class="sum-unit">台</div></div>
   <div class="sum-item"><div class="sum-label">代車貸出中</div><div class="sum-value sum-warn" id="s-rental">-</div><div class="sum-unit">台</div></div>
   <div class="sum-item"><div class="sum-label">代車空き</div><div class="sum-value sum-ok" id="s-free">-</div><div class="sum-unit">台</div></div>
@@ -193,7 +195,7 @@ document.addEventListener('keydown', function(e) {
   if (e.key === '0') resetZoom();
 });
 
-var STATUSES=['受付','見積中','作業待ち','板金中','塗装中','完成','納車済'];
+var STATUSES=['受付','見積中','作業待ち','板金中','塗装中','組付け磨き','完成','納車済'];
 
 function updateClock(){
   var n=new Date();
@@ -274,6 +276,7 @@ function renderAll(estimates, rentalCars, rentalActiveMap){
   var todayC=estimates.filter(function(e){return e.estimate_date===today;}).length;
   var bankin=estimates.filter(function(e){return e.repair_status==='板金中';}).length;
   var tosou=estimates.filter(function(e){return e.repair_status==='塗装中';}).length;
+  var kumitsuke=estimates.filter(function(e){return e.repair_status==='組付け磨き';}).length;
   var ready=estimates.filter(function(e){return e.repair_status==='完成';}).length;
 
   // ★ レンタカーマスタからカウント
@@ -284,6 +287,7 @@ function renderAll(estimates, rentalCars, rentalActiveMap){
   document.getElementById('s-today').textContent=todayC;
   document.getElementById('s-bankin').textContent=bankin;
   document.getElementById('s-tosou').textContent=tosou;
+  document.getElementById('s-kumitsuke').textContent=kumitsuke;
   document.getElementById('s-ready').textContent=ready;
   document.getElementById('s-rental').textContent=rBusy;
   document.getElementById('s-free').textContent=rFree;
