@@ -7578,8 +7578,20 @@ async function aiChatCallAPI(){
     clearTimeout(aiTimer);
     var data = await resp.json();
     var text = '';
-    if(data.content && data.content.length){
+    // ★ ai-proxyはdata.resultで返す（正常パターンに合わせる）
+    if(data.result){
+      text = data.result;
+    } else if(data.content && data.content.length){
       data.content.forEach(function(c){ if(c.type==='text') text += c.text; });
+    }
+    // JSONフェンスがない場合もJSONとして試みる
+    if(text && !text.includes('```json')){
+      try{
+        var testParsed = JSON.parse(text);
+        if(testParsed.ready !== undefined){
+          text = '```json\n' + text + '\n```';
+        }
+      }catch(e){}
     }
     var jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
     if(jsonMatch){
