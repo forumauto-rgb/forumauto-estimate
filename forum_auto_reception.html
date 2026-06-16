@@ -558,7 +558,11 @@ function switchTab(name, btn) {
     if(d&&!d.value) d.value=new Date().toISOString().split('T')[0];
     loadCases();
   }
-  if (name === 'rental') loadRentalCars();
+  if (name === 'rental') {
+    loadRentalCars();
+    // ★ キャンバスが表示された後に再初期化（offsetWidthが取得できるようになる）
+    setTimeout(function(){ initSign(); }, 100);
+  }
   if (name === 'master') { loadRentalCars().then(function(){ renderMasterCars(); }); }
   if (name === 'map') initMainMap();
 }
@@ -1061,17 +1065,21 @@ function clearDamages() { damages=[]; renderDamageMarkers(); renderDamageList();
 function initSign() {
   var canvas = document.getElementById('signCanvas');
   if (!canvas) return;
-  canvas.width = canvas.offsetWidth*2; canvas.height = 360;
+  // ★ 非表示タブでoffsetWidth=0になるため固定サイズを使用
+  var w = canvas.offsetWidth > 0 ? canvas.offsetWidth : 800;
+  canvas.width = w * 2; canvas.height = 360;
   canvas.style.width = '100%'; canvas.style.height = '180px';
   signCtx = canvas.getContext('2d');
-  signCtx.scale(2,2);
+  signCtx.scale(2, 2);
   signCtx.strokeStyle='#1a2744'; signCtx.lineWidth=2; signCtx.lineCap='round'; signCtx.lineJoin='round';
   var drawing = false;
   var getPos = function(e) {
     var r = canvas.getBoundingClientRect();
-    var clientX = e.touches?e.touches[0].clientX:e.clientX;
-    var clientY = e.touches?e.touches[0].clientY:e.clientY;
-    return {x:clientX-r.left, y:clientY-r.top};
+    var scaleX = canvas.width / 2 / r.width;
+    var scaleY = canvas.height / 2 / r.height;
+    var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {x:(clientX - r.left) * scaleX, y:(clientY - r.top) * scaleY};
   };
   canvas.addEventListener('mousedown',function(e){drawing=true;var p=getPos(e);signCtx.beginPath();signCtx.moveTo(p.x,p.y);});
   canvas.addEventListener('mousemove',function(e){if(!drawing)return;var p=getPos(e);signCtx.lineTo(p.x,p.y);signCtx.stroke();});
