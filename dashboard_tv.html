@@ -430,7 +430,7 @@ loadAll();
       <button onclick="closeTvRentalPopup()" style="background:rgba(255,255,255,0.2);color:white;border:none;border-radius:8px;padding:8px 20px;font-size:14px;font-weight:700;cursor:pointer;">✕ 閉じる</button>
     </div>
     <div style="overflow-y:auto;padding:20px;">
-      <div id="tvRentalModalGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;"></div>
+      <div id="tvRentalModalGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;font-size:14px;"></div>
     </div>
   </div>
 </div>
@@ -446,12 +446,25 @@ function closeTvCalPopup() {
 }
 function openTvRentalPopup() {
   var m = document.getElementById('tvRentalModal');
-  if (m) {
-    m.style.display = 'flex';
-    // レンタカーグリッドの内容をモーダルにコピー
-    var src = document.getElementById('rentalList') || document.querySelector('.rental-panel .rental-list');
-    var dst = document.getElementById('tvRentalModalGrid');
-    if (src && dst) dst.innerHTML = src.innerHTML;
+  if (!m) return;
+  m.style.display = 'flex';
+  var dst = document.getElementById('tvRentalModalGrid');
+  if (!dst) return;
+  // ★ rentalPanelBodyの内容をコピー（正しいコピー元）
+  var src = document.getElementById('rentalPanelBody');
+  if (src && src.innerHTML.trim()) {
+    // パネル用の小さいカードをポップアップ用に大きく表示
+    dst.innerHTML = src.innerHTML;
+    // ポップアップ内のフォントを大きく調整
+    dst.querySelectorAll('*').forEach(function(el){
+      var fs = window.getComputedStyle(el).fontSize;
+      if (fs) {
+        var size = parseFloat(fs);
+        if (size < 13) el.style.fontSize = '13px';
+      }
+    });
+  } else {
+    dst.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;font-size:14px;">データ読み込み中...</div>';
   }
 }
 function closeTvRentalPopup() {
