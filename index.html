@@ -8007,12 +8007,6 @@ async function aiAnalyze(){
     + '【損傷程度】' + aiState.level + '\n\n'
     + '【作業サンプル（参考）】\n' + JSON.stringify(taskSamples.slice(0, 30));
 
-  if(!AI_API_KEY){
-    showNotify('⚠ APIキーを設定してください（🔑 の欄）');
-    aiState.loading = false;
-    render();
-    return;
-  }
 
   try{
     var resp = await fetch('https://uhppgdwbyrijnqpvusxw.supabase.co/functions/v1/ai-proxy', {
