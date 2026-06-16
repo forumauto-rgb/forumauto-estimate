@@ -102,6 +102,21 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 .tab-content{display:none;}
 .tab-content.active{display:block;}
 .empty{text-align:center;padding:40px;color:var(--text-light);}
+.pw-overlay{position:fixed;inset:0;background:var(--primary);z-index:9999;display:flex;align-items:center;justify-content:center;}
+.pw-box{background:white;border-radius:20px;padding:40px 36px;max-width:360px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.4);}
+.pw-logo{font-size:48px;margin-bottom:12px;}
+.pw-title{font-size:20px;font-weight:700;color:var(--primary);margin-bottom:4px;}
+.pw-sub{font-size:12px;color:var(--text-light);margin-bottom:24px;}
+.pw-dots{display:flex;justify-content:center;gap:12px;margin-bottom:24px;}
+.pw-dot{width:18px;height:18px;border-radius:50%;background:#f0f2f5;border:2px solid var(--border);transition:all 0.2s;}
+.pw-dot.filled{background:var(--primary);border-color:var(--primary);}
+.pw-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.pw-key{padding:16px;border:1.5px solid var(--border);border-radius:12px;font-size:20px;font-weight:700;color:var(--primary);background:white;cursor:pointer;transition:all 0.15s;font-family:'Noto Sans JP',sans-serif;}
+.pw-key:hover{background:var(--bg);border-color:var(--primary);}
+.pw-key:active{transform:scale(0.95);}
+.pw-key.wide{grid-column:span 2;}
+.pw-error{color:var(--accent);font-size:13px;font-weight:700;min-height:20px;margin-bottom:8px;}
+.pw-hint{font-size:12px;color:var(--text-light);cursor:pointer;text-decoration:underline;margin-top:8px;}
 .dept-btn{padding:5px 12px;border:1.5px solid var(--border);border-radius:20px;background:white;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:12px;font-weight:700;color:var(--text-light);transition:all 0.2s;}
 .dept-btn.active{background:var(--primary);color:white;border-color:var(--primary);}
 .dept-btn:hover{border-color:var(--primary);color:var(--primary);}
@@ -110,6 +125,37 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 </style>
 </head>
 <body>
+
+<!-- ★ パスワード画面 -->
+<div class="pw-overlay" id="pwOverlay">
+  <div class="pw-box">
+    <div class="pw-logo">🔐</div>
+    <div class="pw-title">FORUM AUTO</div>
+    <div class="pw-sub">社員管理システム　※社内専用</div>
+    <div class="pw-dots">
+      <div class="pw-dot" id="dot0"></div>
+      <div class="pw-dot" id="dot1"></div>
+      <div class="pw-dot" id="dot2"></div>
+      <div class="pw-dot" id="dot3"></div>
+    </div>
+    <div class="pw-error" id="pwError"></div>
+    <div class="pw-pad">
+      <button class="pw-key" onclick="pwInput('1')">1</button>
+      <button class="pw-key" onclick="pwInput('2')">2</button>
+      <button class="pw-key" onclick="pwInput('3')">3</button>
+      <button class="pw-key" onclick="pwInput('4')">4</button>
+      <button class="pw-key" onclick="pwInput('5')">5</button>
+      <button class="pw-key" onclick="pwInput('6')">6</button>
+      <button class="pw-key" onclick="pwInput('7')">7</button>
+      <button class="pw-key" onclick="pwInput('8')">8</button>
+      <button class="pw-key" onclick="pwInput('9')">9</button>
+      <button class="pw-key" onclick="pwClear()">⌫</button>
+      <button class="pw-key" onclick="pwInput('0')">0</button>
+      <button class="pw-key" onclick="pwReset()">✕</button>
+    </div>
+    <div class="pw-hint" onclick="showPwHint()">💡 パスワードを忘れた方</div>
+  </div>
+</div>
 
 <div class="header">
   <div class="header-inner">
@@ -137,17 +183,13 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
     <div class="card">
       <div class="toolbar">
         <input type="text" id="searchInput" placeholder="名前・部署・役職で検索..." oninput="filterStaff()">
-        <div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;">
-          <div id="deptFilter" style="display:flex;flex-wrap:wrap;gap:5px;">
-            <button class="dept-btn active" data-dept="" onclick="toggleDeptFilter(this)">すべて</button>
-            <button class="dept-btn" data-dept="板金・塗装" onclick="toggleDeptFilter(this)">板金・塗装</button>
-            <button class="dept-btn" data-dept="整備" onclick="toggleDeptFilter(this)">整備</button>
-            <button class="dept-btn" data-dept="フロント" onclick="toggleDeptFilter(this)">フロント</button>
-            <button class="dept-btn" data-dept="事務・保険" onclick="toggleDeptFilter(this)">事務・保険</button>
-            <button class="dept-btn" data-dept="管理" onclick="toggleDeptFilter(this)">管理</button>
-          </div>
-          <button onclick="filterStaff()" style="background:var(--accent);color:white;border:none;border-radius:20px;padding:5px 16px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">🔍 絞り込む</button>
-          <button onclick="resetDeptFilter()" style="background:white;color:var(--text-light);border:1.5px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;cursor:pointer;white-space:nowrap;">✕ リセット</button>
+        <div id="deptFilter" style="display:flex;flex-wrap:wrap;gap:5px;">
+          <button class="dept-btn active" data-dept="" onclick="toggleDeptFilter(this)">すべて</button>
+          <button class="dept-btn" data-dept="板金・塗装" onclick="toggleDeptFilter(this)">板金・塗装</button>
+          <button class="dept-btn" data-dept="整備" onclick="toggleDeptFilter(this)">整備</button>
+          <button class="dept-btn" data-dept="フロント" onclick="toggleDeptFilter(this)">フロント</button>
+          <button class="dept-btn" data-dept="事務・保険" onclick="toggleDeptFilter(this)">事務・保険</button>
+          <button class="dept-btn" data-dept="管理" onclick="toggleDeptFilter(this)">管理</button>
         </div>
         <select id="statusFilter" onchange="filterStaff()">
           <option value="">すべてのステータス</option>
@@ -185,10 +227,6 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
         <button onclick="openGoogleCal()" style="background:#4285f4;color:white;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;">📅 Googleカレンダーで開く</button>
         <button onclick="addEvent()" style="background:var(--accent);color:white;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;">＋ 予定を追加</button>
-        <div id="returnHint" style="display:none;background:#e8f0ff;border:1.5px solid #1a2744;border-radius:8px;padding:8px 14px;font-size:12px;color:#1a2744;display:none;align-items:center;gap:10px;">
-          <span>📅 予定を保存してポップアップを閉じると自動更新されます</span>
-          <button onclick="backFromCalendar()" style="background:#1a2744;color:white;border:none;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer;">✅ 今すぐ更新</button>
-        </div>
       </div>
       <!-- Googleカレンダー埋め込み -->
       <div style="border-radius:10px;overflow:hidden;border:1.5px solid var(--border);">
@@ -224,15 +262,15 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
       </div>
     </div>
     <div class="form-grid">
-      <div class="form-group" style="grid-column:1/-1;">
-        <label>部署（複数選択可）</label>
-        <div id="fDeptCheck" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
-          <label style="display:flex;align-items:center;gap:5px;padding:6px 14px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" value="板金・塗装" style="width:16px;height:16px;accent-color:var(--primary);"> 板金・塗装</label>
-          <label style="display:flex;align-items:center;gap:5px;padding:6px 14px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" value="整備" style="width:16px;height:16px;accent-color:var(--primary);"> 整備</label>
-          <label style="display:flex;align-items:center;gap:5px;padding:6px 14px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" value="フロント" style="width:16px;height:16px;accent-color:var(--primary);"> フロント</label>
-          <label style="display:flex;align-items:center;gap:5px;padding:6px 14px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" value="事務・保険" style="width:16px;height:16px;accent-color:var(--primary);"> 事務・保険</label>
-          <label style="display:flex;align-items:center;gap:5px;padding:6px 14px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" value="管理" style="width:16px;height:16px;accent-color:var(--primary);"> 管理</label>
-        </div>
+      <div class="form-group">
+        <label>部署</label>
+        <select id="fDept">
+          <option>板金・塗装</option>
+          <option>整備</option>
+          <option>フロント</option>
+          <option>事務・保険</option>
+          <option>管理</option>
+        </select>
       </div>
       <div class="form-group">
         <label>役職</label>
@@ -302,6 +340,83 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 var allStaff = [];
 var editingId = null;
+
+// ========== パスワード認証 ==========
+var PW_CORRECT = '3325';
+var PW_SESSION_KEY = 'fa_staff_auth';
+var pwCurrent = '';
+
+function pwInit() {
+  // セッション中は認証済みならスキップ
+  if (sessionStorage.getItem(PW_SESSION_KEY) === 'ok') {
+    document.getElementById('pwOverlay').style.display = 'none';
+    loadStaff();
+    return;
+  }
+  // 未認証の場合はパスワード画面を表示（データは読み込まない）
+}
+
+function pwInput(num) {
+  if (pwCurrent.length >= 4) return;
+  pwCurrent += num;
+  updateDots();
+  if (pwCurrent.length === 4) {
+    setTimeout(checkPw, 150);
+  }
+}
+
+function pwClear() {
+  pwCurrent = pwCurrent.slice(0, -1);
+  updateDots();
+  document.getElementById('pwError').textContent = '';
+}
+
+function pwReset() {
+  pwCurrent = '';
+  updateDots();
+  document.getElementById('pwError').textContent = '';
+}
+
+function updateDots() {
+  for (var i = 0; i < 4; i++) {
+    var dot = document.getElementById('dot' + i);
+    if (dot) dot.classList.toggle('filled', i < pwCurrent.length);
+  }
+}
+
+function checkPw() {
+  if (pwCurrent === PW_CORRECT) {
+    sessionStorage.setItem(PW_SESSION_KEY, 'ok');
+    var overlay = document.getElementById('pwOverlay');
+    overlay.style.transition = 'opacity 0.4s';
+    overlay.style.opacity = '0';
+    setTimeout(function(){ overlay.style.display = 'none'; }, 400);
+    loadStaff();
+  } else {
+    document.getElementById('pwError').textContent = '❌ パスワードが違います';
+    pwCurrent = '';
+    updateDots();
+    // 画面を揺らす
+    var box = document.querySelector('.pw-box');
+    box.style.animation = 'none';
+    box.style.transform = 'translateX(-8px)';
+    setTimeout(function(){ box.style.transform = 'translateX(8px)'; }, 80);
+    setTimeout(function(){ box.style.transform = 'translateX(-5px)'; }, 160);
+    setTimeout(function(){ box.style.transform = 'translateX(0)'; }, 240);
+  }
+}
+
+function showPwHint() {
+  var ans = prompt('ヒント：有限会社フォーラムオートの創業日は？\n（例：昭和〇年〇月〇日）');
+  if (ans && ans.replace(/\s/g,'') === '平成3年3月25日') {
+    document.getElementById('pwError').textContent = '✅ ヒント：創業日の数字です（3325）';
+    document.getElementById('pwError').style.color = 'var(--success)';
+  } else if (ans !== null) {
+    document.getElementById('pwError').textContent = '❌ 違います。もう一度お試しください。';
+    document.getElementById('pwError').style.color = 'var(--accent)';
+  }
+}
+
 // ========== 時計 ==========
 function updateTime() {
   var now = new Date();
@@ -421,29 +536,18 @@ function renderStats() {
 function toggleDeptFilter(btn) {
   var dept = btn.getAttribute('data-dept');
   if (dept === '') {
-    // 「すべて」を押したら全部解除してすべてだけON → 即反映
+    // 「すべて」を押したら全部解除してすべてだけON
     document.querySelectorAll('.dept-btn').forEach(function(b){ b.classList.remove('active'); });
     btn.classList.add('active');
-    filterStaff();
   } else {
     // 「すべて」ボタンをOFF
     var allBtn = document.querySelector('.dept-btn[data-dept=""]');
     if (allBtn) allBtn.classList.remove('active');
     btn.classList.toggle('active');
-    // 何も選択されていなければ「すべて」に戻す → 即反映
+    // 何も選択されていなければ「すべて」に戻す
     var anyActive = document.querySelectorAll('.dept-btn.active').length > 0;
-    if (!anyActive && allBtn) {
-      allBtn.classList.add('active');
-      filterStaff();
-    }
-    // 複数選択中は「🔍 絞り込む」ボタンで反映（自動反映しない）
+    if (!anyActive && allBtn) allBtn.classList.add('active');
   }
-}
-
-function resetDeptFilter() {
-  document.querySelectorAll('.dept-btn').forEach(function(b){ b.classList.remove('active'); });
-  var allBtn = document.querySelector('.dept-btn[data-dept=""]');
-  if (allBtn) allBtn.classList.add('active');
   filterStaff();
 }
 
@@ -540,7 +644,7 @@ function openAddModal() {
   ['fName','fKana','fRole','fPhone','fEmergency','fCerts','fNotes'].forEach(function(id){
     document.getElementById(id).value = '';
   });
-  document.querySelectorAll('#fDeptCheck input[type=checkbox]').forEach(function(cb){cb.checked=false;});
+  document.getElementById('fDept').value = '板金・塗装';
   document.getElementById('fStatus').value = '在籍';
   document.getElementById('fJoinDate').value = new Date().toISOString().split('T')[0];
   document.getElementById('staffModal').style.display = 'flex';
@@ -552,11 +656,7 @@ function openEditModal(id) {
   document.getElementById('modalTitle').textContent = '社員編集：' + s.name;
   document.getElementById('fName').value = s.name||'';
   document.getElementById('fKana').value = s.name_kana||'';
-  // 部署チェックボックスを設定（カンマ区切りで複数対応）
-  var depts = (s.dept||'').split(',').map(function(d){return d.trim();});
-  document.querySelectorAll('#fDeptCheck input[type=checkbox]').forEach(function(cb){
-    cb.checked = depts.indexOf(cb.value) >= 0;
-  });
+  document.getElementById('fDept').value = s.dept||'板金・塗装';
   document.getElementById('fRole').value = s.role||'';
   document.getElementById('fJoinDate').value = s.join_date||'';
   document.getElementById('fStatus').value = s.status||'在籍';
@@ -574,7 +674,7 @@ async function saveStaff() {
   var payload = {
     name: name,
     name_kana: document.getElementById('fKana').value.trim(),
-    dept: Array.from(document.querySelectorAll('#fDeptCheck input[type=checkbox]:checked')).map(function(cb){return cb.value;}).join(','),
+    dept: document.getElementById('fDept').value,
     role: document.getElementById('fRole').value.trim(),
     join_date: document.getElementById('fJoinDate').value || null,
     status: document.getElementById('fStatus').value,
@@ -661,41 +761,8 @@ function openGoogleCal() {
   window.open('https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(GCAL_ID), '_blank');
 }
 
-var _calPopup = null;
-
 function addEvent() {
-  var url = 'https://calendar.google.com/calendar/r/eventedit?cid=' + encodeURIComponent(GCAL_ID);
-  var w = Math.min(900, window.screen.width - 100);
-  var h = Math.min(700, window.screen.height - 100);
-  var left = Math.round((window.screen.width - w) / 2);
-  var top = Math.round((window.screen.height - h) / 2);
-  _calPopup = window.open(url, 'gcal_add', 'width='+w+',height='+h+',left='+left+',top='+top+',resizable=yes,scrollbars=yes');
-  // ポップアップが閉じたら自動更新
-  var timer = setInterval(function() {
-    if (_calPopup && _calPopup.closed) {
-      clearInterval(timer);
-      _calPopup = null;
-      var iframe = document.getElementById('gcalIframe');
-      if (iframe) iframe.src = iframe.src;
-      setTimeout(function(){ loadUpcomingEvents(); }, 1500);
-      showToast('カレンダーを更新しました ✅', 'success');
-      var hint = document.getElementById('returnHint');
-      if (hint) hint.style.display = 'none';
-    }
-  }, 500);
-  // 戻るボタンヒントも表示
-  var hint = document.getElementById('returnHint');
-  if (hint) hint.style.display = 'flex';
-}
-
-function backFromCalendar() {
-  if (_calPopup && !_calPopup.closed) _calPopup.close();
-  var hint = document.getElementById('returnHint');
-  if (hint) hint.style.display = 'none';
-  var iframe = document.getElementById('gcalIframe');
-  if (iframe) iframe.src = iframe.src;
-  setTimeout(function(){ loadUpcomingEvents(); }, 1500);
-  showToast('カレンダーを更新しました ✅', 'success');
+  window.open('https://calendar.google.com/calendar/r/eventedit?cid=' + encodeURIComponent(GCAL_ID), '_blank');
 }
 
 async function loadUpcomingEvents() {
@@ -760,18 +827,6 @@ async function loadUpcomingEvents() {
   }
 }
 
-// ========== 部署チェックボックス ハイライト ==========
-document.addEventListener('change', function(e) {
-  if (e.target && e.target.closest && e.target.closest('#fDeptCheck')) {
-    var lbl = e.target.closest('label');
-    if (lbl) {
-      lbl.style.borderColor = e.target.checked ? 'var(--primary)' : 'var(--border)';
-      lbl.style.background = e.target.checked ? '#e8f0ff' : 'white';
-      lbl.style.color = e.target.checked ? 'var(--primary)' : 'var(--text)';
-    }
-  }
-});
-
 // ========== ユーティリティ ==========
 function openEvent(btn) {
   var url = btn.getAttribute('data-url');
@@ -787,7 +842,10 @@ function showLoading(msg){ document.getElementById('loadingText').textContent=ms
 function hideLoading(){ document.getElementById('loadingOverlay').classList.remove('show'); }
 
 // ========== 初期化 ==========
-document.addEventListener('DOMContentLoaded', function(){ loadStaff(); });
+document.addEventListener('DOMContentLoaded', function(){
+  pwInit();
+  // 認証済みの場合のみloadStaff（pwInitで認証済みなら呼ばれる）
+});
 </script>
 </body>
 </html>
