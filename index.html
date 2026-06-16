@@ -7308,7 +7308,6 @@ async function aiAnalyzePhotos(){
   // 写真必須チェック
   var photos = (customer.photoIncoming||[]).slice(0,3);
   if(!photos.length){ showNotify('📷 入庫時写真が登録されていません'); return; }
-  if(!AI_API_KEY){ showNotify('⚠ APIキーを設定してください'); return; }
   if(aiChatLoading) return;
 
   // 会話型モードに切り替え
@@ -7466,12 +7465,6 @@ function aiStartMic(){
 }
 
 async function aiChatCallAPI(){
-  if(!AI_API_KEY){
-    showNotify('⚠ APIキーを設定してください');
-    aiChatLoading = false;
-    render();
-    return;
-  }
   // ★RAG検索：ユーザーの質問に関連するPDF抜粋を取得（5秒タイムアウト）
   var ragContext = '';
   try {
@@ -8046,7 +8039,6 @@ async function aiAnalyze(){
 }
 // ===== PDF部品見積書読み込み =====
 async function aiReadPdf(input){
-  if(!AI_API_KEY){ showNotify('⚠ APIキーを設定してください'); return; }
   var file = input.files[0];
   if(!file){ return; }
   var status = document.getElementById('ai-pdf-status');
