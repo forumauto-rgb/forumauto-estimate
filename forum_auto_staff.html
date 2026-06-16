@@ -343,17 +343,25 @@ var editingId = null;
 
 // ========== パスワード認証 ==========
 var PW_CORRECT = '3325';
-var PW_SESSION_KEY = 'fa_staff_auth';
+var PW_SESSION_KEY = 'fa_staff_auth_time';
 var pwCurrent = '';
+var PW_EXPIRE_MS = 8 * 60 * 60 * 1000; // 8時間
 
 function pwInit() {
-  // セッション中は認証済みならスキップ
-  if (sessionStorage.getItem(PW_SESSION_KEY) === 'ok') {
-    document.getElementById('pwOverlay').style.display = 'none';
-    loadStaff();
-    return;
+  // 認証済み＆8時間以内ならスキップ
+  var saved = localStorage.getItem(PW_SESSION_KEY);
+  if (saved) {
+    var elapsed = Date.now() - parseInt(saved);
+    if (elapsed < PW_EXPIRE_MS) {
+      document.getElementById('pwOverlay').style.display = 'none';
+      loadStaff();
+      return;
+    } else {
+      // 期限切れ → 削除
+      localStorage.removeItem(PW_SESSION_KEY);
+    }
   }
-  // 未認証の場合はパスワード画面を表示（データは読み込まない）
+  // 未認証 → パスワード画面を表示
 }
 
 function pwInput(num) {
@@ -386,7 +394,7 @@ function updateDots() {
 
 function checkPw() {
   if (pwCurrent === PW_CORRECT) {
-    sessionStorage.setItem(PW_SESSION_KEY, 'ok');
+    localStorage.setItem(PW_SESSION_KEY, Date.now().toString());
     var overlay = document.getElementById('pwOverlay');
     overlay.style.transition = 'opacity 0.4s';
     overlay.style.opacity = '0';
