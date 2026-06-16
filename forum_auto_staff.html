@@ -137,13 +137,17 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
     <div class="card">
       <div class="toolbar">
         <input type="text" id="searchInput" placeholder="名前・部署・役職で検索..." oninput="filterStaff()">
-        <div id="deptFilter" style="display:flex;flex-wrap:wrap;gap:5px;">
-          <button class="dept-btn active" data-dept="" onclick="toggleDeptFilter(this)">すべて</button>
-          <button class="dept-btn" data-dept="板金・塗装" onclick="toggleDeptFilter(this)">板金・塗装</button>
-          <button class="dept-btn" data-dept="整備" onclick="toggleDeptFilter(this)">整備</button>
-          <button class="dept-btn" data-dept="フロント" onclick="toggleDeptFilter(this)">フロント</button>
-          <button class="dept-btn" data-dept="事務・保険" onclick="toggleDeptFilter(this)">事務・保険</button>
-          <button class="dept-btn" data-dept="管理" onclick="toggleDeptFilter(this)">管理</button>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;">
+          <div id="deptFilter" style="display:flex;flex-wrap:wrap;gap:5px;">
+            <button class="dept-btn active" data-dept="" onclick="toggleDeptFilter(this)">すべて</button>
+            <button class="dept-btn" data-dept="板金・塗装" onclick="toggleDeptFilter(this)">板金・塗装</button>
+            <button class="dept-btn" data-dept="整備" onclick="toggleDeptFilter(this)">整備</button>
+            <button class="dept-btn" data-dept="フロント" onclick="toggleDeptFilter(this)">フロント</button>
+            <button class="dept-btn" data-dept="事務・保険" onclick="toggleDeptFilter(this)">事務・保険</button>
+            <button class="dept-btn" data-dept="管理" onclick="toggleDeptFilter(this)">管理</button>
+          </div>
+          <button onclick="filterStaff()" style="background:var(--accent);color:white;border:none;border-radius:20px;padding:5px 16px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">🔍 絞り込む</button>
+          <button onclick="resetDeptFilter()" style="background:white;color:var(--text-light);border:1.5px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;cursor:pointer;white-space:nowrap;">✕ リセット</button>
         </div>
         <select id="statusFilter" onchange="filterStaff()">
           <option value="">すべてのステータス</option>
@@ -216,15 +220,15 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
       </div>
     </div>
     <div class="form-grid">
-      <div class="form-group">
-        <label>部署</label>
-        <select id="fDept">
-          <option>板金・塗装</option>
-          <option>整備</option>
-          <option>フロント</option>
-          <option>事務・保険</option>
-          <option>管理</option>
-        </select>
+      <div class="form-group" style="grid-column:1/-1;">
+        <label>部署（複数選択可）</label>
+        <div id="fDeptCheck" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
+          <label style="display:flex;align-items:center;gap:5px;padding:6px 14px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" value="板金・塗装" style="width:16px;height:16px;accent-color:var(--primary);"> 板金・塗装</label>
+          <label style="display:flex;align-items:center;gap:5px;padding:6px 14px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" value="整備" style="width:16px;height:16px;accent-color:var(--primary);"> 整備</label>
+          <label style="display:flex;align-items:center;gap:5px;padding:6px 14px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" value="フロント" style="width:16px;height:16px;accent-color:var(--primary);"> フロント</label>
+          <label style="display:flex;align-items:center;gap:5px;padding:6px 14px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" value="事務・保険" style="width:16px;height:16px;accent-color:var(--primary);"> 事務・保険</label>
+          <label style="display:flex;align-items:center;gap:5px;padding:6px 14px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" value="管理" style="width:16px;height:16px;accent-color:var(--primary);"> 管理</label>
+        </div>
       </div>
       <div class="form-group">
         <label>役職</label>
@@ -413,18 +417,29 @@ function renderStats() {
 function toggleDeptFilter(btn) {
   var dept = btn.getAttribute('data-dept');
   if (dept === '') {
-    // 「すべて」を押したら全部解除してすべてだけON
+    // 「すべて」を押したら全部解除してすべてだけON → 即反映
     document.querySelectorAll('.dept-btn').forEach(function(b){ b.classList.remove('active'); });
     btn.classList.add('active');
+    filterStaff();
   } else {
     // 「すべて」ボタンをOFF
     var allBtn = document.querySelector('.dept-btn[data-dept=""]');
     if (allBtn) allBtn.classList.remove('active');
     btn.classList.toggle('active');
-    // 何も選択されていなければ「すべて」に戻す
+    // 何も選択されていなければ「すべて」に戻す → 即反映
     var anyActive = document.querySelectorAll('.dept-btn.active').length > 0;
-    if (!anyActive && allBtn) allBtn.classList.add('active');
+    if (!anyActive && allBtn) {
+      allBtn.classList.add('active');
+      filterStaff();
+    }
+    // 複数選択中は「🔍 絞り込む」ボタンで反映（自動反映しない）
   }
+}
+
+function resetDeptFilter() {
+  document.querySelectorAll('.dept-btn').forEach(function(b){ b.classList.remove('active'); });
+  var allBtn = document.querySelector('.dept-btn[data-dept=""]');
+  if (allBtn) allBtn.classList.add('active');
   filterStaff();
 }
 
@@ -521,7 +536,7 @@ function openAddModal() {
   ['fName','fKana','fRole','fPhone','fEmergency','fCerts','fNotes'].forEach(function(id){
     document.getElementById(id).value = '';
   });
-  document.getElementById('fDept').value = '板金・塗装';
+  document.querySelectorAll('#fDeptCheck input[type=checkbox]').forEach(function(cb){cb.checked=false;});
   document.getElementById('fStatus').value = '在籍';
   document.getElementById('fJoinDate').value = new Date().toISOString().split('T')[0];
   document.getElementById('staffModal').style.display = 'flex';
@@ -533,7 +548,11 @@ function openEditModal(id) {
   document.getElementById('modalTitle').textContent = '社員編集：' + s.name;
   document.getElementById('fName').value = s.name||'';
   document.getElementById('fKana').value = s.name_kana||'';
-  document.getElementById('fDept').value = s.dept||'板金・塗装';
+  // 部署チェックボックスを設定（カンマ区切りで複数対応）
+  var depts = (s.dept||'').split(',').map(function(d){return d.trim();});
+  document.querySelectorAll('#fDeptCheck input[type=checkbox]').forEach(function(cb){
+    cb.checked = depts.indexOf(cb.value) >= 0;
+  });
   document.getElementById('fRole').value = s.role||'';
   document.getElementById('fJoinDate').value = s.join_date||'';
   document.getElementById('fStatus').value = s.status||'在籍';
@@ -551,7 +570,7 @@ async function saveStaff() {
   var payload = {
     name: name,
     name_kana: document.getElementById('fKana').value.trim(),
-    dept: document.getElementById('fDept').value,
+    dept: Array.from(document.querySelectorAll('#fDeptCheck input[type=checkbox]:checked')).map(function(cb){return cb.value;}).join(','),
     role: document.getElementById('fRole').value.trim(),
     join_date: document.getElementById('fJoinDate').value || null,
     status: document.getElementById('fStatus').value,
@@ -703,6 +722,18 @@ async function loadUpcomingEvents() {
       + '</div>';
   }
 }
+
+// ========== 部署チェックボックス ハイライト ==========
+document.addEventListener('change', function(e) {
+  if (e.target && e.target.closest && e.target.closest('#fDeptCheck')) {
+    var lbl = e.target.closest('label');
+    if (lbl) {
+      lbl.style.borderColor = e.target.checked ? 'var(--primary)' : 'var(--border)';
+      lbl.style.background = e.target.checked ? '#e8f0ff' : 'white';
+      lbl.style.color = e.target.checked ? 'var(--primary)' : 'var(--text)';
+    }
+  }
+});
 
 // ========== ユーティリティ ==========
 function openEvent(btn) {
