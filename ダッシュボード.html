@@ -444,7 +444,6 @@ tr:hover td { background:var(--bg3); }
     <a href="forum_auto_3dscan.html" class="sub-card"><span class="sub-card-icon">🔬</span><div class="sub-card-name">3D損傷スキャン</div><div class="sub-card-desc">損傷解析</div></a>
     <a href="customer.html" class="sub-card"><span class="sub-card-icon">🔗</span><div class="sub-card-name">お客様HP</div><div class="sub-card-desc">スタッフへ共有</div></a>
     <a href="forum_auto_agents.html" class="sub-card"><span class="sub-card-icon">🤖</span><div class="sub-card-name">AIコンシェルジュ</div><div class="sub-card-desc">麗子・愛華・真子</div></a>
-    <a href="forum_auto_staff.html#calendar" class="sub-card"><span class="sub-card-icon">📅</span><div class="sub-card-name">社内カレンダー</div><div class="sub-card-desc">予定・Googleカレンダー</div></a>
   </div>
 
   <div class="sec-label">進行中の案件</div>
@@ -497,21 +496,68 @@ setInterval(tick, 1000); tick();
 
 async function loadStats() {
   try {
-    var res  = await fetch(SB_URL + '/rest/v1/estimates?select=repair_status,estimate_date', { headers: SB_H });
-    var data = await res.json();
-    if (!Array.isArray(data)) return;
+    // ★ 作業ダッシュボードと同じSTATUSES定義
+    var WORK_STATUSES = ['受付','見積中','作業待ち','板金中','塗装中','組付け磨き'];
     var today = new Date().toISOString().slice(0,10);
-    var wip=0, done=0, tod=0;
-    data.forEach(function(r){
-      var s = r.repair_status || '';
-      if (['受付','見積中','入庫中','鈑金中','塗装中','仕上中'].indexOf(s) >= 0) wip++;
-      if (s === '完成') done++;
-      if (String(r.estimate_date||'').slice(0,10) === today) tod++;
+
+    // ① estimatesテーブル（見積作成済み案件）
+    var res = await fetch(SB_URL + '/rest/v1/estimates?select=repair_status,estimate_date,estimate_no&limit=500', { headers: SB_H });
+    var estData = await res.json();
+    var estNos = {}; // 見積番号のセット（receptionとの重複排除用）
+    var wip=0, done=0, todEst=0;
+    if (Array.isArray(estData)) {
+      estData.forEach(function(r){
+        var s = r.repair_status || '受付';
+        if (s === '削除済' || s === '納車済') return;
+        estNos[r.estimate_no] = true;
+        if (WORK_STATUSES.indexOf(s) >= 0) wip++;
+        if (s === '完成') done++;
+        if (String(r.estimate_date||'').slice(0,10) === today) todEst++;
+      });
+    }
+
+    // ② receptionsテーブル（受付のみ・見積未作成も含む）
+    var recRes = await fetch(SB_URL + '/rest/v1/receptions?select=reception_datetime,type&order=reception_datetime.desc&limit=500', { headers: SB_H });
+    var recData = await recRes.json();
+    var todRec = 0;
+    if (Array.isArray(recData)) {
+      recData.forEach(function(r){
+        if (r.type === 'レンタカー返却' || r.type === 'レンタカー貸出') return;
+        if (String(r.reception_datetime||'').slice(0,10) === today) todRec++;
+      });
+    }
+
+    // ★ 本日受付 = receptions（受付した全件）＋ estimates（今日の見積）の多い方
+    var todTotal = Math.max(todEst, todRec);
+
+    document.getElementById('stat-wip').innerHTML   = wip      + '<span class="stat-unit">件</span>';
+    document.getElementById('stat-done').innerHTML  = done     + '<span class="stat-unit">台</span>';
+    document.getElementById('stat-today').innerHTML = todTotal + '<span class="stat-unit">台</span>';
+
+    // ③ レンタカー貸出中（receptionsテーブル・作業ダッシュボードと同じロジック）
+    var lends = await fetch(SB_URL + '/rest/v1/receptions?rental_needed=eq.true&order=reception_datetime.desc&limit=200', { headers: SB_H });
+    var lendsData = await lends.json();
+    var returns = await fetch(SB_URL + '/rest/v1/receptions?type=eq.' + encodeURIComponent('レンタカー返却') + '&order=reception_datetime.desc&limit=200', { headers: SB_H });
+    var returnsData = await returns.json();
+    var returnMap = {};
+    (returnsData||[]).forEach(function(r){
+      var k = r.rental_type || r.car_model || '';
+      if (k && !returnMap[k]) returnMap[k] = r.reception_datetime;
     });
-    document.getElementById('stat-wip').innerHTML   = wip   + '<span class="stat-unit">件</span>';
-    document.getElementById('stat-done').innerHTML  = done  + '<span class="stat-unit">台</span>';
-    document.getElementById('stat-today').innerHTML = tod   + '<span class="stat-unit">台</span>';
-  } catch(e) { console.error(e); }
+    var activeRental = 0;
+    var seen = {};
+    (lendsData||[]).forEach(function(r){
+      if (r.type === 'レンタカー返却') return;
+      var k = r.rental_type || r.car_model || '';
+      if (!k || seen[k]) return;
+      seen[k] = true;
+      if (returnMap[k] && returnMap[k] >= (r.reception_datetime||'')) return;
+      activeRental++;
+    });
+    var el = document.getElementById('stat-rental');
+    if (el) el.innerHTML = activeRental + '<span class="stat-unit">台</span>';
+
+  } catch(e) { console.error('loadStatsエラー', e); }
 }
 
 async function loadCases() {
