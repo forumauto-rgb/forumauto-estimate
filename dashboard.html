@@ -91,6 +91,8 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#f0f
 <div class="tabs">
   <button class="tab-btn active" onclick="showTab('kanban',this)">📋 作業進捗</button>
   <button class="tab-btn" onclick="showTab('rental',this)">🚗 レンタカー</button>
+  <button class="tab-btn" onclick="showTab('calendar',this)">📅 カレンダー</button>
+  <button class="tab-btn" onclick="showTab('staff',this)">👥 社員管理</button>
   <button class="tab-btn" onclick="showTab('mapview',this)">📍 顧客マップ</button>
 </div>
 
@@ -101,8 +103,61 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#f0f
 </div>
 
 <div id="rental" class="tab-panel">
+  <div style="padding:12px 20px 0;display:flex;justify-content:flex-end;">
+    <button onclick="openRentalPopup();document.getElementById('rentalGridModal').innerHTML=document.getElementById('rentalGrid').innerHTML;" style="background:#1a3a6b;color:white;border:none;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:700;cursor:pointer;">🔍 大きく表示</button>
+  </div>
   <div class="rental-grid" id="rentalGrid">
     <div class="loading">読み込み中...</div>
+  </div>
+</div>
+
+<div id="calendar" class="tab-panel">
+  <div style="padding:16px 20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div style="font-size:15px;font-weight:700;color:#1a3a6b;">📅 フォーラムオート 社内カレンダー</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="addCalEvent()" style="background:#e8392a;color:white;border:none;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:700;cursor:pointer;">＋ 予定追加</button>
+        <button onclick="openCalPopup()" style="background:#1a3a6b;color:white;border:none;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:700;cursor:pointer;">🔍 大きく表示</button>
+        <button onclick="refreshCal()" style="background:#f0f2f5;color:#1a3a6b;border:none;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:700;cursor:pointer;">🔄 更新</button>
+      </div>
+    </div>
+    <!-- Googleカレンダー埋め込み -->
+    <div style="border-radius:10px;overflow:hidden;border:1.5px solid #d8dde8;">
+      <iframe id="dashCalIframe"
+        src="https://calendar.google.com/calendar/embed?src=c_3203387bbac9311a212cf7f50d243c0cbdffd02278ecd10014b23280d92ccdf9%40group.calendar.google.com&ctz=Asia%2FTokyo&hl=ja&mode=MONTH&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=1&showCalendars=0&showTz=0&bgcolor=%23ffffff"
+        style="border:0;width:100%;height:580px;display:block;"
+        frameborder="0" scrolling="no">
+      </iframe>
+    </div>
+    <!-- 直近の予定 -->
+    <div style="margin-top:16px;background:white;border-radius:10px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+      <div style="font-size:13px;font-weight:700;color:#1a3a6b;margin-bottom:10px;">📋 直近30日の予定 <span id="dashCalCount" style="font-size:11px;font-weight:400;color:#888;"></span></div>
+      <div id="dashCalEvents"><div style="text-align:center;padding:20px;color:#aaa;">読み込み中...</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="staff" class="tab-panel">
+  <div style="padding:16px 20px;">
+    <!-- 統計カード -->
+    <div id="staffStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px;"></div>
+    <!-- 検索バー -->
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+      <input type="text" id="dashStaffSearch" placeholder="名前・部署・役職で検索..." oninput="filterDashStaff()" style="flex:1;min-width:160px;padding:8px 12px;border:1.5px solid #d8dde8;border-radius:8px;font-size:13px;">
+      <div style="display:flex;gap:5px;flex-wrap:wrap;" id="dashDeptBtns">
+        <button class="dash-dept-btn active" data-dept="" onclick="toggleDashDept(this)" style="padding:5px 12px;border:1.5px solid #d8dde8;border-radius:20px;background:white;cursor:pointer;font-size:12px;font-weight:700;color:#6b7a99;">すべて</button>
+        <button class="dash-dept-btn" data-dept="板金・塗装" onclick="toggleDashDept(this)" style="padding:5px 12px;border:1.5px solid #d8dde8;border-radius:20px;background:white;cursor:pointer;font-size:12px;font-weight:700;color:#6b7a99;">板金・塗装</button>
+        <button class="dash-dept-btn" data-dept="整備" onclick="toggleDashDept(this)" style="padding:5px 12px;border:1.5px solid #d8dde8;border-radius:20px;background:white;cursor:pointer;font-size:12px;font-weight:700;color:#6b7a99;">整備</button>
+        <button class="dash-dept-btn" data-dept="フロント" onclick="toggleDashDept(this)" style="padding:5px 12px;border:1.5px solid #d8dde8;border-radius:20px;background:white;cursor:pointer;font-size:12px;font-weight:700;color:#6b7a99;">フロント</button>
+        <button class="dash-dept-btn" data-dept="事務・保険" onclick="toggleDashDept(this)" style="padding:5px 12px;border:1.5px solid #d8dde8;border-radius:20px;background:white;cursor:pointer;font-size:12px;font-weight:700;color:#6b7a99;">事務・保険</button>
+        <button class="dash-dept-btn" data-dept="管理" onclick="toggleDashDept(this)" style="padding:5px 12px;border:1.5px solid #d8dde8;border-radius:20px;background:white;cursor:pointer;font-size:12px;font-weight:700;color:#6b7a99;">管理</button>
+      </div>
+      <a href="forum_auto_staff.html" style="background:#1a3a6b;color:white;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;white-space:nowrap;">✏️ 社員管理を開く</a>
+    </div>
+    <!-- 社員カード一覧 -->
+    <div id="dashStaffGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;">
+      <div style="text-align:center;padding:30px;color:#aaa;">読み込み中...</div>
+    </div>
   </div>
 </div>
 
@@ -352,9 +407,220 @@ function renderMap(){
   });
 }
 
+
+
+// ========== 社員管理 ==========
+var dashAllStaff = [];
+var AVATAR_COLORS_DASH = [
+  {bg:'#e8f0ff',c:'#1a2744'},{bg:'#e8f8ee',c:'#1b5e20'},{bg:'#fff3e0',c:'#bf360c'},
+  {bg:'#fce4ec',c:'#880e4f'},{bg:'#e0f2f1',c:'#004d40'},{bg:'#ede7f6',c:'#4527a0'}
+];
+
+function calcYearsDash(joinDate) {
+  if (!joinDate) return 0;
+  var now = new Date(), join = new Date(joinDate);
+  var y = now.getFullYear() - join.getFullYear();
+  var m = now.getMonth() - join.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < join.getDate())) y--;
+  return Math.max(0, y);
+}
+
+function calcYearsMonthsDash(joinDate) {
+  if (!joinDate) return '—';
+  var now = new Date(), join = new Date(joinDate);
+  var y = now.getFullYear() - join.getFullYear();
+  var m = now.getMonth() - join.getMonth();
+  if (m < 0) { y--; m += 12; }
+  if (now.getDate() < join.getDate()) m = Math.max(0, m - 1);
+  return y + '年' + m + 'ヶ月';
+}
+
+async function loadDashStaff() {
+  try {
+    var res = await fetch(SB_URL + '/rest/v1/staff?order=join_date.asc', {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    });
+    dashAllStaff = await res.json() || [];
+    renderDashStaffStats();
+    filterDashStaff();
+  } catch(e) { console.warn('社員データ読み込み失敗', e); }
+}
+
+function renderDashStaffStats() {
+  var total = dashAllStaff.length;
+  var active = dashAllStaff.filter(function(s){return s.status==='在籍';}).length;
+  var avgY = total ? Math.round(dashAllStaff.reduce(function(sum,s){return sum+calcYearsDash(s.join_date);},0)/total) : 0;
+  var depts = [...new Set(dashAllStaff.map(function(s){return s.dept;}))].length;
+  document.getElementById('staffStats').innerHTML =
+    statCard('👥 総社員数', total+'名', '#1a3a6b') +
+    statCard('✅ 在籍中', active+'名', '#2e7d32') +
+    statCard('📅 平均勤続', avgY+'年', '#f57c00') +
+    statCard('🏢 部署数', depts+'部署', '#e53935');
+}
+
+function statCard(label, val, color) {
+  return '<div style="background:white;border-radius:10px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,0.08);text-align:center;">'
+    + '<div style="font-size:24px;font-weight:700;color:'+color+';">'+val+'</div>'
+    + '<div style="font-size:11px;color:#888;margin-top:4px;">'+label+'</div>'
+    + '</div>';
+}
+
+function toggleDashDept(btn) {
+  var dept = btn.getAttribute('data-dept');
+  document.querySelectorAll('.dash-dept-btn').forEach(function(b){
+    b.style.background = 'white';
+    b.style.color = '#6b7a99';
+    b.style.borderColor = '#d8dde8';
+  });
+  btn.style.background = '#1a3a6b';
+  btn.style.color = 'white';
+  btn.style.borderColor = '#1a3a6b';
+  filterDashStaff();
+}
+
+function filterDashStaff() {
+  var q = (document.getElementById('dashStaffSearch').value||'').toLowerCase();
+  var activeBtn = document.querySelector('.dash-dept-btn[style*="background: rgb(26, 58, 107)"], .dash-dept-btn[style*="background:#1a3a6b"]');
+  var dept = activeBtn ? activeBtn.getAttribute('data-dept') : '';
+  var filtered = dashAllStaff.filter(function(s){
+    var match = !q || (s.name||'').toLowerCase().includes(q) || (s.dept||'').includes(q) || (s.role||'').includes(q);
+    var depts = (s.dept||'').split(',');
+    var dMatch = !dept || depts.some(function(d){return d.trim()===dept;});
+    return match && dMatch;
+  });
+  renderDashStaffGrid(filtered);
+}
+
+function renderDashStaffGrid(list) {
+  var el = document.getElementById('dashStaffGrid');
+  if (!list || !list.length) {
+    el.innerHTML = '<div style="text-align:center;padding:30px;color:#aaa;">該当する社員がいません</div>';
+    return;
+  }
+  el.innerHTML = list.map(function(s, i) {
+    var ac = AVATAR_COLORS_DASH[i % AVATAR_COLORS_DASH.length];
+    var initials = (s.name||'?').replace(/\s+/g,'').slice(0,2);
+    var certs = (s.certs||'').split(',').filter(function(c){return c.trim();});
+    var certTags = certs.slice(0,3).map(function(c){
+      return '<span style="padding:2px 8px;background:#e8f0ff;color:#1a2744;border-radius:20px;font-size:10px;font-weight:700;">'+c.trim()+'</span>';
+    }).join('');
+    var yrs = calcYearsDash(s.join_date);
+    var pct = Math.min(100, Math.round(yrs/40*100));
+    var statusColor = s.status==='在籍'?'#2e7d32':s.status==='休職'?'#e53935':'#f57c00';
+    var statusBg = s.status==='在籍'?'#e8f8ee':s.status==='休職'?'#fff0ee':'#fff3e0';
+    return '<div style="background:white;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.08);border:1.5px solid #f0f2f5;">'
+      + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
+      + '<div style="width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0;background:'+ac.bg+';color:'+ac.c+';">'+initials+'</div>'
+      + '<div><div style="font-size:15px;font-weight:700;color:#1a3a6b;">'+s.name+'</div>'
+      + '<div style="font-size:11px;color:#888;">'+( s.role||'')+'</div></div>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;margin-bottom:8px;">'
+      + '<div><span style="color:#aaa;">部署</span><br><b>'+( s.dept||'—')+'</b></div>'
+      + '<div><span style="color:#aaa;">ステータス</span><br><span style="background:'+statusBg+';color:'+statusColor+';border-radius:10px;padding:1px 8px;font-weight:700;">'+(s.status||'在籍')+'</span></div>'
+      + '<div><span style="color:#aaa;">入社日</span><br><b>'+(s.join_date||'—')+'</b></div>'
+      + '<div><span style="color:#aaa;">勤続</span><br><b>'+calcYearsMonthsDash(s.join_date)+'</b></div>'
+      + '</div>'
+      + '<div style="height:4px;background:#f0f2f5;border-radius:2px;margin-bottom:8px;"><div style="height:4px;background:#1a3a6b;border-radius:2px;width:'+pct+'%;"></div></div>'
+      + (certTags ? '<div style="display:flex;flex-wrap:wrap;gap:4px;">'+certTags+'</div>' : '')
+      + '</div>';
+  }).join('');
+}
+
+// ========== Googleカレンダー ==========
+var GCAL_API_KEY = 'AIzaSyDSYtJFo8rBD4ibV82uWPZTC65hIN3x3_A';
+var GCAL_ID = 'c_3203387bbac9311a212cf7f50d243c0cbdffd02278ecd10014b23280d92ccdf9@group.calendar.google.com';
+var _calPopupWin = null;
+
+function addCalEvent() {
+  var url = 'https://calendar.google.com/calendar/r/eventedit?cid=' + encodeURIComponent(GCAL_ID);
+  var w = Math.min(900, screen.width - 100);
+  var h = Math.min(700, screen.height - 100);
+  var left = Math.round((screen.width - w) / 2);
+  var top = Math.round((screen.height - h) / 2);
+  _calPopupWin = window.open(url, 'gcal_add', 'width='+w+',height='+h+',left='+left+',top='+top+',resizable=yes,scrollbars=yes');
+  var timer = setInterval(function() {
+    if (_calPopupWin && _calPopupWin.closed) {
+      clearInterval(timer);
+      refreshCal();
+    }
+  }, 500);
+}
+
+function refreshCal() {
+  var iframe = document.getElementById('dashCalIframe');
+  if (iframe) iframe.src = iframe.src;
+  loadDashCalEvents();
+}
+
+function openCalPopup() {
+  var modal = document.getElementById('calModal');
+  if (modal) { modal.style.display = 'flex'; loadDashCalEvents(); }
+}
+function closeCalPopup() {
+  var modal = document.getElementById('calModal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function loadDashCalEvents() {
+  var el = document.getElementById('dashCalEvents');
+  var cnt = document.getElementById('dashCalCount');
+  var elModal = document.getElementById('calModalEvents');
+  var now = new Date();
+  var future = new Date(now.getTime() + 30*24*60*60*1000);
+  var url = 'https://www.googleapis.com/calendar/v3/calendars/'
+    + encodeURIComponent(GCAL_ID)
+    + '/events?key=' + GCAL_API_KEY
+    + '&timeMin=' + encodeURIComponent(now.toISOString())
+    + '&timeMax=' + encodeURIComponent(future.toISOString())
+    + '&singleEvents=true&orderBy=startTime&maxResults=20';
+  try {
+    var res = await fetch(url);
+    var data = await res.json();
+    var items = data.items || [];
+    if (cnt) cnt.textContent = '（'+items.length+'件）';
+    var html = items.length ? items.map(function(ev) {
+      var start = ev.start.dateTime || ev.start.date;
+      var dt = new Date(start);
+      var isAllDay = !ev.start.dateTime;
+      var dateStr = dt.toLocaleDateString('ja-JP',{month:'long',day:'numeric',weekday:'short'});
+      var timeStr = isAllDay ? '終日' : dt.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+      var today = new Date();
+      var isToday = dt.toDateString() === today.toDateString();
+      var isTomorrow = dt.toDateString() === new Date(today.getTime()+86400000).toDateString();
+      var badge = isToday ? '<span style="background:#e8392a;color:white;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:4px;">今日</span>'
+                : isTomorrow ? '<span style="background:#f5a623;color:white;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:4px;">明日</span>' : '';
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f2f5;">'
+        + '<div style="min-width:44px;height:44px;background:'+(isToday?'#e8392a':'#1a3a6b')+';color:white;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;">'
+        + '<div style="font-size:15px;font-weight:700;line-height:1;">'+dt.getDate()+'</div>'
+        + '<div style="font-size:10px;opacity:0.8;">'+(dt.getMonth()+1)+'月</div></div>'
+        + '<div style="flex:1;"><div style="font-size:13px;font-weight:700;">'+(ev.summary||'（タイトルなし）')+badge+'</div>'
+        + '<div style="font-size:11px;color:#888;">'+dateStr+'　'+timeStr+'</div></div>'
+        + '</div>';
+    }).join('') : '<div style="text-align:center;padding:20px;color:#aaa;">直近30日の予定はありません</div>';
+    if (el) el.innerHTML = html;
+    if (elModal) elModal.innerHTML = html;
+  } catch(e) {
+    var errHtml = '<div style="color:#e8392a;font-size:12px;padding:10px;">カレンダー読み込みエラー: '+e.message+'</div>';
+    if (el) el.innerHTML = errHtml;
+    if (elModal) elModal.innerHTML = errHtml;
+  }
+}
+
+// レンタカーポップアップ
+function openRentalPopup() {
+  var modal = document.getElementById('rentalModal');
+  if (modal) modal.style.display = 'flex';
+}
+function closeRentalPopup() {
+  var modal = document.getElementById('rentalModal');
+  if (modal) modal.style.display = 'none';
+}
+
 function showTab(tabId, btn){
   document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
   document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+  if (tabId === 'staff' && dashAllStaff.length === 0) loadDashStaff();
+  if (tabId === 'calendar') loadDashCalEvents();
   document.getElementById(tabId).classList.add('active');
   btn.classList.add('active');
   if(tabId === 'mapview'){ renderMap(); }
@@ -371,5 +637,41 @@ function showNotify(msg){
 setInterval(loadAll, 30000);
 loadAll();
 </script>
+
+<!-- ★ カレンダーポップアップモーダル -->
+<div id="calModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeCalPopup()">
+  <div style="background:white;border-radius:16px;width:95%;max-width:1100px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #f0f2f5;">
+      <div style="font-size:16px;font-weight:700;color:#1a3a6b;">📅 フォーラムオート 社内カレンダー</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="addCalEvent()" style="background:#e8392a;color:white;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;">＋ 予定追加</button>
+        <button onclick="closeCalPopup()" style="background:#f0f2f5;color:#1a3a6b;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;">✕ 閉じる</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:0;flex:1;overflow:hidden;">
+      <div style="flex:1;overflow:hidden;">
+        <iframe src="https://calendar.google.com/calendar/embed?src=c_3203387bbac9311a212cf7f50d243c0cbdffd02278ecd10014b23280d92ccdf9%40group.calendar.google.com&ctz=Asia%2FTokyo&hl=ja&mode=MONTH&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=1&showCalendars=0&showTz=0&bgcolor=%23ffffff"
+          style="border:0;width:100%;height:100%;min-height:500px;display:block;" frameborder="0" scrolling="no"></iframe>
+      </div>
+      <div style="width:280px;border-left:1px solid #f0f2f5;overflow-y:auto;padding:16px;">
+        <div style="font-size:12px;font-weight:700;color:#1a3a6b;margin-bottom:8px;">直近の予定</div>
+        <div id="calModalEvents"><div style="text-align:center;padding:20px;color:#aaa;">読み込み中...</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ★ レンタカーポップアップモーダル -->
+<div id="rentalModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeRentalPopup()">
+  <div style="background:white;border-radius:16px;width:95%;max-width:900px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #f0f2f5;">
+      <div style="font-size:16px;font-weight:700;color:#1a3a6b;">🚗 レンタカー状況</div>
+      <button onclick="closeRentalPopup()" style="background:#f0f2f5;color:#1a3a6b;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;">✕ 閉じる</button>
+    </div>
+    <div style="overflow-y:auto;padding:16px;">
+      <div class="rental-grid" id="rentalGridModal"><div style="text-align:center;padding:20px;color:#aaa;">読み込み中...</div></div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
