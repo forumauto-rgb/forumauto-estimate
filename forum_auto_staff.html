@@ -185,6 +185,10 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
         <button onclick="openGoogleCal()" style="background:#4285f4;color:white;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;">📅 Googleカレンダーで開く</button>
         <button onclick="addEvent()" style="background:var(--accent);color:white;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;">＋ 予定を追加</button>
+        <div id="returnHint" style="display:none;background:#e8f0ff;border:1.5px solid #1a2744;border-radius:8px;padding:8px 14px;font-size:12px;color:#1a2744;display:none;align-items:center;gap:10px;">
+          <span>📅 Googleカレンダーで予定を追加したら</span>
+          <button onclick="backFromCalendar()" style="background:#1a2744;color:white;border:none;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer;">✅ 戻って更新</button>
+        </div>
       </div>
       <!-- Googleカレンダー埋め込み -->
       <div style="border-radius:10px;overflow:hidden;border:1.5px solid var(--border);">
@@ -659,6 +663,19 @@ function openGoogleCal() {
 
 function addEvent() {
   window.open('https://calendar.google.com/calendar/r/eventedit?cid=' + encodeURIComponent(GCAL_ID), '_blank');
+  // 戻るボタンヒントを表示
+  var hint = document.getElementById('returnHint');
+  if (hint) hint.style.display = 'flex';
+}
+
+function backFromCalendar() {
+  var hint = document.getElementById('returnHint');
+  if (hint) hint.style.display = 'none';
+  // カレンダーとイベント一覧を更新
+  var iframe = document.getElementById('gcalIframe');
+  if (iframe) iframe.src = iframe.src;
+  loadUpcomingEvents();
+  showToast('カレンダーを更新しました ✅', 'success');
 }
 
 async function loadUpcomingEvents() {
