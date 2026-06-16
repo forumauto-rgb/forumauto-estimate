@@ -7567,13 +7567,12 @@ async function aiChatCallAPI(){
   try{
     var aiAbort = new AbortController();
     var aiTimer = setTimeout(function(){ aiAbort.abort(); }, 30000);
-    var resp = await fetch('https://api.anthropic.com/v1/messages', {
+    var resp = await fetch('https://uhppgdwbyrijnqpvusxw.supabase.co/functions/v1/ai-proxy', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': AI_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
