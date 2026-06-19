@@ -61,12 +61,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0f1e;color:white;
 .h-組付け磨き{background:linear-gradient(135deg,#00838f,#4dd0e1);}
 .h-完成{background:linear-gradient(135deg,#1b5e20,#2e7d32);}
 .h-納車済{background:linear-gradient(135deg,#37474f,#546e7a);}
-.case-card{background:#111d3a;border:1px solid #1e2d5a;border-left:4px solid #2196f3;border-radius:5px;padding:6px 8px;margin-bottom:5px;}
+.case-card{background:#111d3a;border:1px solid #1e2d5a;border-left:6px solid #2196f3;border-radius:6px;padding:16px 18px;margin-bottom:8px;}
 .case-card.ins{border-left-color:#ef5350;}
 .case-card.own{border-left-color:#ffa726;}
 .case-card.done{border-left-color:#66bb6a;}
-.card-name{font-size:12px;font-weight:bold;color:#e3f2fd;margin-bottom:2px;}
-.card-car{font-size:10px;color:#90a4ae;margin-bottom:3px;}
+.card-name{font-size:32px;font-weight:bold;color:#e3f2fd;margin-bottom:6px;line-height:1.2;}
+.card-car{font-size:24px;color:#90a4ae;line-height:1.2;}
 .card-badges{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:2px;}
 .cbadge{font-size:9px;padding:1px 5px;border-radius:5px;font-weight:bold;}
 .cbadge-ins{background:#1a237e;color:#90caf9;}
@@ -380,27 +380,9 @@ function renderRentalPanel(rentalCars, rentalActiveMap){
 // カードにレンタカー情報バッジを追加
 function renderCard(e, rentalActiveMap){
   var repClass=e.repair_status==='完成'?'done':(e.repair_type==='own'?'own':'ins');
-  var total=e.grand_total?'¥'+Math.round(e.grand_total).toLocaleString():'';
-  // ★ この案件がレンタカーを使っているか確認
-  var rentalBadge = '';
-  Object.values(rentalActiveMap||{}).forEach(function(rec){
-    if(rec.note && e.estimate_no && rec.note.indexOf(e.estimate_no)>=0){
-      rentalBadge = '<span class="cbadge cbadge-rental">🚗代車中</span>';
-    }
-    if(rec.customer_name && e.customer_name && rec.customer_name===e.customer_name){
-      rentalBadge = '<span class="cbadge cbadge-rental">🚗'+(rec.rental_type||'代車')+'</span>';
-    }
-  });
   return '<div class="case-card '+repClass+'">'
     +'<div class="card-name">'+(e.customer_name||'未設定')+'　様</div>'
-    +'<div class="card-car">'+(e.car_name||'')+'　'+(e.plate||'')+'</div>'
-    +'<div class="card-badges">'
-    +(e.repair_type==='own'?'<span class="cbadge cbadge-own">自費</span>':'<span class="cbadge cbadge-ins">保険</span>')
-    +(e.staff_name?'<span class="cbadge cbadge-staff">'+e.staff_name+'</span>':'')
-    +(total?'<span class="cbadge cbadge-total">'+total+'</span>':'')
-    +rentalBadge
-    +'</div>'
-    +(e.delivery_date?'<div class="card-date">納車予定: '+e.delivery_date+'</div>':'')
+    +'<div class="card-car">'+(e.car_name||'')+'</div>'
     +'</div>';
 }
 
