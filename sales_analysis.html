@@ -88,6 +88,19 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#f0f
 
 /* バッジ */
 .badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:bold;display:inline-block;}
+
+/* 車格別カード */
+.grade-card{border-radius:10px;padding:12px 14px;border:1px solid transparent;}
+.grade-card.kei{background:#eaf2fb;border-color:#b5d4f4;}
+.grade-card.futsuu{background:#eaf6ee;border-color:#9fe1cb;}
+.grade-card.minivan{background:#fff3e6;border-color:#fac775;}
+.gc-title{font-size:11px;font-weight:bold;margin-bottom:8px;}
+.kei .gc-title{color:#1a5fa8;}
+.futsuu .gc-title{color:#2e7d32;}
+.minivan .gc-title{color:#e65100;}
+.gc-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;}
+.gc-lbl{color:#888;}
+.gc-val{font-weight:bold;color:#1a3a6b;}
 .badge-ins{background:#e3f2fd;color:#1565c0;}
 .badge-own{background:#fff3e0;color:#e65100;}
 .badge-discount{background:#fce4ec;color:#c62828;}
@@ -191,6 +204,10 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#f0f
       <div class="card-title">担当別売上</div>
       <div class="chart-wrap" onclick="openChartModal('chart-staff','担当別売上')"><canvas id="chart-staff"></canvas></div>
     </div>
+  </div>
+  <div style="margin-top:16px;" class="card">
+    <div class="card-title">車格別サマリー<span>軽自動車・普通車・ミニバン　※粗利は部品・材料の実原価ベース（労務費は含みません）</span></div>
+    <div class="grid3" id="gradeArea"></div>
   </div>
 </div>
 
@@ -401,9 +418,19 @@ function applyFilter(){
   renderAll();
 }
 
+var KEI_WORDS=['ハイゼット','ムーブ','タント','ルーミー','ソリオ','ワゴンR','アルト','ミラ','コペン','N-BOX','NBOX','スペーシア','デイズ','eKワゴン','ジムニー','ラパン','フレア','ピクシス','サンバー','アクティ','バモス','ライフ','パレット','ザッツ','モコ','プレオ','ステラ','ルクラ','カスタム'];
+var MINIVAN_WORDS=['アルファード','ヴェルファイア','エルグランド','オデッセイ','ステップワゴン','ステップW','セレナ','ヴォクシー','ノア','エスクァイア','シエンタ','フリード','ストリーム','ウィッシュ','アイシス','プレマシー','MPV','ビアンテ','デリカ','エクスパンダー'];
+function detectGrade(carName){
+  var n=(carName||'').replace(/\s/g,'');
+  for(var i=0;i<KEI_WORDS.length;i++){ if(n.indexOf(KEI_WORDS[i])>=0) return 'kei'; }
+  for(var i=0;i<MINIVAN_WORDS.length;i++){ if(n.indexOf(MINIVAN_WORDS[i])>=0) return 'minivan'; }
+  return 'futsuu';
+}
+
 function renderAll(){
   renderSummary();
   renderOverview();
+  renderGrade();
   renderProcess();
   renderParts();
   renderHours();
@@ -427,6 +454,43 @@ function renderSummary(){
   document.getElementById('s-estimated').textContent = fmt(estimated);
   document.getElementById('s-discount').textContent = fmt(discount);
   document.getElementById('s-hours').textContent = (hoursDiff >= 0 ? '+' : '') + hoursDiff.toFixed(1);
+}
+
+function renderGrade(){
+  var stats = {
+    kei:{n:0, sales:0, cost:0},
+    futsuu:{n:0, sales:0, cost:0},
+    minivan:{n:0, sales:0, cost:0}
+  };
+  filteredEstimates.forEach(function(e){
+    var g = detectGrade(e.car_name);
+    var sales = e.confirmed_amount || e.grand_total || 0;
+    var cost = allParts.filter(function(p){ return p.estimate_id === e.id; })
+      .reduce(function(s,p){ return s + (parseFloat(p.cost)||0); }, 0);
+    stats[g].n++;
+    stats[g].sales += sales;
+    stats[g].cost += cost;
+  });
+  var list = [
+    {key:'kei', label:'軽自動車', cls:'kei'},
+    {key:'futsuu', label:'普通車', cls:'futsuu'},
+    {key:'minivan', label:'ミニバン', cls:'minivan'}
+  ];
+  var h = list.map(function(g){
+    var s = stats[g.key];
+    var profit = s.sales - s.cost;
+    var rate = s.sales > 0 ? Math.round(profit / s.sales * 100) : 0;
+    var avg = s.n > 0 ? Math.round(s.sales / s.n) : 0;
+    return '<div class="grade-card ' + g.cls + '">'
+      + '<div class="gc-title">' + g.label + ' (' + s.n + '件)</div>'
+      + '<div class="gc-row"><span class="gc-lbl">売上(確定)</span><span class="gc-val">¥' + fmt(s.sales) + '</span></div>'
+      + '<div class="gc-row"><span class="gc-lbl">部品材料原価</span><span class="gc-val">¥' + fmt(s.cost) + '</span></div>'
+      + '<div class="gc-row"><span class="gc-lbl">粗利</span><span class="gc-val">¥' + fmt(profit) + '</span></div>'
+      + '<div class="gc-row"><span class="gc-lbl">粗利率</span><span class="gc-val">' + rate + '%</span></div>'
+      + '<div class="gc-row"><span class="gc-lbl">平均単価</span><span class="gc-val">¥' + fmt(avg) + '</span></div>'
+      + '</div>';
+  }).join('');
+  document.getElementById('gradeArea').innerHTML = h;
 }
 
 function renderOverview(){
