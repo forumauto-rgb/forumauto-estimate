@@ -206,7 +206,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#f0f
     </div>
   </div>
   <div style="margin-top:16px;" class="card">
-    <div class="card-title">車格別サマリー<span>軽自動車・普通車・ミニバン　※粗利は部品・材料の実原価ベース（労務費は含みません）</span></div>
+    <div class="card-title">車格別サマリー<span>軽自動車・普通車・ミニバン　※部品原価は実費、材料原価は見積時40%基準＋完成時の調整額</span></div>
     <div class="grid3" id="gradeArea"></div>
   </div>
 </div>
@@ -370,7 +370,7 @@ async function loadAll(){
 
   try{
     var col = dateType;
-    var estimates = await sbFetch('/rest/v1/estimates?' + col + '=gte.' + fromVal + 'T00:00:00&' + col + '=lte.' + toVal + 'T23:59:59&order=' + col + '.desc&limit=500&select=id,estimate_no,customer_name,car_name,repair_type,repair_status,staff_name,grand_total,confirmed_amount,discount_amount,confirmed_at,estimate_date');
+    var estimates = await sbFetch('/rest/v1/estimates?' + col + '=gte.' + fromVal + 'T00:00:00&' + col + '=lte.' + toVal + 'T23:59:59&order=' + col + '.desc&limit=500&select=id,estimate_no,customer_name,car_name,repair_type,repair_status,staff_name,grand_total,confirmed_amount,discount_amount,confirmed_at,estimate_date,mat_total,material_cost_adjustment');
     allEstimates = estimates || [];
 
     // 担当フィルター更新
@@ -465,8 +465,10 @@ function renderGrade(){
   filteredEstimates.forEach(function(e){
     var g = detectGrade(e.car_name);
     var sales = e.confirmed_amount || e.grand_total || 0;
-    var cost = allParts.filter(function(p){ return p.estimate_id === e.id; })
+    var partsCost = allParts.filter(function(p){ return p.estimate_id === e.id && p.item_type === 'parts'; })
       .reduce(function(s,p){ return s + (parseFloat(p.cost)||0); }, 0);
+    var matCost = (parseFloat(e.mat_total)||0) + (parseFloat(e.material_cost_adjustment)||0);
+    var cost = partsCost + matCost;
     stats[g].n++;
     stats[g].sales += sales;
     stats[g].cost += cost;
