@@ -903,8 +903,7 @@ document.addEventListener('DOMContentLoaded', function() {
   var e = document.getElementById('rentalEnd');
   if (s) s.addEventListener('change', calcRentalBilling);
   if (e) e.addEventListener('change', calcRentalBilling);
-  var today = new Date().toISOString().split('T')[0];
-  if (s) s.value = today;
+  // ★ 貸出日は空欄で開始（自動で今日をセットしない）
   initSign();
   loadRentalCars();
   loadCases();
@@ -1299,7 +1298,10 @@ async function saveRental() {
     damage_marks: JSON.stringify(damages),
     signature: getSignDataURL()||'',
     reception_datetime: new Date(rentalStart+'T00:00:00').toISOString(),
-    // ★ 追加フィールド（rejectionsテーブルに余裕があれば）
+    // ★ 貸出日・返却日・金額を専用列に保存（ダッシュボード編集用）
+    rental_start_date: rentalStart || null,
+    rental_end_date: rentalEnd || null,
+    rental_fee: billing || 0,
     location_address: rentalEnd ? '返却予定:'+rentalEnd : '',
     checklist: JSON.stringify({
       caseNum: caseNum,
