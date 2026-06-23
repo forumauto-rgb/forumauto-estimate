@@ -227,6 +227,9 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text
 
       <!-- ★ カレンダー操作バー -->
       <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
+        <!-- ★ 今日の日付 -->
+        <div id="calTodayLabel" style="background:#e53935;color:white;border-radius:8px;padding:6px 16px;font-size:14px;font-weight:700;letter-spacing:0.05em;"></div>
+
         <!-- 今日ボタン -->
         <button onclick="calToday()" style="background:#1a3a6b;color:white;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;">📍 今日</button>
 
@@ -465,6 +468,13 @@ function switchTab(name, btn) {
   if (name === 'certs') renderCerts();
   if (name === 'calendar') {
     renderCalendar();
+    // 今日の日付バッジ
+    var lbl = document.getElementById('calTodayLabel');
+    if (lbl) {
+      var d = new Date();
+      var weeks = ['日','月','火','水','木','金','土'];
+      lbl.textContent = '今日 ' + (d.getMonth()+1) + '月' + d.getDate() + '日（' + weeks[d.getDay()] + '）';
+    }
     // ズームレベル復元
     try {
       var savedZoom = parseFloat(localStorage.getItem('fa_cal_zoom'));
