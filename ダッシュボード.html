@@ -455,7 +455,7 @@ tr:hover td { background:var(--bg3); }
     <table>
       <thead>
         <tr>
-          <th>見積No</th><th>お客様</th><th>車両</th><th>ステータス</th><th>受付日</th><th>操作</th>
+          <th>見積No</th><th>お客様</th><th>車両</th><th>ステータス</th><th>受付日</th><th>レンタカー</th><th>操作</th>
         </tr>
       </thead>
       <tbody id="cases-tbody">
@@ -477,6 +477,96 @@ tr:hover td { background:var(--bg3); }
 </footer>
 
 <div class="toast" id="toast"></div>
+
+<!-- ★ 案件編集モーダル -->
+<div id="editOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.55);z-index:8000;align-items:center;justify-content:center;">
+<div style="background:#fff;border-radius:16px;width:min(560px,95vw);max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.25);">
+  <!-- ヘッダー -->
+  <div style="padding:16px 20px;border-bottom:1px solid rgba(0,0,0,0.08);display:flex;justify-content:space-between;align-items:center;background:#f8f9fc;border-radius:16px 16px 0 0;">
+    <div>
+      <div style="font-size:15px;font-weight:700;color:#111;" id="editModalTitle">受付情報の編集</div>
+      <div style="font-size:12px;color:#6b7280;margin-top:2px;" id="editModalSub"></div>
+    </div>
+    <button onclick="closeEditModal()" style="border:none;background:transparent;font-size:20px;cursor:pointer;color:#6b7280;line-height:1;">✕</button>
+  </div>
+  <!-- ボディ -->
+  <div style="padding:18px 20px;display:flex;flex-direction:column;gap:16px;">
+
+    <!-- 顧客・車両 -->
+    <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:1px;border-bottom:1px solid #e5e7eb;padding-bottom:6px;">👤 顧客・車両情報</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div><label style="font-size:12px;color:#374151;display:block;margin-bottom:4px;">顧客名</label><input id="em_customer" type="text" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;"></div>
+      <div><label style="font-size:12px;color:#374151;display:block;margin-bottom:4px;">電話番号</label><input id="em_phone" type="text" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div><label style="font-size:12px;color:#374151;display:block;margin-bottom:4px;">車種</label><input id="em_car_model" type="text" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;"></div>
+      <div><label style="font-size:12px;color:#374151;display:block;margin-bottom:4px;">ナンバー</label><input id="em_plate" type="text" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;"></div>
+    </div>
+
+    <!-- 受付情報 -->
+    <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:1px;border-bottom:1px solid #e5e7eb;padding-bottom:6px;">📋 受付情報</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div><label style="font-size:12px;color:#374151;display:block;margin-bottom:4px;">受付種別</label>
+        <select id="em_type" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;">
+          <option value="板金塗装">板金塗装</option>
+          <option value="レッカー">レッカー</option>
+          <option value="レンタカー貸出">レンタカー貸出</option>
+          <option value="レンタカー返却">レンタカー返却</option>
+          <option value="車検">車検</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+      <div><label style="font-size:12px;color:#374151;display:block;margin-bottom:4px;">受付日</label><input id="em_date" type="date" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;"></div>
+    </div>
+    <div><label style="font-size:12px;color:#374151;display:block;margin-bottom:4px;">損傷・メモ</label><textarea id="em_note" rows="2" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;resize:vertical;"></textarea></div>
+
+    <!-- レッカー -->
+    <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:1px;border-bottom:1px solid #e5e7eb;padding-bottom:6px;">🚚 レッカー搬送</div>
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+        <input type="checkbox" id="em_towing" style="width:16px;height:16px;cursor:pointer;"> レッカー搬送あり（記録する）
+      </label>
+      <div><input id="em_towing_from" type="text" placeholder="搬送元（例：袋井IC付近）" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;"></div>
+    </div>
+    <div style="font-size:11px;color:#9ca3af;background:#f9fafb;padding:8px 10px;border-radius:8px;">※ レッカー記録は受付データに保存され、案件履歴として残ります（type=レッカー として登録）</div>
+
+    <!-- レンタカー -->
+    <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:1px;border-bottom:1px solid #e5e7eb;padding-bottom:6px;">🚗 レンタカー情報</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div><label style="font-size:12px;color:#374151;display:block;margin-bottom:4px;">貸出日</label><input id="em_rental_start" type="date" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;"></div>
+      <div><label style="font-size:12px;color:#374151;display:block;margin-bottom:4px;">返却日（予定）</label><input id="em_rental_end" type="date" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div>
+        <label style="font-size:12px;color:#374151;display:block;margin-bottom:4px;">貸出金額（税込）</label>
+        <input id="em_rental_fee" type="number" min="0" step="100" placeholder="0" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;">
+        <div style="font-size:11px;color:#9ca3af;margin-top:3px;">車検・1〜2日無料は 0 でOK</div>
+      </div>
+      <div><label style="font-size:12px;color:#374151;display:block;margin-bottom:4px;">貸出車両</label><input id="em_rental_car" type="text" placeholder="例: N-BOX 白" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;"></div>
+    </div>
+
+    <!-- 削除ゾーン -->
+    <div style="margin-top:4px;padding:14px;background:#fff5f5;border:1px solid rgba(200,37,27,0.2);border-radius:10px;">
+      <div style="font-size:12px;font-weight:700;color:#c8251b;margin-bottom:8px;">⚠️ 案件の削除</div>
+      <div style="font-size:12px;color:#6b7280;margin-bottom:10px;">この受付記録を完全に削除します。見積データは別途 index.html で削除してください。この操作は取り消せません。</div>
+      <button id="deleteConfirmBtn" onclick="showDeleteConfirm()" style="padding:8px 16px;background:transparent;border:1.5px solid #c8251b;border-radius:8px;color:#c8251b;font-size:13px;font-weight:700;cursor:pointer;">🗑 この受付を削除する</button>
+      <div id="deleteConfirmArea" style="display:none;margin-top:10px;">
+        <div style="font-size:13px;color:#c8251b;font-weight:700;margin-bottom:8px;">本当に削除しますか？（取り消せません）</div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="document.getElementById('deleteConfirmArea').style.display='none'" style="flex:1;padding:8px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;">キャンセル</button>
+          <button onclick="execDeleteReception()" style="flex:1;padding:8px;border:none;border-radius:8px;background:#c8251b;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">削除実行</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <!-- フッター -->
+  <div style="padding:14px 20px;border-top:1px solid rgba(0,0,0,0.08);display:flex;justify-content:flex-end;gap:10px;background:#f8f9fc;border-radius:0 0 16px 16px;">
+    <button onclick="closeEditModal()" style="padding:10px 20px;border:1px solid #d1d5db;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-weight:600;">キャンセル</button>
+    <button onclick="saveReceptionEdit()" style="padding:10px 24px;border:none;border-radius:8px;background:#1a5fa8;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">💾 保存する</button>
+  </div>
+</div>
+</div>
 
 <script>
 var SB_URL    = 'https://uhppgdwbyrijnqpvusxw.supabase.co';
@@ -562,18 +652,29 @@ async function loadStats() {
 
 async function loadCases() {
   var tb = document.getElementById('cases-tbody');
-  tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--txt3);padding:20px;">読み込み中...</td></tr>';
+  tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--txt3);padding:20px;">読み込み中...</td></tr>';
   try {
-  var url = SB_URL + '/rest/v1/estimates'
-          + '?select=estimate_no,customer_name,car_name,repair_status,estimate_date,plate'
-          + '&repair_status=not.in.(完成,納車済,キャンセル)'
-          + '&order=estimate_date.desc&limit=50';
+    var url = SB_URL + '/rest/v1/estimates'
+            + '?select=estimate_no,customer_name,car_name,repair_status,estimate_date,plate,reception_id'
+            + '&repair_status=not.in.(完成,納車済,キャンセル)'
+            + '&order=estimate_date.desc&limit=50';
     var res  = await fetch(url, { headers: SB_H });
     var data = await res.json();
     if (!Array.isArray(data) || !data.length) {
-      tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--txt3);padding:20px;">案件なし</td></tr>';
+      tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--txt3);padding:20px;">案件なし</td></tr>';
       return;
     }
+    // ★ receptions テーブルからレンタカー情報を一括取得
+    var recMap = {};
+    try {
+      var recUrl = SB_URL + '/rest/v1/receptions?select=id,rental_needed,rental_type,rental_fee,rental_start_date,rental_end_date&rental_needed=eq.true&limit=200';
+      var recRes = await fetch(recUrl, { headers: SB_H });
+      var recData = await recRes.json();
+      if (Array.isArray(recData)) {
+        recData.forEach(function(r){ recMap[r.id] = r; });
+      }
+    } catch(e) {}
+
     var h = '';
     data.forEach(function(r) {
       var bc = getBadgeClass(r.repair_status || '');
@@ -582,13 +683,35 @@ async function loadCases() {
       var no  = esc(r.estimate_no||'');
       var cus = esc(r.customer_name||'');
       var car = esc(r.car_name||'');
+      var rid = esc(r.reception_id||'');
+
+      // レンタカー表示
+      var rec = recMap[r.reception_id] || null;
+      var rentalCell = '<span style="color:#9ca3af;font-size:12px;">—</span>';
+      if (rec && rec.rental_needed) {
+        var fee = (rec.rental_fee === 0 || rec.rental_fee === null) ? '<span style="color:#157a47;font-weight:700;">無料</span>' : '¥' + Number(rec.rental_fee).toLocaleString();
+        var rcar = esc(rec.rental_type || '');
+        var sd = (rec.rental_start_date||'').slice(0,10);
+        rentalCell = '<span style="font-size:11px;line-height:1.5;">'
+          + (rcar ? rcar + '<br>' : '')
+          + (sd ? sd + '<br>' : '')
+          + fee + '</span>';
+      }
+
       h += '<tr>';
-      h += '<td style="font-weight:700;color:var(--txt);">' + no + '</td>';
+      h += '<td style="font-weight:700;color:var(--txt);white-space:nowrap;">' + no + '</td>';
       h += '<td>' + cus + '</td>';
       h += '<td>' + car + '</td>';
       h += '<td><span class="badge ' + bc + '">' + esc(r.repair_status||'—') + '</span></td>';
       h += '<td>' + esc((r.estimate_date||'').slice(0,10)) + '</td>';
-      h += '<td>';
+      h += '<td>' + rentalCell + '</td>';
+      h += '<td style="white-space:nowrap;">';
+      // ★ 編集ボタン（reception_id がある場合のみ有効）
+      if (rid) {
+        h += '<button class="act-btn" style="color:#1a5fa8;border-color:rgba(26,95,168,0.3);background:rgba(26,95,168,0.06);" onclick="openEditModal(\'' + rid + '\',\'' + no + '\',\'' + cus + '\')">✏️ 編集</button>';
+      } else {
+        h += '<button class="act-btn" style="color:#9ca3af;border-color:#e5e7eb;background:#f9fafb;cursor:default;" title="受付IDが未紐付けのため編集不可">✏️ 編集</button>';
+      }
       h += '<button class="act-btn line-btn" onclick="quickSend(\'' + no + '\',\'' + cus + '\',\'' + car + '\',\'' + p4 + '\')">📤 送信</button>';
       h += '<a class="act-btn" href="' + su + '" target="_blank">🔍 進捗</a>';
       h += '<button class="act-btn" style="color:#6a1b9a;border-color:rgba(107,63,192,0.3);background:rgba(107,63,192,0.06);" onclick="showPhotoQR(\'' + no + '\',\'' + cus + '\',\'' + car + '\')">📸 写真</button>';
@@ -597,7 +720,6 @@ async function loadCases() {
     });
     tb.innerHTML = h;
     document.getElementById('last-update').textContent = new Date().toLocaleTimeString('ja-JP');
-    // ★ 案件数バッジを更新
     var badge = document.getElementById('caseBadge');
     if (badge) {
       var count = data.length;
@@ -605,7 +727,7 @@ async function loadCases() {
       badge.style.display = count > 0 ? 'block' : 'none';
     }
   } catch(e) {
-    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--txt3);padding:20px;">読み込みエラー</td></tr>';
+    tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--txt3);padding:20px;">読み込みエラー</td></tr>';
   }
 }
 
@@ -866,6 +988,133 @@ async function cancelCase(estimateNo, customerName) {
 }
 
 function loadAll() { loadStats(); loadCases(); }
+
+// ★ 案件編集モーダル関数群
+var _editReceptionId = null;
+
+async function openEditModal(receptionId, estimateNo, customerName) {
+  _editReceptionId = receptionId;
+  document.getElementById('editModalTitle').textContent = '受付情報の編集';
+  document.getElementById('editModalSub').textContent = estimateNo + ' — ' + customerName + ' 様';
+  document.getElementById('deleteConfirmArea').style.display = 'none';
+
+  // Supabaseから最新データ取得
+  try {
+    var res = await fetch(SB_URL + '/rest/v1/receptions?id=eq.' + encodeURIComponent(receptionId)
+      + '&select=*&limit=1', { headers: SB_H });
+    var data = await res.json();
+    var r = (Array.isArray(data) && data[0]) ? data[0] : {};
+
+    document.getElementById('em_customer').value     = r.customer_name || '';
+    document.getElementById('em_phone').value        = r.phone || '';
+    document.getElementById('em_car_model').value    = r.car_model || '';
+    document.getElementById('em_plate').value        = r.plate || '';
+    document.getElementById('em_type').value         = r.type || '板金塗装';
+    // ★ 受付日: reception_datetime の日付部分のみ（時刻は使わない）
+    document.getElementById('em_date').value         = (r.reception_datetime||'').slice(0,10);
+    document.getElementById('em_note').value         = r.note || '';
+    // レッカー: type===レッカー か location_address で判定
+    document.getElementById('em_towing').checked    = (r.type === 'レッカー');
+    document.getElementById('em_towing_from').value = r.location_address || '';
+    // レンタカー: rental_start_date（存在しない場合は空欄。reception_datetimeは使わない）
+    document.getElementById('em_rental_start').value = r.rental_start_date ? r.rental_start_date.slice(0,10) : '';
+    document.getElementById('em_rental_end').value   = r.rental_end_date   ? r.rental_end_date.slice(0,10)   : '';
+    document.getElementById('em_rental_fee').value   = (r.rental_fee !== null && r.rental_fee !== undefined) ? r.rental_fee : 0;
+    document.getElementById('em_rental_car').value   = r.rental_type || '';
+  } catch(e) {
+    showToast('データ取得エラー: ' + e.message);
+    return;
+  }
+
+  var ov = document.getElementById('editOverlay');
+  ov.style.display = 'flex';
+}
+
+function closeEditModal() {
+  document.getElementById('editOverlay').style.display = 'none';
+  _editReceptionId = null;
+}
+
+async function saveReceptionEdit() {
+  if (!_editReceptionId) return;
+  var type = document.getElementById('em_type').value;
+  // レッカーチェックが入っていたら type を上書き
+  if (document.getElementById('em_towing').checked) type = 'レッカー';
+
+  var dateVal = document.getElementById('em_date').value;
+  // reception_datetime: 日付部分だけ更新（時刻は 00:00:00+09 に固定）
+  var newDatetime = dateVal ? dateVal + 'T00:00:00+09:00' : null;
+
+  var rentalStart = document.getElementById('em_rental_start').value || null;
+  var rentalEnd   = document.getElementById('em_rental_end').value   || null;
+  var rentalFee   = parseInt(document.getElementById('em_rental_fee').value) || 0;
+  var rentalCar   = document.getElementById('em_rental_car').value || null;
+  var rentalNeeded = (rentalStart || rentalCar) ? true : false;
+
+  var payload = {
+    customer_name:    document.getElementById('em_customer').value,
+    phone:            document.getElementById('em_phone').value,
+    car_model:        document.getElementById('em_car_model').value,
+    plate:            document.getElementById('em_plate').value,
+    type:             type,
+    note:             document.getElementById('em_note').value,
+    location_address: document.getElementById('em_towing').checked ? document.getElementById('em_towing_from').value : null,
+    rental_needed:    rentalNeeded,
+    rental_type:      rentalCar,
+    rental_fee:       rentalFee,
+    rental_start_date: rentalStart,
+    rental_end_date:   rentalEnd
+  };
+  if (newDatetime) payload.reception_datetime = newDatetime;
+
+  try {
+    var res = await fetch(SB_URL + '/rest/v1/receptions?id=eq.' + encodeURIComponent(_editReceptionId), {
+      method: 'PATCH',
+      headers: Object.assign({}, SB_H, { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }),
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      showToast('✅ 保存しました');
+      closeEditModal();
+      loadCases();
+      loadStats();
+    } else {
+      var err = await res.text();
+      showToast('保存エラー: ' + err);
+    }
+  } catch(e) {
+    showToast('通信エラー: ' + e.message);
+  }
+}
+
+function showDeleteConfirm() {
+  document.getElementById('deleteConfirmArea').style.display = 'block';
+}
+
+async function execDeleteReception() {
+  if (!_editReceptionId) return;
+  try {
+    var res = await fetch(SB_URL + '/rest/v1/receptions?id=eq.' + encodeURIComponent(_editReceptionId), {
+      method: 'DELETE',
+      headers: Object.assign({}, SB_H, { 'Prefer': 'return=minimal' })
+    });
+    if (res.ok) {
+      showToast('🗑 受付を削除しました');
+      closeEditModal();
+      loadCases();
+      loadStats();
+    } else {
+      showToast('削除エラー');
+    }
+  } catch(e) {
+    showToast('通信エラー: ' + e.message);
+  }
+}
+
+// オーバーレイ外クリックで閉じる
+document.getElementById('editOverlay').addEventListener('click', function(e){
+  if (e.target === this) closeEditModal();
+});
 loadAll();
 setInterval(loadCases, 60000);
 </script>
