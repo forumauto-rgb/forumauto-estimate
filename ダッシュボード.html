@@ -304,6 +304,14 @@ tr:hover td { background:var(--bg3); }
   table { font-size:12px; }
   th,td { padding:8px 10px; }
 }
+
+/* ★ 完成案件点滅 */
+@keyframes blinkRow {
+  0%,100%{ background:#fff8e1; }
+  50%{ background:#ffe082; }
+}
+.blink-complete { animation: blinkRow 1.2s ease-in-out infinite; }
+.badge-complete-alert { background:#e65100; color:#fff; animation: blinkRow 1.2s ease-in-out infinite; }
 </style>
 </head>
 <body>
@@ -477,6 +485,85 @@ tr:hover td { background:var(--bg3); }
 </footer>
 
 <div class="toast" id="toast"></div>
+
+
+<!-- ★ 品質チェック・入金モーダル -->
+<div id="qualityOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(26,39,68,0.65);z-index:9000;align-items:center;justify-content:center;padding:12px;" onclick="if(event.target===this)closeQualityCheck()">
+<div style="background:#fff;border-radius:16px;width:min(560px,100%);max-height:92vh;overflow-y:auto;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.35);">
+  <!-- ヘッダー -->
+  <div style="padding:14px 18px;background:linear-gradient(135deg,#e65100,#ff8f00);border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:1;">
+    <div>
+      <div style="font-size:15px;font-weight:700;color:#fff;">✅ 納車前 品質チェック・入金確認</div>
+      <div id="qc_subtitle" style="font-size:12px;color:rgba(255,255,255,0.85);margin-top:2px;"></div>
+    </div>
+    <button onclick="closeQualityCheck()" style="border:none;background:rgba(255,255,255,0.2);color:#fff;border-radius:8px;padding:5px 10px;font-size:16px;cursor:pointer;">✕</button>
+  </div>
+  <!-- ボディ -->
+  <div style="padding:16px 18px;display:flex;flex-direction:column;gap:16px;">
+
+    <!-- 工程品質チェック -->
+    <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:1px;border-bottom:1px solid #e5e7eb;padding-bottom:5px;">🔧 工程品質チェック</div>
+    <div id="qc_process_checks" style="display:flex;flex-direction:column;gap:6px;"></div>
+
+    <!-- 写真確認 -->
+    <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:1px;border-bottom:1px solid #e5e7eb;padding-bottom:5px;">📷 写真確認</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="qc_photo_checks"></div>
+
+    <!-- 入金確認 -->
+    <div style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:1px;border-bottom:1px solid #e5e7eb;padding-bottom:5px;">💰 入金確認</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div>
+        <label style="font-size:12px;color:#374151;display:block;margin-bottom:3px;">入金状況</label>
+        <select id="qc_payment_status" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;">
+          <option value="">未確認</option>
+          <option value="現金入金済">💴 現金入金済</option>
+          <option value="振込入金済">🏦 振込入金済</option>
+          <option value="保険会社支払待ち">📋 保険会社支払待ち</option>
+          <option value="後日入金">⏳ 後日入金</option>
+          <option value="入金不要">— 入金不要</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:12px;color:#374151;display:block;margin-bottom:3px;">入金確定額（円）</label>
+        <input id="qc_payment_amount" type="number" min="0" step="1000" placeholder="0" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;">
+      </div>
+    </div>
+    <div>
+      <label style="font-size:12px;color:#374151;display:block;margin-bottom:3px;">入金メモ・備考</label>
+      <textarea id="qc_payment_memo" rows="2" placeholder="例：保険会社から6/30振込予定" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;resize:vertical;"></textarea>
+    </div>
+
+    <!-- 担当者・確認日 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div>
+        <label style="font-size:12px;color:#374151;display:block;margin-bottom:3px;">確認担当者</label>
+        <input id="qc_staff" type="text" placeholder="例：仁志・永田" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;">
+      </div>
+      <div>
+        <label style="font-size:12px;color:#374151;display:block;margin-bottom:3px;">確認日</label>
+        <input id="qc_date" type="date" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;">
+      </div>
+    </div>
+
+    <!-- 総合メモ -->
+    <div>
+      <label style="font-size:12px;color:#374151;display:block;margin-bottom:3px;">総合コメント・クレーム予防メモ</label>
+      <textarea id="qc_memo" rows="2" placeholder="例：左ドア付近の古い傷は修理対象外と説明済み" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;resize:vertical;"></textarea>
+    </div>
+
+    <!-- 注意書き -->
+    <div style="background:#e8f5e9;border-left:3px solid #2e7d32;padding:10px 12px;border-radius:6px;font-size:12px;color:#1b5e20;line-height:1.6;">
+      ✅ 保存後はステータスが「<strong>納車準備完了</strong>」に変わり、点滅が止まります。<br>
+      記録はSupabaseに保存され、後から参照できます。
+    </div>
+  </div>
+  <!-- フッター -->
+  <div style="padding:12px 18px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:10px;background:#fff8f0;border-radius:0 0 16px 16px;position:sticky;bottom:0;">
+    <button onclick="closeQualityCheck()" style="padding:10px 20px;border:1px solid #d1d5db;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-weight:600;">キャンセル</button>
+    <button onclick="saveQualityCheck()" style="padding:10px 24px;border:none;border-radius:8px;background:#e65100;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">💾 保存して納車準備完了へ</button>
+  </div>
+</div>
+</div>
 
 <!-- ★ 案件編集モーダル -->
 <div id="editOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.55);z-index:8000;align-items:center;justify-content:center;">
@@ -655,8 +742,8 @@ async function loadCases() {
   tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--txt3);padding:20px;">読み込み中...</td></tr>';
   try {
     var url = SB_URL + '/rest/v1/estimates'
-            + '?select=estimate_no,customer_name,car_name,repair_status,estimate_date,plate,reception_id'
-            + '&repair_status=not.in.(完成,納車済,キャンセル)'
+            + '?select=estimate_no,customer_name,car_name,repair_status,estimate_date,plate,reception_id,id'
+            + '&repair_status=not.in.(納車済,キャンセル)'
             + '&order=estimate_date.desc&limit=50';
     var res  = await fetch(url, { headers: SB_H });
     var data = await res.json();
@@ -698,15 +785,23 @@ async function loadCases() {
           + fee + '</span>';
       }
 
-      h += '<tr>';
+      var isComplete = (r.repair_status === '完成');
+      h += isComplete ? '<tr class="blink-complete">' : '<tr>';
       h += '<td style="font-weight:700;color:var(--txt);white-space:nowrap;">' + no + '</td>';
       h += '<td>' + cus + '</td>';
       h += '<td>' + car + '</td>';
-      h += '<td><span class="badge ' + bc + '">' + esc(r.repair_status||'—') + '</span></td>';
+      if (isComplete) {
+        h += '<td><span class="badge badge-complete-alert">🔔 完成・要チェック</span></td>';
+      } else {
+        h += '<td><span class="badge ' + bc + '">' + esc(r.repair_status||'—') + '</span></td>';
+      }
       h += '<td>' + esc((r.estimate_date||'').slice(0,10)) + '</td>';
       h += '<td>' + rentalCell + '</td>';
       h += '<td style="white-space:nowrap;">';
-      // ★ 編集ボタン（reception_id がある場合のみ有効）
+      // ★ 完成案件：品質チェックボタンを最優先表示
+      if (isComplete) {
+        h += '<button class="act-btn" style="color:#fff;border-color:#e65100;background:#e65100;font-weight:700;" onclick="openQualityCheck(\'' + esc(r.id||no) + '\',\'' + no + '\',\'' + cus + '\',\'' + car + '\')">✅ 品質チェック</button>';
+      }
       if (rid) {
         h += '<button class="act-btn" style="color:#1a5fa8;border-color:rgba(26,95,168,0.3);background:rgba(26,95,168,0.06);" onclick="openEditModal(\'' + rid + '\',\'' + no + '\',\'' + cus + '\')">✏️ 編集</button>';
       } else {
@@ -715,7 +810,9 @@ async function loadCases() {
       h += '<button class="act-btn line-btn" onclick="quickSend(\'' + no + '\',\'' + cus + '\',\'' + car + '\',\'' + p4 + '\')">📤 送信</button>';
       h += '<a class="act-btn" href="' + su + '" target="_blank">🔍 進捗</a>';
       h += '<button class="act-btn" style="color:#6a1b9a;border-color:rgba(107,63,192,0.3);background:rgba(107,63,192,0.06);" onclick="showPhotoQR(\'' + no + '\',\'' + cus + '\',\'' + car + '\')">📸 写真</button>';
-      h += '<button class="act-btn" style="color:#c8251b;border-color:rgba(200,37,27,0.3);background:rgba(200,37,27,0.06);" onclick="cancelCase(\'' + no + '\',\'' + cus + '\')">✖ 取消</button>';
+      if (!isComplete) {
+        h += '<button class="act-btn" style="color:#c8251b;border-color:rgba(200,37,27,0.3);background:rgba(200,37,27,0.06);" onclick="cancelCase(\'' + no + '\',\'' + cus + '\')">✖ 取消</button>';
+      }
       h += '</td></tr>';
     });
     tb.innerHTML = h;
@@ -981,6 +1078,113 @@ async function cancelCase(estimateNo, customerName) {
       loadStats();
     } else {
       showToast('エラーが発生しました');
+    }
+  } catch(e) {
+    showToast('通信エラー: ' + e.message);
+  }
+}
+
+
+// ★ 品質チェック関数群
+var _qcEstimateId = null;
+var _qcEstimateNo = null;
+
+var QC_PROCESS_ITEMS = [
+  '板金修正仕上がり確認','パテ工程確認','下地処理確認','塗装仕上がり確認',
+  'ブース内異物・ゴミ確認','磨き・肌調整確認','部品取付確認','エーミング実施確認',
+  '室内清掃確認','外装洗車確認','ガラス・ミラー確認','タイヤ・ホイール確認'
+];
+var QC_PHOTO_ITEMS = [
+  '受付時写真','作業前写真','板金工程写真','塗装工程写真','完成写真','納車前最終写真'
+];
+
+function openQualityCheck(estimateId, estimateNo, customerName, carName) {
+  _qcEstimateId = estimateId;
+  _qcEstimateNo = estimateNo;
+  document.getElementById('qc_subtitle').textContent = estimateNo + ' — ' + customerName + ' 様（' + carName + '）';
+  // 今日の日付をセット
+  document.getElementById('qc_date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('qc_payment_amount').value = '';
+  document.getElementById('qc_payment_status').value = '';
+  document.getElementById('qc_payment_memo').value = '';
+  document.getElementById('qc_staff').value = '';
+  document.getElementById('qc_memo').value = '';
+
+  // 工程チェック項目を生成
+  var pcHtml = '';
+  QC_PROCESS_ITEMS.forEach(function(item, i){
+    pcHtml += '<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:#f9fafb;border-radius:8px;cursor:pointer;border:1px solid #e5e7eb;">'
+      + '<input type="checkbox" id="qc_proc_' + i + '" style="width:17px;height:17px;accent-color:#e65100;cursor:pointer;">'
+      + '<span style="font-size:13px;">' + item + '</span></label>';
+  });
+  document.getElementById('qc_process_checks').innerHTML = pcHtml;
+
+  // 写真チェック項目を生成
+  var phHtml = '';
+  QC_PHOTO_ITEMS.forEach(function(item, i){
+    phHtml += '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#f0fdf4;border-radius:8px;cursor:pointer;border:1px solid #bbf7d0;">'
+      + '<input type="checkbox" id="qc_photo_' + i + '" style="width:16px;height:16px;accent-color:#2e7d32;cursor:pointer;">'
+      + '<span style="font-size:12px;">' + item + '</span></label>';
+  });
+  document.getElementById('qc_photo_checks').innerHTML = phHtml;
+
+  document.getElementById('qualityOverlay').style.display = 'flex';
+}
+
+function closeQualityCheck() {
+  document.getElementById('qualityOverlay').style.display = 'none';
+  _qcEstimateId = null;
+  _qcEstimateNo = null;
+}
+
+async function saveQualityCheck() {
+  if (!_qcEstimateId) return;
+
+  // 工程チェック結果を収集
+  var processResults = {};
+  QC_PROCESS_ITEMS.forEach(function(item, i){
+    var cb = document.getElementById('qc_proc_' + i);
+    processResults[item] = cb ? cb.checked : false;
+  });
+  // 写真チェック結果を収集
+  var photoResults = {};
+  QC_PHOTO_ITEMS.forEach(function(item, i){
+    var cb = document.getElementById('qc_photo_' + i);
+    photoResults[item] = cb ? cb.checked : false;
+  });
+
+  var checkedCount = Object.values(processResults).filter(Boolean).length;
+  var totalCount = QC_PROCESS_ITEMS.length;
+
+  var payload = {
+    repair_status: '納車準備完了',
+    payment_memo: [
+      '【入金状況】' + (document.getElementById('qc_payment_status').value || '未確認'),
+      '【確定額】¥' + (parseInt(document.getElementById('qc_payment_amount').value)||0).toLocaleString(),
+      document.getElementById('qc_payment_memo').value ? '【備考】' + document.getElementById('qc_payment_memo').value : '',
+      '【確認者】' + (document.getElementById('qc_staff').value || '—'),
+      '【確認日】' + (document.getElementById('qc_date').value || '—'),
+      '【コメント】' + (document.getElementById('qc_memo').value || '—'),
+      '【工程チェック】' + checkedCount + '/' + totalCount + '項目完了',
+      '【process_check】' + JSON.stringify(processResults),
+      '【photo_check】' + JSON.stringify(photoResults)
+    ].filter(Boolean).join(' | ')
+  };
+
+  try {
+    var res = await fetch(SB_URL + '/rest/v1/estimates?estimate_no=eq.' + encodeURIComponent(_qcEstimateNo), {
+      method: 'PATCH',
+      headers: Object.assign({}, SB_H, {'Content-Type':'application/json','Prefer':'return=minimal'}),
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      showToast('✅ 品質チェックを保存しました（' + checkedCount + '/' + totalCount + '項目）');
+      closeQualityCheck();
+      loadCases();
+      loadStats();
+    } else {
+      var err = await res.text();
+      showToast('保存エラー: ' + err);
     }
   } catch(e) {
     showToast('通信エラー: ' + e.message);
