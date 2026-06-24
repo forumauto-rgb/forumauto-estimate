@@ -537,16 +537,10 @@ tr:hover td { background:var(--bg3); }
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
       <div>
         <label style="font-size:12px;color:#374151;display:block;margin-bottom:3px;">確認担当者</label>
-        <div style="position:relative;">
-          <input id="qc_staff" type="text" placeholder="名前を入力 または ▼で一覧" autocomplete="off"
-            oninput="filterStaffList(this.value)"
-            onfocus="showStaffList()"
-            style="width:100%;padding:8px 36px 8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;">
-          <button type="button" onclick="toggleStaffList()" tabindex="-1"
-            style="position:absolute;right:0;top:0;bottom:0;width:32px;border:none;background:transparent;cursor:pointer;font-size:14px;color:#6b7280;">▼</button>
-          <div id="qc_staff_dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #d1d5db;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-height:180px;overflow-y:auto;z-index:999;margin-top:2px;"></div>
-        </div>
-        <div style="font-size:11px;color:#9ca3af;margin-top:3px;">入力で絞り込み、▼で一覧表示</div>
+        <select id="qc_staff" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;background:#fff;">
+          <option value="">— 選択してください —</option>
+        </select>
+        <div style="font-size:11px;color:#9ca3af;margin-top:3px;">社員マスターから選択</div>
       </div>
       <div>
         <label style="font-size:12px;color:#374151;display:block;margin-bottom:3px;">確認日</label>
@@ -1098,72 +1092,6 @@ async function cancelCase(estimateNo, customerName) {
 }
 
 
-// ★ 担当者ドロップダウン制御
-var _staffList = [];
-
-function renderStaffDropdown(list, filter) {
-  var dd = document.getElementById('qc_staff_dropdown');
-  if (!dd) return;
-  var filtered = filter
-    ? list.filter(function(s){ return (s.name||'').includes(filter); })
-    : list;
-  if (!filtered.length) {
-    dd.innerHTML = '<div style="padding:10px 12px;color:#9ca3af;font-size:13px;">該当なし（そのまま入力できます）</div>';
-  } else {
-    dd.innerHTML = filtered.map(function(s){
-      var dept = s.dept ? '<span style="font-size:11px;color:#6b7280;margin-left:6px;">'+s.dept+'</span>' : '';
-      return '<div onclick="selectStaff(''+( s.name||'').replace(/'/g,'&apos;')+'')" '
-        + 'style="padding:9px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;" '
-        + 'onmouseover="this.style.background='#f0f9ff'" onmouseout="this.style.background=''">👤 '
-        + (s.name||'') + dept + '</div>';
-    }).join('');
-  }
-}
-
-function showStaffList() {
-  var dd = document.getElementById('qc_staff_dropdown');
-  if (dd) { renderStaffDropdown(_staffList); dd.style.display = 'block'; }
-}
-
-function toggleStaffList() {
-  var dd = document.getElementById('qc_staff_dropdown');
-  if (!dd) return;
-  if (dd.style.display === 'none') {
-    renderStaffDropdown(_staffList);
-    dd.style.display = 'block';
-    document.getElementById('qc_staff').focus();
-  } else {
-    dd.style.display = 'none';
-  }
-}
-
-function filterStaffList(val) {
-  var dd = document.getElementById('qc_staff_dropdown');
-  if (!dd) return;
-  if (val) {
-    renderStaffDropdown(_staffList, val);
-    dd.style.display = 'block';
-  } else {
-    renderStaffDropdown(_staffList);
-    dd.style.display = 'block';
-  }
-}
-
-function selectStaff(name) {
-  document.getElementById('qc_staff').value = name;
-  var dd = document.getElementById('qc_staff_dropdown');
-  if (dd) dd.style.display = 'none';
-}
-
-// ドロップダウン外クリックで閉じる
-document.addEventListener('click', function(e){
-  var dd = document.getElementById('qc_staff_dropdown');
-  if (!dd) return;
-  if (!e.target.closest('#qc_staff') && !e.target.closest('#qc_staff_dropdown') && !e.target.closest('button[onclick="toggleStaffList()"]')) {
-    dd.style.display = 'none';
-  }
-});
-
 // ★ 品質チェック関数群
 var _qcEstimateId = null;
 var _qcEstimateNo = null;
@@ -1190,15 +1118,20 @@ async function openQualityCheck(estimateId, estimateNo, customerName, carName) {
   try {
     var sRes = await fetch(SB_URL + '/rest/v1/staff?select=name,dept,status&status=eq.在籍&order=name.asc', { headers: SB_H });
     var sData = await sRes.json();
+    var sel = document.getElementById('qc_staff');
+    sel.innerHTML = '<option value="">— 選択してください —</option>';
     if (Array.isArray(sData)) {
-      _staffList = sData;
+      sData.forEach(function(s){
+        var opt = document.createElement('option');
+        opt.value = s.name || '';
+        opt.textContent = (s.name||'') + (s.dept ? '（'+s.dept+'）' : '');
+        sel.appendChild(opt);
+      });
     }
-    renderStaffDropdown(_staffList);
   } catch(e) {
-    console.warn('社員取得失敗', e);
-    // RLS未設定の場合のフォールバック：手入力のみ
-    _staffList = [];
-    renderStaffDropdown([]);
+    // 取得失敗時はテキスト入力に切り替え
+    var sel = document.getElementById('qc_staff');
+    sel.outerHTML = '<input id="qc_staff" type="text" placeholder="担当者名を入力" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;">';
   }
   document.getElementById('qc_staff').value = '';
   document.getElementById('qc_memo').value = '';
