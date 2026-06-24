@@ -798,9 +798,13 @@ async function loadCases() {
       h += '<td>' + esc((r.estimate_date||'').slice(0,10)) + '</td>';
       h += '<td>' + rentalCell + '</td>';
       h += '<td style="white-space:nowrap;">';
-      // ★ 完成案件：品質チェックボタンを最優先表示
+      // ★ 完成案件：品質チェックボタン（data属性で文字列エスケープ問題を回避）
       if (isComplete) {
-        h += '<button class="act-btn" style="color:#fff;border-color:#e65100;background:#e65100;font-weight:700;" onclick="openQualityCheck(\'' + esc(r.id||no) + '\',\'' + no + '\',\'' + cus + '\',\'' + car + '\')">✅ 品質チェック</button>';
+        var qcId  = (r.id||no).replace(/'/g,'&apos;');
+        var qcNo  = no.replace(/'/g,'&apos;');
+        var qcCus = (r.customer_name||'').replace(/'/g,'&apos;').replace(/"/g,'&quot;');
+        var qcCar = (r.car_name||'').replace(/'/g,'&apos;').replace(/"/g,'&quot;');
+        h += '<button class="act-btn qc-btn" data-id="'+qcId+'" data-no="'+qcNo+'" data-cus="'+qcCus+'" data-car="'+qcCar+'" style="color:#fff;border-color:#e65100;background:#e65100;font-weight:700;">✅ 品質チェック</button>';
       }
       if (rid) {
         h += '<button class="act-btn" style="color:#1a5fa8;border-color:rgba(26,95,168,0.3);background:rgba(26,95,168,0.06);" onclick="openEditModal(\'' + rid + '\',\'' + no + '\',\'' + cus + '\')">✏️ 編集</button>';
@@ -1190,6 +1194,20 @@ async function saveQualityCheck() {
     showToast('通信エラー: ' + e.message);
   }
 }
+
+// ★ 品質チェックボタン：イベント委譲（data属性方式）
+document.addEventListener('click', function(e){
+  var btn = e.target.closest('.qc-btn');
+  if (!btn) return;
+  e.preventDefault();
+  e.stopPropagation();
+  openQualityCheck(
+    btn.dataset.id,
+    btn.dataset.no,
+    btn.dataset.cus,
+    btn.dataset.car
+  );
+});
 
 function loadAll() { loadStats(); loadCases(); }
 
