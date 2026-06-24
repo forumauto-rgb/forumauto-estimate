@@ -537,7 +537,10 @@ tr:hover td { background:var(--bg3); }
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
       <div>
         <label style="font-size:12px;color:#374151;display:block;margin-bottom:3px;">確認担当者</label>
-        <input id="qc_staff" type="text" placeholder="例：仁志・永田" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;">
+        <select id="qc_staff" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;background:#fff;">
+          <option value="">— 選択してください —</option>
+        </select>
+        <div style="font-size:11px;color:#9ca3af;margin-top:3px;">社員マスターから選択</div>
       </div>
       <div>
         <label style="font-size:12px;color:#374151;display:block;margin-bottom:3px;">確認日</label>
@@ -1102,7 +1105,7 @@ var QC_PHOTO_ITEMS = [
   '受付時写真','作業前写真','板金工程写真','塗装工程写真','完成写真','納車前最終写真'
 ];
 
-function openQualityCheck(estimateId, estimateNo, customerName, carName) {
+async function openQualityCheck(estimateId, estimateNo, customerName, carName) {
   _qcEstimateId = estimateId;
   _qcEstimateNo = estimateNo;
   document.getElementById('qc_subtitle').textContent = estimateNo + ' — ' + customerName + ' 様（' + carName + '）';
@@ -1111,6 +1114,25 @@ function openQualityCheck(estimateId, estimateNo, customerName, carName) {
   document.getElementById('qc_payment_amount').value = '';
   document.getElementById('qc_payment_status').value = '';
   document.getElementById('qc_payment_memo').value = '';
+  // ★ 社員マスターからセレクトを動的生成
+  try {
+    var sRes = await fetch(SB_URL + '/rest/v1/staff?select=name,dept,status&status=eq.在籍&order=name.asc', { headers: SB_H });
+    var sData = await sRes.json();
+    var sel = document.getElementById('qc_staff');
+    sel.innerHTML = '<option value="">— 選択してください —</option>';
+    if (Array.isArray(sData)) {
+      sData.forEach(function(s){
+        var opt = document.createElement('option');
+        opt.value = s.name || '';
+        opt.textContent = (s.name||'') + (s.dept ? '（'+s.dept+'）' : '');
+        sel.appendChild(opt);
+      });
+    }
+  } catch(e) {
+    // 取得失敗時はテキスト入力に切り替え
+    var sel = document.getElementById('qc_staff');
+    sel.outerHTML = '<input id="qc_staff" type="text" placeholder="担当者名を入力" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;">';
+  }
   document.getElementById('qc_staff').value = '';
   document.getElementById('qc_memo').value = '';
 
