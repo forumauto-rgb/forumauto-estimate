@@ -30,6 +30,8 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#f0f
 .col-body{padding:8px;min-height:120px;}
 .case-card{background:#f8f9ff;border:1.5px solid #e3e8ff;border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:pointer;transition:all 0.15s;}
 .case-card:hover{box-shadow:0 2px 8px rgba(0,0,0,0.1);transform:translateY(-1px);}
+@keyframes blinkCard{0%,100%{border-color:#e65100;background:#fff8f0;}50%{border-color:#ff8f00;background:#ffe0b2;}}
+.case-card-complete{animation:blinkCard 1.2s ease-in-out infinite;border:2px solid #e65100 !important;}
 .case-card .cname{font-size:13px;font-weight:bold;color:#1a3a6b;}
 .case-card .ccar{font-size:11px;color:#555;margin-top:2px;}
 .case-card .cbadges{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;}
@@ -289,7 +291,8 @@ function renderCard(e){
   var opts = STATUSES.map(function(s){
     return '<option value="' + s + '"' + ((e.repair_status||'受付')===s?' selected':'') + '>' + s + '</option>';
   }).join('');
-  return '<div class="case-card" onclick="">'
+  var cardClass = e.repair_status === '完成' ? 'case-card case-card-complete' : 'case-card';
+  return '<div class="' + cardClass + '" onclick="">'
     + '<div class="cname">' + (e.customer_name||'未設定') + ' 様</div>'
     + '<div class="ccar">' + (e.car_name||'') + ' ' + (e.plate||'') + '</div>'
     + '<div class="cbadges">'
@@ -298,10 +301,21 @@ function renderCard(e){
     + (totalStr ? '<span class="badge" style="background:#e8f5e9;color:#1b5e20;">' + totalStr + '</span>' : '')
     + '</div>'
     + (e.delivery_date ? '<div class="cdate">納車予定: ' + e.delivery_date + '</div>' : '')
+    + (e.repair_status === '完成' ? '<button onclick="event.stopPropagation();openQCFromKanban(\'' + e.id + '\',\'' + e.estimate_no + '\',\'' + (e.customer_name||'') + '\',\'' + (e.car_name||'') + '\')" style="margin-top:6px;width:100%;padding:6px;background:#e65100;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold;">✅ 品質チェック入力</button>' : '')
     + (e.repair_status === '納車済' ? '<button onclick="deleteCard(event,\'' + e.id + '\')" style="margin-top:6px;width:100%;padding:4px;background:#e74c3c;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;">削除</button>' : '')
     + '<select class="cstatus-sel" onchange="updateStatus(\'' + e.id + '\',this.value)" onclick="event.stopPropagation()">'
     + opts + '</select>'
     + '</div>';
+}
+
+function openQCFromKanban(id, no, name, car){
+  // ダッシュボード.htmlの品質チェック機能にリダイレクト
+  if(window.openQualityCheck){
+    openQualityCheck(id, no, name, car);
+  } else {
+    // ダッシュボード.htmlを開く
+    window.open('ダッシュボード.html', '_blank');
+  }
 }
 
 async function updateStatus(id, newStatus){
