@@ -464,16 +464,40 @@ function showStatus(type, msg) {
 function hideStatus() { document.getElementById('status').className = 'status'; }
 
 async function resolveEstimateDbId() {
+  // ★ 優先順位1: eidnum（DB UUID）が直接渡されている場合はそのまま使用
   if (estimateDbId) return estimateDbId;
-  if (!estimateId) return '';
-  try {
-    var r = await fetch(
-      SUPABASE_URL + '/rest/v1/estimates?estimate_no=eq.' + encodeURIComponent(estimateId) + '&select=id',
-      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
-    );
-    var rows = r.ok ? await r.json() : [];
-    if (rows.length) { estimateDbId = rows[0].id; return estimateDbId; }
-  } catch(e) { console.error('案件ID取得失敗:', e); }
+
+  // ★ 優先順位2: estimate_no（見積番号）で検索
+  if (estimateId) {
+    try {
+      var r = await fetch(
+        SUPABASE_URL + '/rest/v1/estimates?estimate_no=eq.' + encodeURIComponent(estimateId) + '&select=id',
+        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
+      );
+      var rows = r.ok ? await r.json() : [];
+      if (rows.length) { estimateDbId = rows[0].id; return estimateDbId; }
+    } catch(e) { console.error('案件ID取得失敗:', e); }
+  }
+
+  // ★ 優先順位3: DRAFT番号の場合 → 顧客名・車種で最新の見積を検索
+  if (estimateId && estimateId.indexOf('DRAFT') === 0) {
+    var nameParam = new URLSearchParams(window.location.search).get('name') || '';
+    if (nameParam) {
+      try {
+        var r2 = await fetch(
+          SUPABASE_URL + '/rest/v1/estimates?customer_name=eq.' + encodeURIComponent(nameParam)
+          + '&select=id,estimate_no&order=created_at.desc&limit=1',
+          { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
+        );
+        var rows2 = r2.ok ? await r2.json() : [];
+        if (rows2.length) {
+          estimateDbId = rows2[0].id;
+          estimateId = rows2[0].estimate_no || estimateId;
+          return estimateDbId;
+        }
+      } catch(e) { console.error('顧客名検索失敗:', e); }
+    }
+  }
   return '';
 }
 
