@@ -1129,9 +1129,7 @@ async function openQualityCheck(estimateId, estimateNo, customerName, carName) {
       });
     }
   } catch(e) {
-    // 取得失敗時はテキスト入力に切り替え
-    var sel = document.getElementById('qc_staff');
-    sel.outerHTML = '<input id="qc_staff" type="text" placeholder="担当者名を入力" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;">';
+    console.warn('社員取得失敗', e);
   }
   document.getElementById('qc_staff').value = '';
   document.getElementById('qc_memo').value = '';
