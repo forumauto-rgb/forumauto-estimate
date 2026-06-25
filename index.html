@@ -7050,27 +7050,37 @@ var qrLastReceivedCount = 0; // 前回受信枚数を記録
 async function pollQRPhotos(){
   if(!qrSessionId) return;
   try{
-    // ★ estimate_idで絞り込む（session_idが変わっても正確に取得）
+    // ★ photo_upload.htmlはestimate_photosテーブルに保存するのでそちらを監視
+    var estId = customer._estId || '';
     var estNo = customer.no || '';
-    var filterUrl = '';
-    if(estNo){
-      // estimate_idがある場合はそちらを優先（最も正確）
-      filterUrl = SUPABASE_URL + '/rest/v1/photo_sessions?estimate_id=eq.' + encodeURIComponent(estNo) + '&select=id,session_id,category,data_url&order=id.asc';
-    } else {
-      // estimate_idがない場合はsession_idで検索
-      filterUrl = SUPABASE_URL + '/rest/v1/photo_sessions?session_id=eq.' + encodeURIComponent(qrSessionId) + '&select=id,session_id,category,data_url&order=id.asc';
-    }
-    var resp = await fetch(filterUrl, {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
-    if(!resp.ok) return;
-    var rows = await resp.json();
+    var rows = [];
 
-    // estimate_idで取れなかった場合のフォールバック（session_id検索）
-    if((!rows || !rows.length) && estNo){
-      var resp2 = await fetch(
-        SUPABASE_URL + '/rest/v1/photo_sessions?session_id=eq.' + encodeURIComponent(qrSessionId) + '&select=id,session_id,category,data_url&order=id.asc',
+    if(estId){
+      // UUIDで直接検索（最も正確）
+      var resp = await fetch(
+        SUPABASE_URL + '/rest/v1/estimate_photos?estimate_id=eq.' + encodeURIComponent(estId)
+        + '&select=id,category,data_url&order=id.asc',
         {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
       );
-      if(resp2.ok) rows = await resp2.json();
+      if(resp.ok) rows = await resp.json();
+    } else if(estNo){
+      // 見積番号でestimate_idを取得してから検索
+      var rNo = await fetch(
+        SUPABASE_URL + '/rest/v1/estimates?estimate_no=eq.' + encodeURIComponent(estNo) + '&select=id&limit=1',
+        {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
+      );
+      if(rNo.ok){
+        var dNo = await rNo.json();
+        if(Array.isArray(dNo) && dNo[0] && dNo[0].id){
+          customer._estId = dNo[0].id;
+          var resp2 = await fetch(
+            SUPABASE_URL + '/rest/v1/estimate_photos?estimate_id=eq.' + encodeURIComponent(customer._estId)
+            + '&select=id,category,data_url&order=id.asc',
+            {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
+          );
+          if(resp2.ok) rows = await resp2.json();
+        }
+      }
     }
 
     if(!rows || !rows.length) return;
