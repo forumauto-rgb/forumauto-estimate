@@ -3817,7 +3817,7 @@ function renderMaster(){
       h+='<td><input value="'+(c.insurance||'').replace(/"/g,'&quot;')+'" list="ins-list-'+i+'" oninput="cMaster['+i+'].insurance=this.value" placeholder="東京海上日動" style="width:110px"><datalist id="ins-list-'+i+'">'+INS_LIST.map(function(s){return'<option value="'+s+'">';}).join('')+'</datalist></td>';
       h+='<td><input value="'+(c.aj||'').replace(/"/g,'&quot;')+'" oninput="cMaster['+i+'].aj=this.value" placeholder="金指"></td>';
       h+='<td><input value="'+(c.memo||'').replace(/"/g,'&quot;')+'" oninput="cMaster['+i+'].memo=this.value"></td>';
-      h+='<td><button class="del-btn" onclick="if(confirm(\'削除?\')){{cMaster.splice('+i+',1);render()}}">✕</button></td>';
+      h+='<td><button class="del-btn" onclick="if(confirm(\'削除?\')){{cMaster.splice('+i+',1);localStorage.setItem(\'fa_c6\',JSON.stringify(cMaster));localStorage.setItem(\'fa_cMaster\',JSON.stringify(cMaster));render()}}">✕</button></td>';
       h+='</tr>';
     });
     h+='</tbody></table></div>';
@@ -3892,7 +3892,7 @@ function renderMaster(){
       PAINT_MASTERS.special.forEach(function(o){h+='<option value="'+o.name+'"'+((v.special||'なし')===o.name?' selected':'')+'>'+o.name+'(×'+o.val.toFixed(2)+')</option>';});
       h+='</select></td>';
       h+='<td><input value="'+(v.memo||'').replace(/"/g,'&quot;')+'" oninput="vMaster['+i+'].memo=this.value"></td>';
-      h+='<td><button class="del-btn" onclick="if(confirm(\'削除?\')){{vMaster.splice('+i+',1);render()}}">✕</button></td>';
+      h+='<td><button class="del-btn" onclick="if(confirm(\'削除?\')){{vMaster.splice('+i+',1);localStorage.setItem(\'fa_v6\',JSON.stringify(vMaster));localStorage.setItem(\'fa_vMaster\',JSON.stringify(vMaster));render()}}">✕</button></td>';
       h+='</tr>';
     });
     h+='</tbody></table></div>';
