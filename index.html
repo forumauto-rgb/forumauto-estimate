@@ -6389,26 +6389,10 @@ function loadPhotoFromHistory(estNo){
 
 // ===== 写真取込後の自動クラウド保存 =====
 async function autoSavePhotosToCloud(){
-  // ★ _estIdがない場合は見積番号でIDを検索してから写真保存
-  if(!customer._estId){
-    if(!customer.no){
-      showNotify('📷 写真を取込みました（見積保存後にクラウドへ自動送信されます）');
-      return;
-    }
-    try {
-      var r = await fetch(SUPABASE_URL+'/rest/v1/estimates?estimate_no=eq.'+encodeURIComponent(customer.no)+'&select=id&limit=1',
-        {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
-      var d = await r.json();
-      if(Array.isArray(d) && d[0] && d[0].id){
-        customer._estId = d[0].id;
-      } else {
-        showNotify('📷 写真を取込みました（見積保存後にクラウドへ自動送信されます）');
-        return;
-      }
-    } catch(e){
-      showNotify('📷 写真を取込みました（見積保存後にクラウドへ自動送信されます）');
-      return;
-    }
+  // 見積番号がない場合はスキップ（保存後に自動紐付けされる）
+  if(!customer.no || !customer._estId){
+    showNotify('📷 写真を取込みました（見積保存後にクラウドへ自動送信されます）');
+    return;
   }
   try {
     var cats = ['photoIncoming','photoWork','photoDone'];
@@ -6965,49 +6949,18 @@ function clearChatHistory(){ try{ localStorage.removeItem(AI_CHAT_HISTORY_KEY); 
 var qrPollTimer = null;
 var qrSessionId = null;
 
-async function showQRUpload(targetCat){
+function showQRUpload(targetCat){
   targetCat = targetCat || 'photoIncoming';
-  // ★ QR生成前に必ずSupabaseに保存してIDを確保
-  if(!customer._estId){
-    if(!customer.name){
-      showNotify('⚠ 顧客名を入力してからQRを生成してください');
-      return;
-    }
-    showNotify('📷 見積を保存してからQRを生成します...');
-    // saveEstimateを呼ぶ（Supabaseに保存してcustomer._estIdをセット）
-    try{
-      await saveEstimate();
-      // saveEstimate後にIDが取れているか確認
-      if(!customer._estId && customer.no){
-        var r=await fetch(SUPABASE_URL+'/rest/v1/estimates?estimate_no=eq.'+encodeURIComponent(customer.no)+'&select=id&limit=1',
-          {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
-        var d=await r.json();
-        if(Array.isArray(d)&&d[0]&&d[0].id) customer._estId=d[0].id;
-      }
-    }catch(e){
-      showNotify('⚠ 見積保存に失敗しました。手動で保存後にQRを押してください');
-      return;
-    }
-    if(!customer._estId){
-      showNotify('⚠ 見積IDが取得できません。一度保存ボタンを押してから再度QRを押してください');
-      return;
-    }
-    showNotify('✅ 保存完了。QRを生成します');
-  }
   // セッションIDを生成
   qrSessionId = 'fa_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
   var name = encodeURIComponent(customer.name||'');
   var car  = encodeURIComponent((customer.car||'') + ' ' + (customer.plate||''));
-  // ★ eidにはestimate_no（見積番号）を渡す（photo_upload.htmlが番号で検索）
   var eid  = encodeURIComponent(customer.no||'');
-  // ★ eidnum（DB UUID）も渡す → photo_upload.htmlが直接使えて検索不要
-  var eidnum = encodeURIComponent(customer._estId||'');
   var uploadUrl = 'https://forumauto-rgb.github.io/forumauto-estimate/photo_upload.html'
     + '?session=' + qrSessionId
     + '&name=' + name
     + '&car=' + car
     + '&eid=' + eid
-    + '&eidnum=' + eidnum
     + '&cat=' + encodeURIComponent(targetCat);
 
   // モーダル表示
@@ -7050,37 +7003,27 @@ var qrLastReceivedCount = 0; // 前回受信枚数を記録
 async function pollQRPhotos(){
   if(!qrSessionId) return;
   try{
-    // ★ photo_upload.htmlはestimate_photosテーブルに保存するのでそちらを監視
-    var estId = customer._estId || '';
+    // ★ estimate_idで絞り込む（session_idが変わっても正確に取得）
     var estNo = customer.no || '';
-    var rows = [];
+    var filterUrl = '';
+    if(estNo){
+      // estimate_idがある場合はそちらを優先（最も正確）
+      filterUrl = SUPABASE_URL + '/rest/v1/photo_sessions?estimate_id=eq.' + encodeURIComponent(estNo) + '&select=id,session_id,category,data_url&order=id.asc';
+    } else {
+      // estimate_idがない場合はsession_idで検索
+      filterUrl = SUPABASE_URL + '/rest/v1/photo_sessions?session_id=eq.' + encodeURIComponent(qrSessionId) + '&select=id,session_id,category,data_url&order=id.asc';
+    }
+    var resp = await fetch(filterUrl, {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+    if(!resp.ok) return;
+    var rows = await resp.json();
 
-    if(estId){
-      // UUIDで直接検索（最も正確）
-      var resp = await fetch(
-        SUPABASE_URL + '/rest/v1/estimate_photos?estimate_id=eq.' + encodeURIComponent(estId)
-        + '&select=id,category,data_url&order=id.asc',
+    // estimate_idで取れなかった場合のフォールバック（session_id検索）
+    if((!rows || !rows.length) && estNo){
+      var resp2 = await fetch(
+        SUPABASE_URL + '/rest/v1/photo_sessions?session_id=eq.' + encodeURIComponent(qrSessionId) + '&select=id,session_id,category,data_url&order=id.asc',
         {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
       );
-      if(resp.ok) rows = await resp.json();
-    } else if(estNo){
-      // 見積番号でestimate_idを取得してから検索
-      var rNo = await fetch(
-        SUPABASE_URL + '/rest/v1/estimates?estimate_no=eq.' + encodeURIComponent(estNo) + '&select=id&limit=1',
-        {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
-      );
-      if(rNo.ok){
-        var dNo = await rNo.json();
-        if(Array.isArray(dNo) && dNo[0] && dNo[0].id){
-          customer._estId = dNo[0].id;
-          var resp2 = await fetch(
-            SUPABASE_URL + '/rest/v1/estimate_photos?estimate_id=eq.' + encodeURIComponent(customer._estId)
-            + '&select=id,category,data_url&order=id.asc',
-            {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
-          );
-          if(resp2.ok) rows = await resp2.json();
-        }
-      }
+      if(resp2.ok) rows = await resp2.json();
     }
 
     if(!rows || !rows.length) return;
