@@ -3527,7 +3527,7 @@ function renderEstimate(){
           <span style="margin-left:auto;font-size:10px;color:#888;font-weight:normal;">左＝助手席　右＝運転席</span>
         </div>
         <div class="kw-wrap">
-          <input class="kw-input" placeholder="🔍 部位・作業名・工程名で検索..." value="${kw}" oninput="kw=this.value;var el=this;rIP();var inp=document.querySelector('.kw-input');if(inp){inp.value=kw;inp.focus();}">
+          <input class="kw-input" autocomplete="off" placeholder="🔍 部位・作業名・工程名で検索..." value="${kw}" oninput="kw=this.value;var el=this;rIP();var inp=document.querySelector('.kw-input');if(inp){inp.value=kw;inp.focus();}">
           ${kw?`<button class="btn btn-sm" onclick="kw='';rIP()" style="height:42px;padding:0 12px">✕ クリア</button>`:''}
         </div>
         ${kw?`<div style="font-size:11px;color:#888;margin-bottom:6px;padding:0 4px">「${kw}」の検索結果：<strong>${sr.length}件</strong></div>
@@ -7823,7 +7823,7 @@ function renderAiChat(){
     + '<div style="display:flex;gap:6px;">'
     + '<button id="ai-mic-btn" onclick="aiStartMic()" title="音声入力" '
     + 'style="width:42px;height:42px;border-radius:50%;border:1.5px solid #ce93d8;background:#f3e5f5;color:#7b1fa2;font-size:18px;cursor:pointer;flex-shrink:0;">🎤</button>'
-    + '<input id="ai-chat-input" type="text" placeholder="テキスト入力またはマイクで話しかけてください..." '
+    + '<input id="ai-chat-input" type="text" autocomplete="off" placeholder="テキスト入力またはマイクで話しかけてください..." '
     + 'onkeydown="if(event.key===\'Enter\')aiChatSend()" '
     + 'style="flex:1;height:42px;padding:0 14px;border:1.5px solid #AFA9EC;border-radius:21px;font-size:13px;outline:none;box-sizing:border-box;">'
     + '<button onclick="aiChatSend()" style="padding:0 20px;height:42px;background:linear-gradient(135deg,#534AB7,#7F77DD);color:white;border:none;border-radius:21px;font-size:13px;font-weight:bold;cursor:pointer;">送信</button>'
