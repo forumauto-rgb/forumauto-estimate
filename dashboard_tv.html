@@ -30,7 +30,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0f1e;color:white;
 /* メインエリア: カンバン + レンタカーパネル */
 .main-wrap{display:flex;gap:8px;padding:8px 12px;height:calc(100vh - 66px - 62px - 46px);overflow:hidden;}
 /* カンバン（左側・可変幅） */
-.kanban-wrap{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;flex:1;overflow:hidden;}
+.kanban-wrap{display:flex;flex-direction:column;gap:6px;flex:1;overflow:hidden;}
 /* ★ レンタカーパネル（右側） */
 .rental-panel{width:230px;flex-shrink:0;display:flex;flex-direction:column;gap:6px;overflow:hidden;}
 .rental-panel-header{background:linear-gradient(135deg,#e65100,#ff6d00);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:bold;display:flex;align-items:center;justify-content:space-between;}
@@ -60,6 +60,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0f1e;color:white;
 .h-塗装中{background:linear-gradient(135deg,#b71c1c,#d32f2f);}
 .h-組付け磨き{background:linear-gradient(135deg,#00838f,#4dd0e1);}
 .h-完成{background:linear-gradient(135deg,#1b5e20,#2e7d32);}
+.h-納車準備完了{background:linear-gradient(135deg,#e65100,#ff8f00);}
 .h-納車済{background:linear-gradient(135deg,#37474f,#546e7a);}
 .case-card{background:#111d3a;border:1px solid #1e2d5a;border-left:6px solid #2196f3;border-radius:6px;padding:16px 18px;margin-bottom:8px;}
 .case-card.ins{border-left-color:#ef5350;}
@@ -199,7 +200,7 @@ document.addEventListener('keydown', function(e) {
   if (e.key === '0') resetZoom();
 });
 
-var STATUSES=['受付','見積中','作業待ち','板金中','塗装中','組付け磨き','完成','納車済'];
+var STATUSES=['受付','見積中','作業待ち','板金中','塗装中','組付け磨き','完成','納車準備完了','納車済'];
 
 function updateClock(){
   var n=new Date();
@@ -296,15 +297,17 @@ function renderAll(estimates, rentalCars, rentalActiveMap){
   document.getElementById('s-rental').textContent=rBusy;
   document.getElementById('s-free').textContent=rFree;
 
-  // カンバン
+  // ★ カンバン2段レイアウト
   var kanban=document.getElementById('kanban');
-  kanban.innerHTML=STATUSES.map(function(status){
+  var TOP=['受付','見積中','作業待ち','板金中'];
+  var BOTTOM=['塗装中','組付け磨き','完成','納車準備完了','納車済'];
+
+  function makeTV(status){
     var cards=estimates.filter(function(e){return (e.repair_status||'受付')===status;});
-    // ★ 納車済みカラムに注記を追加
     var headerExtra = status==='納車済'
       ? '<span style="font-size:9px;opacity:0.7;margin-left:4px;">3日後消去</span>'
       : '';
-    return '<div class="column">'
+    return '<div class="column" style="flex:1;min-width:0;">'
       +'<div class="col-header h-'+status+'">'
       +'<span>'+status+headerExtra+'</span>'
       +'<span class="col-count-badge">'+cards.length+'</span>'
@@ -314,7 +317,11 @@ function renderAll(estimates, rentalCars, rentalActiveMap){
         ?'<div style="text-align:center;color:#2a3a5e;padding:12px;font-size:11px;">─</div>'
         :cards.map(function(e){return renderCard(e, rentalActiveMap);}).join(''))
       +'</div></div>';
-  }).join('');
+  }
+
+  kanban.innerHTML=
+    '<div style="display:flex;gap:6px;flex:1;">'+TOP.map(makeTV).join('')+'</div>'
+    +'<div style="display:flex;gap:6px;flex:1;">'+BOTTOM.map(makeTV).join('')+'</div>';
 
   // ★ レンタカーパネル（右側）
   renderRentalPanel(rentalCars, rentalActiveMap);
