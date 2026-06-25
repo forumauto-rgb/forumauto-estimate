@@ -23,8 +23,8 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#f0f
 .tabs{display:flex;gap:0;padding:16px 20px 0;border-bottom:2px solid #e0e0e0;margin:0 20px;}
 .tab-btn{padding:10px 20px;font-size:13px;font-weight:bold;border:none;background:none;cursor:pointer;color:#888;border-bottom:3px solid transparent;margin-bottom:-2px;}
 .tab-btn.active{color:#1565c0;border-bottom-color:#1565c0;}
-.kanban{display:flex;gap:12px;padding:16px 20px;overflow-x:auto;min-height:400px;}
-.column{min-width:200px;flex-shrink:0;background:white;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);}
+.kanban{display:block;padding:16px 20px;min-height:400px;}
+.column{flex:1;min-width:0;background:white;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);}
 .col-header{padding:12px 14px;font-size:12px;font-weight:bold;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center;}
 .col-count{font-size:11px;font-weight:normal;opacity:0.8;background:rgba(255,255,255,0.3);padding:1px 7px;border-radius:10px;}
 .col-body{padding:8px;min-height:120px;}
@@ -66,6 +66,13 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#f0f
   .summary{grid-template-columns:repeat(2,1fr);}
 }
 .notify{position:fixed;top:70px;right:16px;background:#1a3a6b;color:white;padding:10px 16px;border-radius:8px;font-size:12px;z-index:9999;display:none;}
+
+/* ★ 列ポップアップ */
+#colPopupOverlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.55);z-index:9000;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
+#colPopupOverlay.open{display:flex;}
+#colPopupBox{background:#fff;border-radius:16px;width:min(480px,95vw);max-height:85vh;overflow-y:auto;margin:auto;}
+#colPopupHeader{padding:14px 18px;border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:1;}
+#colPopupBody{padding:12px 16px;display:flex;flex-direction:column;gap:8px;}
 </style>
 </head>
 <body>
@@ -180,7 +187,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#f0f
 const SB_URL = 'https://uhppgdwbyrijnqpvusxw.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVocHBnZHdieXJpam5xcHZ1c3h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NDEyMDksImV4cCI6MjA4OTExNzIwOX0.mJ2GXQUsRZAZ-VL6XTVTz3gfG3MTNtfnWxsIPU_DK60';
 
-const STATUSES = ['受付','見積中','作業待ち','板金中','塗装中','組付け磨き','完成','納車済'];
+const STATUSES = ['受付','見積中','作業待ち','板金中','塗装中','組付け磨き','完成','納車準備完了','納車済'];
 
 var allEstimates = [];
 var allRentals = [];
@@ -196,6 +203,7 @@ function getStatusColor(s){
     '塗装中':'linear-gradient(135deg,#c62828,#ef9a9a)',
     '組付け磨き':'linear-gradient(135deg,#00838f,#4dd0e1)',
     '完成':'linear-gradient(135deg,#2e7d32,#66bb6a)',
+    '納車準備完了':'linear-gradient(135deg,#e65100,#ff8f00)',
     '納車済':'linear-gradient(135deg,#455a64,#90a4ae)'
   };
   return colors[s] || '#888';
@@ -246,7 +254,7 @@ function renderSummary(){
   var today = new Date().toISOString().split('T')[0];
   var active = allEstimates.filter(function(e){ return e.repair_status !== '納車済' && e.repair_status !== '削除済'; }).length;
   var todayCount = allEstimates.filter(function(e){ return e.estimate_date === today; }).length;
-  var ready = allEstimates.filter(function(e){ return e.repair_status === '完成'; }).length;
+  var ready = allEstimates.filter(function(e){ return e.repair_status === '完成' || e.repair_status === '納車準備完了'; }).length;
   var rentalBusy = allRentals.filter(function(r){ return (r['現在の状況']||r.status) === '貸出中'; }).length;
   var rentalFree = allRentals.filter(function(r){ return (r['現在の状況']||r.status) === '空き'; }).length;
   document.getElementById('s-active').textContent = active;
@@ -265,23 +273,56 @@ async function deleteCard(event, id){
 
 function renderKanban(){
   var board = document.getElementById('kanbanBoard');
-  var cols = '';
-  STATUSES.forEach(function(status){
+  // ★ 2段レイアウト：上4列・下4列・納車済1列
+  var TOP    = ['受付','見積中','作業待ち','板金中'];
+  var BOTTOM = ['塗装中','組付け磨き','完成','納車準備完了','納車済'];
+  var MAX_SHOW = 2; // 通常表示の最大件数
+
+  function makeCol(status) {
     var cards = allEstimates.filter(function(e){
       if (e.repair_status === '削除済') return false;
       return (e.repair_status || '受付') === status;
     });
-    cols += '<div class="column">'
-      + '<div class="col-header" style="color:white;background:' + getStatusColor(status) + '">'
-      + status
-      + '<span class="col-count">' + cards.length + '</span>'
+    var visibleCards = cards.slice(0, MAX_SHOW);
+    var hiddenCount  = cards.length - MAX_SHOW;
+    var bodyHtml = cards.length === 0
+      ? '<div style="text-align:center;color:#ccc;padding:16px;font-size:11px;">なし</div>'
+      : visibleCards.map(function(e){ return renderCard(e); }).join('')
+        + (hiddenCount > 0
+          ? '<div onclick="showColPopup(\''+status+'\')" style="text-align:center;padding:8px;margin-top:4px;background:#f0f4ff;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;color:#1a5fa8;">他 '+hiddenCount+' 件を見る ▼</div>'
+          : '');
+    return '<div class="column">'
+      + '<div class="col-header" style="color:white;background:'+getStatusColor(status)+';cursor:pointer;" onclick="showColPopup(\''+status+'\')"> '
+      + status + '<span class="col-count">'+cards.length+'</span>'
+      + '<span style="font-size:10px;opacity:0.8;margin-left:4px;">クリックで全表示</span>'
       + '</div>'
-      + '<div class="col-body">'
-      + (cards.length === 0 ? '<div style="text-align:center;color:#ccc;padding:16px;font-size:11px;">なし</div>' : '')
-      + cards.map(function(e){ return renderCard(e); }).join('')
-      + '</div></div>';
+      + '<div class="col-body">' + bodyHtml + '</div></div>';
+  }
+
+  var row1 = '<div style="display:flex;gap:10px;margin-bottom:10px;">' + TOP.map(makeCol).join('') + '</div>';
+  var row2 = '<div style="display:flex;gap:10px;">' + BOTTOM.map(makeCol).join('') + '</div>';
+  board.innerHTML = row1 + row2;
+}
+
+function showColPopup(status){
+  var cards = allEstimates.filter(function(e){
+    if(e.repair_status==='削除済') return false;
+    return (e.repair_status||'受付') === status;
   });
-  board.innerHTML = cols;
+  var color = getStatusColor(status);
+  var html = cards.length===0
+    ? '<div style="text-align:center;color:#aaa;padding:24px;">案件なし</div>'
+    : cards.map(function(e){ return renderCard(e); }).join('');
+
+  var ov = document.getElementById('colPopupOverlay');
+  document.getElementById('colPopupHeader').style.background = color;
+  document.getElementById('colPopupTitle').textContent = status + '（' + cards.length + '件）';
+  document.getElementById('colPopupBody').innerHTML = html;
+  ov.classList.add('open');
+}
+
+function closeColPopup(){
+  document.getElementById('colPopupOverlay').classList.remove('open');
 }
 
 function renderCard(e){
@@ -301,7 +342,7 @@ function renderCard(e){
     + (totalStr ? '<span class="badge" style="background:#e8f5e9;color:#1b5e20;">' + totalStr + '</span>' : '')
     + '</div>'
     + (e.delivery_date ? '<div class="cdate">納車予定: ' + e.delivery_date + '</div>' : '')
-    + (e.repair_status === '完成' ? '<button onclick="event.stopPropagation();openQCFromKanban(\'' + e.id + '\',\'' + e.estimate_no + '\',\'' + (e.customer_name||'') + '\',\'' + (e.car_name||'') + '\')" style="margin-top:6px;width:100%;padding:6px;background:#e65100;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold;">✅ 品質チェック入力</button>' : '')
+    + (e.repair_status === '完成' || e.repair_status === '納車準備完了' ? '<button onclick="event.stopPropagation();openQCFromKanban(\'' + e.id + '\',\'' + e.estimate_no + '\',\'' + (e.customer_name||'') + '\',\'' + (e.car_name||'') + '\')" style="margin-top:6px;width:100%;padding:6px;background:#e65100;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold;">✅ 品質チェック入力</button>' : '')
     + (e.repair_status === '納車済' ? '<button onclick="deleteCard(event,\'' + e.id + '\')" style="margin-top:6px;width:100%;padding:4px;background:#e74c3c;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;">削除</button>' : '')
     + '<select class="cstatus-sel" onchange="updateStatus(\'' + e.id + '\',this.value)" onclick="event.stopPropagation()">'
     + opts + '</select>'
@@ -685,6 +726,17 @@ loadAll();
     <div style="overflow-y:auto;padding:16px;">
       <div class="rental-grid" id="rentalGridModal"><div style="text-align:center;padding:20px;color:#aaa;">読み込み中...</div></div>
     </div>
+  </div>
+</div>
+
+<!-- ★ 列ポップアップ -->
+<div id="colPopupOverlay" onclick="if(event.target===this)closeColPopup()">
+  <div id="colPopupBox">
+    <div id="colPopupHeader" style="color:white;">
+      <div id="colPopupTitle" style="font-size:15px;font-weight:700;"></div>
+      <button onclick="closeColPopup()" style="border:none;background:rgba(255,255,255,0.25);color:white;border-radius:8px;padding:5px 12px;font-size:14px;cursor:pointer;font-weight:700;">✕ 閉じる</button>
+    </div>
+    <div id="colPopupBody"></div>
   </div>
 </div>
 </body>
