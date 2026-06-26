@@ -1266,6 +1266,12 @@ function addPhotos(input, category){
   var cat = category || 'photoIncoming';
   var files = Array.from(input.files || []);
   if(!files.length) return;
+  // ★ 見積未保存の場合は先に保存を促す
+  if(!customer._estId && !customer.no){
+    showNotify('⚠ 先に見積を保存してから写真を追加してください');
+    input.value='';
+    return;
+  }
   files.forEach(function(file){
     if(!file.type.match(/^image\//)) return;
     var reader = new FileReader();
