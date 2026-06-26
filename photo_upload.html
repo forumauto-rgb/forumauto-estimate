@@ -179,7 +179,8 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 var params = new URLSearchParams(location.search);
 var sessionId = params.get('session');
 var estimateId = params.get('eid') || '';
-var estimateDbId = params.get('eidnum') || ''; // 数値ID（DB直書き込み用、わかれば優先利用）
+var estimateDbId = params.get('eidnum') || '';
+var sessionId = params.get('session') || ''; // 数値ID（DB直書き込み用、わかれば優先利用）
 var customerNameParam = params.get('name') || '';
 var carInfoParam = params.get('car') || '';
 var initCat = params.get('cat') || 'photoIncoming';
@@ -511,6 +512,7 @@ async function submitPhotos() {
           rows.push({
             estimate_id: dbId,
             estimate_no: estimateId || '',
+            session_id: sessionId || '',
             category: cat,
             data_url: dataUrl,
             sort_order: maxSort[cat]
