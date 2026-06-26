@@ -678,7 +678,10 @@ async function loadStats() {
   try {
     // ★ 作業ダッシュボードと同じSTATUSES定義
     var WORK_STATUSES = ['受付','見積中','作業待ち','板金中','塗装中','組付け磨き'];
-    var today = new Date().toISOString().slice(0,10);
+    // ★ JSTで今日の日付を取得（UTCではなく日本時間基準）
+    var _now = new Date();
+    var _jst = new Date(_now.getTime() + 9 * 60 * 60 * 1000);
+    var today = _jst.toISOString().slice(0,10);
 
     // ① estimatesテーブル（見積作成済み案件）
     var res = await fetch(SB_URL + '/rest/v1/estimates?select=repair_status,estimate_date,estimate_no&limit=500', { headers: SB_H });
@@ -703,7 +706,12 @@ async function loadStats() {
     if (Array.isArray(recData)) {
       recData.forEach(function(r){
         if (r.type === 'レンタカー返却' || r.type === 'レンタカー貸出') return;
-        if (String(r.reception_datetime||'').slice(0,10) === today) todRec++;
+        // ★ reception_datetimeをJSTに変換して比較
+        var _rdt = r.reception_datetime ? new Date(r.reception_datetime) : null;
+        if (_rdt) {
+          var _rdtJst = new Date(_rdt.getTime() + 9*60*60*1000);
+          if (_rdtJst.toISOString().slice(0,10) === today) todRec++;
+        }
       });
     }
 
@@ -746,7 +754,7 @@ async function loadCases() {
   try {
     var url = SB_URL + '/rest/v1/estimates'
             + '?select=estimate_no,customer_name,car_name,repair_status,estimate_date,plate,reception_id,id'
-            + '&repair_status=not.in.(納車済,キャンセル)'
+            + '&repair_status=not.in.(納車済,キャンセル,削除済)'
             + '&order=estimate_date.desc&limit=50';
     var res  = await fetch(url, { headers: SB_H });
     var data = await res.json();
@@ -1129,7 +1137,9 @@ async function openQualityCheck(estimateId, estimateNo, customerName, carName) {
       });
     }
   } catch(e) {
-    console.warn('社員取得失敗', e);
+    // 取得失敗時はテキスト入力に切り替え
+    var sel = document.getElementById('qc_staff');
+    sel.outerHTML = '<input id="qc_staff" type="text" placeholder="担当者名を入力" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;">';
   }
   document.getElementById('qc_staff').value = '';
   document.getElementById('qc_memo').value = '';
