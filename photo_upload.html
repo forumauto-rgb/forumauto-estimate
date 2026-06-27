@@ -5,116 +5,171 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>フォーラムオート 写真撮影</title>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#1a1a2e;color:white;min-height:100vh;}
-  .header{background:linear-gradient(135deg,#1a3a6b,#2196f3);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;}
-  .header-left{display:flex;align-items:center;gap:10px;}
-  .header-logo{font-size:18px;font-weight:bold;}
-  .header-sub{font-size:11px;opacity:0.8;}
-  .home-btn{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.2);color:white;text-decoration:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:bold;border:1px solid rgba(255,255,255,0.3);white-space:nowrap;}
-  .home-btn:hover{background:rgba(255,255,255,0.3);}
-  .session-info{background:#0d1b3e;padding:12px 16px;border-bottom:1px solid #2a3a5e;}
-  .session-info .label{font-size:10px;color:#90a4ae;margin-bottom:2px;}
-  .session-info .value{font-size:14px;font-weight:bold;color:#64b5f6;}
-  .category-tabs{display:flex;background:#0d1b3e;border-bottom:2px solid #1565c0;}
-  .cat-tab{flex:1;padding:12px 6px;text-align:center;font-size:11px;font-weight:bold;cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s;}
-  .cat-tab.active{color:#64b5f6;border-bottom-color:#2196f3;background:#1a2a4e;}
-  .cat-tab .count{display:inline-block;background:#e53935;color:white;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:3px;}
-  .cat-tab.active .count{background:#2196f3;}
-  .upload-area{padding:16px;}
-  .shoot-btn{width:100%;padding:18px;font-size:16px;font-weight:bold;border:none;border-radius:14px;cursor:pointer;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:10px;}
-  .shoot-btn.camera{background:linear-gradient(135deg,#1565c0,#2196f3);color:white;}
-  .shoot-btn.gallery{background:linear-gradient(135deg,#1a237e,#3949ab);color:white;line-height:1.4;}
-  .shoot-btn:active{opacity:0.8;transform:scale(0.98);}
-  input[type=file]{display:none;}
-  .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;}
-  .photo-item{position:relative;aspect-ratio:4/3;border-radius:8px;overflow:hidden;border:2px solid #1565c0;}
-  .photo-item img{width:100%;height:100%;object-fit:cover;}
-  .photo-item .del-btn{position:absolute;top:3px;right:3px;background:rgba(229,57,53,0.9);color:white;border:none;border-radius:50%;width:22px;height:22px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
-  .photo-count{font-size:11px;color:#90a4ae;margin-bottom:8px;}
-  .submit-area{position:fixed;bottom:0;left:0;right:0;background:#0d1b3e;padding:12px 16px;border-top:1px solid #1565c0;}
-  .submit-btn{width:100%;padding:16px;font-size:16px;font-weight:bold;border:none;border-radius:12px;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;cursor:pointer;}
-  .submit-btn:disabled{background:#37474f;color:#78909c;}
-  .submit-btn:active{opacity:0.8;}
-  .status{text-align:center;padding:8px;font-size:12px;border-radius:8px;margin-bottom:8px;display:none;}
-  .status.show{display:block;}
-  .status.loading{background:#1565c0;color:white;}
-  .status.success{background:#2e7d32;color:white;}
-  .status.error{background:#c62828;color:white;}
-  .empty-msg{text-align:center;padding:30px 16px;color:#546e7a;font-size:13px;}
-  .empty-msg .icon{font-size:48px;margin-bottom:10px;}
-  .done-screen{display:none;text-align:center;padding:40px 20px;}
-  .done-screen.show{display:block;}
-  .done-screen .icon{font-size:72px;margin-bottom:16px;}
-  .done-screen h2{font-size:22px;font-weight:bold;color:#64b5f6;margin-bottom:8px;}
-  .done-screen p{font-size:13px;color:#90a4ae;line-height:1.6;}
-  .pb{padding-bottom:80px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#1a1a2e;color:white;min-height:100vh;}
+
+.header{background:linear-gradient(135deg,#1a3a6b,#2196f3);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;}
+.header-logo{font-size:18px;font-weight:bold;}
+.header-sub{font-size:11px;opacity:0.8;margin-top:2px;}
+
+/* ★ 案件選択画面 */
+.case-select-screen{padding:16px;}
+.case-select-title{font-size:15px;font-weight:bold;color:#64b5f6;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #1565c0;}
+.case-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+.case-row{background:#0d1b3e;border:1.5px solid #1565c0;border-radius:10px;padding:14px;cursor:pointer;transition:all 0.2s;}
+.case-row:active{background:#1a2a5e;transform:scale(0.98);}
+.case-row-name{font-size:15px;font-weight:bold;color:#e3f2fd;margin-bottom:3px;}
+.case-row-sub{font-size:12px;color:#90a4ae;}
+.case-row-badge{display:inline-block;font-size:11px;font-weight:bold;padding:2px 8px;border-radius:10px;margin-right:6px;}
+.b-orange{background:rgba(192,92,8,0.3);color:#ffb74d;border:1px solid rgba(192,92,8,0.5);}
+.b-purple{background:rgba(107,63,192,0.3);color:#ce93d8;border:1px solid rgba(107,63,192,0.5);}
+.b-blue{background:rgba(26,95,168,0.3);color:#90caf9;border:1px solid rgba(26,95,168,0.5);}
+.b-red{background:rgba(200,37,27,0.3);color:#ef9a9a;border:1px solid rgba(200,37,27,0.5);}
+.b-green{background:rgba(21,122,71,0.3);color:#a5d6a7;border:1px solid rgba(21,122,71,0.5);}
+.b-gray{background:rgba(100,100,100,0.3);color:#b0bec5;border:1px solid rgba(100,100,100,0.5);}
+.loading-msg{text-align:center;padding:30px;color:#90a4ae;font-size:13px;}
+.error-msg{background:#c62828;border-radius:8px;padding:12px;font-size:13px;text-align:center;margin-bottom:12px;}
+
+/* ★ カテゴリ選択 */
+.cat-select-screen{padding:16px;display:none;}
+.back-btn{display:flex;align-items:center;gap:8px;background:none;border:1.5px solid #1565c0;color:#64b5f6;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:bold;cursor:pointer;margin-bottom:16px;}
+.selected-case-info{background:#0d1b3e;border-radius:10px;padding:12px;margin-bottom:16px;}
+.selected-case-name{font-size:15px;font-weight:bold;color:#64b5f6;}
+.selected-case-sub{font-size:12px;color:#90a4ae;margin-top:3px;}
+.cat-btns{display:flex;flex-direction:column;gap:10px;}
+.cat-btn{width:100%;padding:18px;font-size:16px;font-weight:bold;border:none;border-radius:12px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all 0.2s;}
+.cat-btn:active{transform:scale(0.98);}
+.cat-btn.incoming{background:linear-gradient(135deg,#1565c0,#1976d2);color:white;}
+.cat-btn.work{background:linear-gradient(135deg,#6a1b9a,#8e24aa);color:white;}
+.cat-btn.done{background:linear-gradient(135deg,#1b5e20,#2e7d32);color:white;}
+.cat-btn .cat-count{margin-left:auto;background:rgba(255,255,255,0.25);border-radius:12px;padding:2px 10px;font-size:13px;}
+
+/* 撮影画面 */
+.shoot-screen{display:none;}
+.session-info{background:#0d1b3e;padding:12px 16px;border-bottom:1px solid #2a3a5e;}
+.session-info .label{font-size:10px;color:#90a4ae;margin-bottom:2px;}
+.session-info .value{font-size:14px;font-weight:bold;color:#64b5f6;}
+.category-tabs{display:flex;background:#0d1b3e;border-bottom:2px solid #1565c0;}
+.cat-tab{flex:1;padding:12px 6px;text-align:center;font-size:11px;font-weight:bold;cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s;}
+.cat-tab.active{color:#64b5f6;border-bottom-color:#2196f3;background:#1a2a4e;}
+.cat-tab .cnt{display:inline-block;background:#e53935;color:white;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:3px;}
+.cat-tab.active .cnt{background:#2196f3;}
+.upload-area{padding:16px;}
+.shoot-btn{width:100%;padding:18px;font-size:16px;font-weight:bold;border:none;border-radius:14px;cursor:pointer;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:10px;}
+.shoot-btn.camera{background:linear-gradient(135deg,#1565c0,#2196f3);color:white;}
+.shoot-btn.gallery{background:linear-gradient(135deg,#1a237e,#3949ab);color:white;line-height:1.4;}
+.shoot-btn:active{opacity:0.8;transform:scale(0.98);}
+input[type=file]{display:none;}
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;}
+.photo-item{position:relative;aspect-ratio:4/3;border-radius:8px;overflow:hidden;border:2px solid #1565c0;}
+.photo-item img{width:100%;height:100%;object-fit:cover;}
+.photo-item .del-btn{position:absolute;top:3px;right:3px;background:rgba(229,57,53,0.9);color:white;border:none;border-radius:50%;width:22px;height:22px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.photo-count{font-size:11px;color:#90a4ae;margin-bottom:8px;}
+.status{text-align:center;padding:8px;font-size:12px;border-radius:8px;margin-bottom:8px;display:none;}
+.status.show{display:block;}
+.status.loading{background:#1565c0;color:white;}
+.status.success{background:#2e7d32;color:white;}
+.status.error{background:#c62828;color:white;}
+.empty-msg{text-align:center;padding:30px 16px;color:#546e7a;font-size:13px;}
+.empty-msg .icon{font-size:48px;margin-bottom:10px;}
+.submit-area{position:fixed;bottom:0;left:0;right:0;background:#0d1b3e;padding:12px 16px;border-top:1px solid #1565c0;}
+.submit-btn{width:100%;padding:16px;font-size:16px;font-weight:bold;border:none;border-radius:12px;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;cursor:pointer;}
+.submit-btn:disabled{background:#37474f;color:#78909c;}
+.submit-btn:active{opacity:0.8;}
+.done-screen{display:none;text-align:center;padding:40px 20px;}
+.done-screen .icon{font-size:72px;margin-bottom:16px;}
+.done-screen h2{font-size:22px;font-weight:bold;color:#64b5f6;margin-bottom:8px;}
+.done-screen p{font-size:13px;color:#90a4ae;line-height:1.6;}
+.pb{padding-bottom:80px;}
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div class="header-left">
-    <div>
-      <div class="header-logo">📷 フォーラムオート</div>
-      <div class="header-sub">受付時写真撮影</div>
+  <div>
+    <div class="header-logo">📷 フォーラムオート</div>
+    <div class="header-sub" id="headerSub">写真撮影システム</div>
+  </div>
+</div>
+
+<!-- ★ 画面1: 案件選択（URLパラメータなしのとき） -->
+<div id="caseSelectScreen" class="case-select-screen" style="display:none;">
+  <div class="case-select-title">📋 案件を選択してください</div>
+  <div id="caseListArea" class="case-list">
+    <div class="loading-msg">🔄 案件を読み込み中...</div>
+  </div>
+</div>
+
+<!-- ★ 画面2: カテゴリ選択 -->
+<div id="catSelectScreen" class="cat-select-screen">
+  <button class="back-btn" id="backBtn" onclick="goBack()">← 戻る</button>
+  <div class="selected-case-info">
+    <div class="selected-case-name" id="selectedCaseName">---</div>
+    <div class="selected-case-sub" id="selectedCaseSub">---</div>
+  </div>
+  <div style="font-size:13px;color:#90a4ae;margin-bottom:12px;">撮影カテゴリを選んでください</div>
+  <div class="cat-btns">
+    <button class="cat-btn incoming" onclick="selectCat('photoIncoming')">
+      <span>📥</span><span>入庫時の写真</span>
+      <span class="cat-count" id="cc-photoIncoming">0枚</span>
+    </button>
+    <button class="cat-btn work" onclick="selectCat('photoWork')">
+      <span>🔧</span><span>作業中の写真</span>
+      <span class="cat-count" id="cc-photoWork">0枚</span>
+    </button>
+    <button class="cat-btn done" onclick="selectCat('photoDone')">
+      <span>✅</span><span>完成写真</span>
+      <span class="cat-count" id="cc-photoDone">0枚</span>
+    </button>
+  </div>
+</div>
+
+<!-- 画面3: 撮影画面（既存） -->
+<div class="shoot-screen" id="shootScreen">
+  <div class="session-info">
+    <div class="label">お客様</div>
+    <div class="value" id="customerName">---</div>
+    <div style="font-size:11px;color:#64b5f6;margin-top:2px;" id="carInfo"></div>
+    <div style="font-size:10px;color:#546e7a;margin-top:2px;" id="categoryLabel"></div>
+  </div>
+  <div class="category-tabs">
+    <div class="cat-tab" id="tab-photoIncoming" onclick="switchCat('photoIncoming',this)">入庫時<span class="cnt" id="cnt-photoIncoming">0</span></div>
+    <div class="cat-tab" id="tab-photoWork" onclick="switchCat('photoWork',this)">作業中<span class="cnt" id="cnt-photoWork">0</span></div>
+    <div class="cat-tab" id="tab-photoDone" onclick="switchCat('photoDone',this)">完成<span class="cnt" id="cnt-photoDone">0</span></div>
+  </div>
+  <div class="upload-area pb">
+    <div class="status" id="status"></div>
+    <div id="materialAdjustArea" style="display:none;background:#0d1b3e;border:1.5px solid #2e7d32;border-radius:10px;padding:12px;margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:bold;color:#81c784;margin-bottom:6px;">💴 材料費の調整（任意）</div>
+      <div style="font-size:11px;color:#90a4ae;margin-bottom:8px;">見積の材料費と実際の使用量が大きくズレた時だけ、差額を入力してください。通常は空欄でOKです。</div>
+      <input type="number" id="materialAdjustInput" placeholder="例: 8000 または -3000" style="width:100%;padding:10px;border-radius:8px;border:1px solid #2e7d32;background:#10204a;color:white;font-size:14px;">
     </div>
-  </div>
-  <a href="ダッシュボード.html" class="home-btn">🏠 ホームに戻る</a>
-</div>
-
-<div class="session-info" id="sessionInfo">
-  <div class="label">お客様</div>
-  <div class="value" id="customerName">読み込み中...</div>
-  <div style="font-size:11px;color:#64b5f6;margin-top:2px;" id="carInfo"></div>
-</div>
-
-<div class="category-tabs">
-  <div class="cat-tab" id="tab-photoIncoming" onclick="switchCat('photoIncoming',this)">
-    入庫時<span class="count" id="cnt-photoIncoming">0</span>
-  </div>
-  <div class="cat-tab" id="tab-photoWork" onclick="switchCat('photoWork',this)">
-    作業中<span class="count" id="cnt-photoWork">0</span>
-  </div>
-  <div class="cat-tab" id="tab-photoDone" onclick="switchCat('photoDone',this)">
-    完成<span class="count" id="cnt-photoDone">0</span>
+    <button class="shoot-btn camera" onclick="document.getElementById('cameraInput').click()">📷 カメラで今すぐ撮影</button>
+    <button class="shoot-btn gallery" onclick="document.getElementById('galleryInput').click()">🖼 スマホのアルバムから選択<br><span style="font-size:11px;font-weight:normal;opacity:0.85">保存済み写真も送れます</span></button>
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" multiple onchange="handleFiles(this.files)">
+    <input type="file" id="galleryInput" accept="image/*" multiple onchange="handleFiles(this.files)">
+    <div class="photo-count" id="photoCount"></div>
+    <div class="photo-grid" id="photoGrid"></div>
+    <div class="empty-msg" id="emptyMsg"><div class="icon">📸</div><div>上のボタンで写真を撮影してください</div></div>
   </div>
 </div>
 
-<div class="upload-area pb">
-  <div class="status" id="status"></div>
-  <button class="shoot-btn camera" onclick="document.getElementById('cameraInput').click()">
-    📷 カメラで今すぐ撮影
-  </button>
-  <button class="shoot-btn gallery" onclick="document.getElementById('galleryInput').click()">
-    🖼 スマホのアルバムから選択<br><span style="font-size:11px;font-weight:normal;opacity:0.85">保存済み写真も送れます</span>
-  </button>
-  <input type="file" id="cameraInput" accept="image/*" capture="environment" multiple onchange="handleFiles(this.files)">
-  <input type="file" id="galleryInput" accept="image/*" multiple onchange="handleFiles(this.files)">
-  <div class="photo-count" id="photoCount"></div>
-  <div class="photo-grid" id="photoGrid"></div>
-  <div class="empty-msg" id="emptyMsg">
-    <div class="icon">📸</div>
-    <div>上のボタンで写真を撮影してください</div>
-  </div>
-</div>
-
+<!-- 完了画面 -->
 <div class="done-screen" id="doneScreen">
   <div class="icon">✅</div>
   <h2>送信完了！</h2>
-  <p id="doneMsg">写真をPCの見積ソフトに送信しました。</p>
+  <p id="doneMsg">写真をクラウドに保存しました。見積書・お客様向け進捗ページに反映されます。</p>
   <p style="font-size:11px;color:#64b5f6;margin-top:8px;">続けて撮影・選択すると<br>これまでの写真も含めて再送信されます</p>
   <div style="margin-top:24px;display:flex;flex-direction:column;gap:12px;">
     <button onclick="continueShoot()" style="padding:16px;font-size:15px;font-weight:bold;border:none;border-radius:12px;background:linear-gradient(135deg,#1565c0,#2196f3);color:white;cursor:pointer;">📷 続けて追加する</button>
-    <button onclick="window.close()" style="padding:12px;font-size:13px;border:none;border-radius:12px;background:#37474f;color:white;cursor:pointer;">✕ 閉じる</button>
+    <button onclick="goToCaseSelect()" style="padding:12px;font-size:13px;border:none;border-radius:12px;background:#37474f;color:white;cursor:pointer;">📋 別の案件を選ぶ</button>
+    <button onclick="window.close()" style="padding:12px;font-size:13px;border:none;border-radius:12px;background:#1a1a2e;border:1px solid #546e7a;color:#90a4ae;cursor:pointer;">✕ 閉じる</button>
   </div>
 </div>
 
-<div class="submit-area" id="submitArea">
+<div class="submit-area" id="submitArea" style="display:none;">
   <div class="status" id="submitStatus"></div>
-  <button class="submit-btn" id="submitBtn" onclick="submitPhotos()" disabled>
-    PCに送信する（0枚）
-  </button>
+  <button class="submit-btn" id="submitBtn" onclick="submitPhotos()" disabled>保存する（0枚）</button>
 </div>
 
 <script>
@@ -124,23 +179,188 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 var params = new URLSearchParams(location.search);
 var sessionId = params.get('session');
 var estimateId = params.get('eid') || '';
-var customerName = params.get('name') || '（未設定）';
-var carInfo = params.get('car') || '';
+var estimateDbId = params.get('eidnum') || ''; // 数値ID（DB直書き込み用、わかれば優先利用）
+var customerNameParam = params.get('name') || '';
+var carInfoParam = params.get('car') || '';
 var initCat = params.get('cat') || 'photoIncoming';
 
 var photos = { photoIncoming:[], photoWork:[], photoDone:[] };
 var currentCat = initCat;
+var selectedCase = null; // 選択中の案件
 
-document.getElementById('customerName').textContent = decodeURIComponent(customerName);
-document.getElementById('carInfo').textContent = decodeURIComponent(carInfo);
+// =========================================================
+// 起動時の振り分け
+// =========================================================
+function init() {
+  if (sessionId) {
+    // QRコードから開いた → 直接撮影画面へ
+    document.getElementById('headerSub').textContent = 'QRコード撮影';
+    showShootScreen(
+      decodeURIComponent(customerNameParam),
+      decodeURIComponent(carInfoParam),
+      estimateId,
+      initCat
+    );
+  } else {
+    // 直接開いた → 案件選択画面へ
+    document.getElementById('headerSub').textContent = '案件を選んで撮影';
+    showCaseSelectScreen();
+  }
+}
+
+// =========================================================
+// 画面1: 案件選択
+// =========================================================
+function showCaseSelectScreen() {
+  document.getElementById('caseSelectScreen').style.display = 'block';
+  document.getElementById('catSelectScreen').style.display = 'none';
+  document.getElementById('shootScreen').style.display = 'none';
+  document.getElementById('submitArea').style.display = 'none';
+  document.getElementById('doneScreen').style.display = 'none';
+  loadCaseList();
+}
+
+async function loadCaseList() {
+  var area = document.getElementById('caseListArea');
+  area.innerHTML = '<div class="loading-msg">🔄 案件を読み込み中...</div>';
+  try {
+    var res = await fetch(
+      SUPABASE_URL + '/rest/v1/estimates'
+      + '?select=id,estimate_no,customer_name,car_name,plate,repair_status'
+      + '&repair_status=neq.完成&repair_status=neq.納車済&repair_status=neq.キャンセル'
+      + '&order=estimate_date.desc&limit=30',
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
+    );
+    var cases = res.ok ? await res.json() : [];
+    if (!cases.length) {
+      area.innerHTML = '<div class="loading-msg">進行中の案件がありません</div>';
+      return;
+    }
+    area.innerHTML = cases.map(function(c) {
+      var bc = getStatusBadge(c.repair_status || '');
+      return '<div class="case-row" onclick="selectCase(' + JSON.stringify(c).replace(/"/g,'&quot;') + ')">'
+        + '<div class="case-row-name">' + (c.customer_name || '---') + ' 様</div>'
+        + '<div class="case-row-sub">'
+        + '<span class="case-row-badge ' + bc + '">' + (c.repair_status || '受付') + '</span>'
+        + (c.car_name || '') + '　' + (c.plate || '')
+        + '</div>'
+        + '<div style="font-size:11px;color:#546e7a;margin-top:4px;">' + (c.estimate_no || '') + '</div>'
+        + '</div>';
+    }).join('');
+  } catch(e) {
+    area.innerHTML = '<div class="error-msg">読み込み失敗: ' + e.message + '</div>';
+  }
+}
+
+function getStatusBadge(s) {
+  if (s==='見積中') return 'b-blue';
+  if (s==='入庫中'||s==='作業待ち') return 'b-orange';
+  if (s==='板金中'||s==='鈑金中') return 'b-red';
+  if (s==='塗装中') return 'b-purple';
+  if (s==='完成') return 'b-green';
+  return 'b-gray';
+}
+
+function selectCase(c) {
+  selectedCase = c;
+  // ★ estimateIdを必ず更新（カテゴリ振り分けの基準になる）
+  estimateId = c.estimate_no || c.id || '';
+  estimateDbId = c.id || '';
+  sessionId = sessionId || ('manual_' + Date.now() + '_' + (estimateId||'').replace(/[^a-z0-9]/gi,''));
+  // 案件情報をセット
+  document.getElementById('selectedCaseName').textContent = (c.customer_name || '---') + ' 様';
+  document.getElementById('selectedCaseSub').textContent = (c.car_name || '') + '　' + (c.plate || '') + '　' + (c.estimate_no || '');
+  showCatSelectScreen();
+}
+
+// =========================================================
+// 画面2: カテゴリ選択
+// =========================================================
+function showCatSelectScreen() {
+  document.getElementById('caseSelectScreen').style.display = 'none';
+  document.getElementById('catSelectScreen').style.display = 'block';
+  document.getElementById('shootScreen').style.display = 'none';
+  document.getElementById('submitArea').style.display = 'none';
+  updateCatCounts();
+}
+
+function selectCat(cat) {
+  currentCat = cat;
+  if (selectedCase) {
+    sessionId = sessionId || ('manual_' + Date.now());
+    estimateId = selectedCase.estimate_no || '';
+    showShootScreen(
+      (selectedCase.customer_name || '') + ' 様',
+      (selectedCase.car_name || '') + ' ' + (selectedCase.plate || ''),
+      estimateId,
+      cat
+    );
+  }
+}
+
+function goBack() {
+  showCaseSelectScreen();
+}
+
+function goToCaseSelect() {
+  var done = document.getElementById('doneScreen');
+  done.style.display = 'none';
+  showCaseSelectScreen();
+}
+
+// =========================================================
+// 画面3: 撮影
+// =========================================================
+function showShootScreen(name, car, eid, cat) {
+  document.getElementById('caseSelectScreen').style.display = 'none';
+  document.getElementById('catSelectScreen').style.display = 'none';
+  document.getElementById('shootScreen').style.display = 'block';
+  document.getElementById('submitArea').style.display = 'block';
+  document.getElementById('doneScreen').style.display = 'none';
+
+  document.getElementById('customerName').textContent = name || '---';
+  document.getElementById('carInfo').textContent = car || '';
+
+  // カテゴリラベル
+  var catLabels = { photoIncoming:'入庫時', photoWork:'作業中', photoDone:'完成' };
+  document.getElementById('categoryLabel').textContent = '📸 撮影カテゴリ: ' + (catLabels[cat] || cat);
+
+  // タブをアクティブに
+  currentCat = cat;
+  document.querySelectorAll('.cat-tab').forEach(function(t){ t.classList.remove('active'); });
+  var activeTab = document.getElementById('tab-' + cat);
+  if (activeTab) activeTab.classList.add('active');
+  toggleMaterialAdjustArea(cat);
+
+  renderGrid();
+  updateCounts();
+}
+
+function toggleMaterialAdjustArea(cat) {
+  var area = document.getElementById('materialAdjustArea');
+  if (area) area.style.display = (cat === 'photoDone') ? 'block' : 'none';
+}
 
 function switchCat(cat, el) {
   currentCat = cat;
   document.querySelectorAll('.cat-tab').forEach(function(t){ t.classList.remove('active'); });
   el.classList.add('active');
+  var catLabels = { photoIncoming:'入庫時', photoWork:'作業中', photoDone:'完成' };
+  document.getElementById('categoryLabel').textContent = '📸 撮影カテゴリ: ' + catLabels[cat];
+  toggleMaterialAdjustArea(cat);
   renderGrid();
 }
 
+function updateCatCounts() {
+  ['photoIncoming','photoWork','photoDone'].forEach(function(cat) {
+    var el = document.getElementById('cc-' + cat);
+    if (el) el.textContent = photos[cat].length + '枚';
+  });
+}
+
+// =========================================================
+// 写真処理（既存のロジックを維持）
+// =========================================================
 function compressImage(file) {
   return new Promise(function(resolve, reject) {
     var reader = new FileReader();
@@ -187,7 +407,9 @@ async function handleFiles(files) {
   if(succeeded > 0) {
     showStatus('success', succeeded + '枚 追加しました');
     setTimeout(function(){ hideStatus(); }, 1500);
-    renderGrid(); updateCounts();
+    renderGrid();
+    updateCounts();
+    updateCatCounts();
   } else {
     showStatus('error', '写真の処理に失敗しました');
   }
@@ -198,17 +420,26 @@ function renderGrid() {
   var empty = document.getElementById('emptyMsg');
   var list = photos[currentCat];
   if(!list.length) {
-    grid.innerHTML = ''; empty.style.display = 'block';
+    grid.innerHTML = '';
+    empty.style.display = 'block';
   } else {
     empty.style.display = 'none';
     grid.innerHTML = list.map(function(src, i) {
-      return '<div class="photo-item"><img src="' + src + '"><button class="del-btn" onclick="deletePhoto(' + i + ')">×</button></div>';
+      return '<div class="photo-item">'
+        + '<img src="' + src + '">'
+        + '<button class="del-btn" onclick="deletePhoto(' + i + ')">×</button>'
+        + '</div>';
     }).join('');
   }
   updateSubmitBtn();
 }
 
-function deletePhoto(idx) { photos[currentCat].splice(idx, 1); renderGrid(); updateCounts(); }
+function deletePhoto(idx) {
+  photos[currentCat].splice(idx, 1);
+  renderGrid();
+  updateCounts();
+  updateCatCounts();
+}
 
 function updateCounts() {
   ['photoIncoming','photoWork','photoDone'].forEach(function(cat) {
@@ -222,88 +453,144 @@ function updateSubmitBtn() {
   var total = photos.photoIncoming.length + photos.photoWork.length + photos.photoDone.length;
   var btn = document.getElementById('submitBtn');
   btn.disabled = (total === 0);
-  btn.textContent = total > 0 ? 'PCに送信する（合計' + total + '枚）' : 'PCに送信する（0枚）';
+  btn.textContent = total > 0 ? '保存する（合計' + total + '枚）' : '保存する（0枚）';
 }
 
 function showStatus(type, msg) {
   var el = document.getElementById('status');
-  el.className = 'status show ' + type; el.textContent = msg;
+  el.className = 'status show ' + type;
+  el.textContent = msg;
 }
 function hideStatus() { document.getElementById('status').className = 'status'; }
+
+async function resolveEstimateDbId() {
+  if (estimateDbId) return estimateDbId;
+  if (!estimateId) return '';
+  try {
+    var r = await fetch(
+      SUPABASE_URL + '/rest/v1/estimates?estimate_no=eq.' + encodeURIComponent(estimateId) + '&select=id',
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
+    );
+    var rows = r.ok ? await r.json() : [];
+    if (rows.length) { estimateDbId = rows[0].id; return estimateDbId; }
+  } catch(e) { console.error('案件ID取得失敗:', e); }
+  return '';
+}
 
 async function submitPhotos() {
   var total = photos.photoIncoming.length + photos.photoWork.length + photos.photoDone.length;
   if(!total) return;
   var btn = document.getElementById('submitBtn');
-  btn.disabled = true; btn.textContent = '送信中...';
+  btn.disabled = true;
+  btn.textContent = '送信中...';
   var ss = document.getElementById('submitStatus');
-  ss.className = 'status show loading'; ss.textContent = '📤 接続確認中...';
+  ss.className = 'status show loading';
+  ss.textContent = '📤 案件を確認中...';
   try {
-    var testResp = await fetch(SUPABASE_URL + '/rest/v1/photo_sessions?limit=1', {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
-    });
-    if(!testResp.ok) throw new Error('接続エラー(' + testResp.status + ')');
-    ss.textContent = '📤 Supabaseに送信中...';
-    var sendSessionId = sessionId || ('manual_' + Date.now());
+    var dbId = await resolveEstimateDbId();
+    if (!dbId) throw new Error('案件IDが見つかりません。案件選択からやり直してください。');
+
+    ss.textContent = '📤 既存写真を確認中...';
     var existResp = await fetch(
-      SUPABASE_URL + '/rest/v1/photo_sessions?session_id=eq.' + encodeURIComponent(sendSessionId) + '&select=category,data_url',
-      {headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }}
+      SUPABASE_URL + '/rest/v1/estimate_photos?estimate_id=eq.' + dbId + '&select=category,sort_order,data_url',
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
     );
     var existRows = existResp.ok ? (await existResp.json()) : [];
     var existSet = {};
-    existRows.forEach(function(r){ existSet[r.category + '||' + r.data_url] = true; });
-    var rows = []; var sortIdx = existRows.length;
+    var maxSort = {photoIncoming:-1, photoWork:-1, photoDone:-1};
+    existRows.forEach(function(r){
+      existSet[r.category + '||' + r.data_url] = true;
+      if (r.sort_order > maxSort[r.category]) maxSort[r.category] = r.sort_order;
+    });
+
+    var rows = [];
     ['photoIncoming','photoWork','photoDone'].forEach(function(cat) {
       photos[cat].forEach(function(dataUrl) {
         if(!existSet[cat + '||' + dataUrl]) {
-          rows.push({ session_id: sendSessionId, estimate_id: estimateId, category: cat, data_url: dataUrl, sort_order: sortIdx++, uploaded_at: new Date().toISOString() });
+          maxSort[cat]++;
+          rows.push({
+            estimate_id: dbId,
+            estimate_no: estimateId || '',
+            category: cat,
+            data_url: dataUrl,
+            sort_order: maxSort[cat]
+          });
         }
       });
     });
-    if(rows.length === 0) {
-      ss.className = 'status show success'; ss.textContent = '✅ 既に全て送信済みです';
-      setTimeout(function() {
-        document.getElementById('doneMsg').textContent = '全ての写真が送信済みです';
-        document.getElementById('doneScreen').style.cssText = 'display:block;position:fixed;top:0;left:0;right:0;bottom:0;background:#1a1a2e;z-index:999;padding:40px 20px;';
-      }, 800);
-      btn.disabled = false; btn.textContent = 'PCに送信する（合計' + total + '枚）';
-      return;
+
+    if(rows.length > 0) {
+      for(var ri = 0; ri < rows.length; ri++){
+        ss.textContent = '📤 送信中 (' + (ri+1) + '/' + rows.length + ')...';
+        var resp = await fetch(SUPABASE_URL + '/rest/v1/estimate_photos', {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_KEY,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify(rows[ri])
+        });
+        if(!resp.ok) {
+          var errText = await resp.text();
+          throw new Error('送信失敗(' + (ri+1) + '枚目): ' + errText);
+        }
+      }
     }
-    ss.textContent = '📤 送信中 (0/' + rows.length + ')...';
-    for(var ri = 0; ri < rows.length; ri++){
-      ss.textContent = '📤 送信中 (' + (ri+1) + '/' + rows.length + ')...';
-      var resp = await fetch(SUPABASE_URL + '/rest/v1/photo_sessions', {
-        method: 'POST',
-        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-        body: JSON.stringify(rows[ri])
+
+    // ★ 完成写真タブで材料費調整額の入力があれば保存
+    var adjEl = document.getElementById('materialAdjustInput');
+    var adjVal = adjEl ? parseInt(adjEl.value, 10) : NaN;
+    if (!isNaN(adjVal) && adjVal !== 0) {
+      ss.textContent = '📤 材料費の調整額を保存中...';
+      var patchResp = await fetch(SUPABASE_URL + '/rest/v1/estimates?id=eq.' + dbId, {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ material_cost_adjustment: adjVal })
       });
-      if(!resp.ok) throw new Error('送信失敗(' + (ri+1) + '枚目) HTTP' + resp.status);
+      if (!patchResp.ok) console.error('材料費調整額の保存に失敗:', await patchResp.text());
+      adjEl.value = '';
     }
-    ss.className = 'status show success'; ss.textContent = '✅ ' + total + '枚 送信完了！';
-    setTimeout(function() {
-      document.getElementById('doneMsg').textContent = total + '枚 PCに送信しました！';
-      document.getElementById('doneScreen').style.cssText = 'display:block;position:fixed;top:0;left:0;right:0;bottom:0;background:#1a1a2e;z-index:999;padding:40px 20px;';
-    }, 800);
+
+    ss.className = 'status show success';
+    ss.textContent = rows.length > 0
+      ? '✅ ' + rows.length + '枚 送信完了！'
+      : '✅ 既に全て送信済みです';
+    setTimeout(showDoneScreen, 800);
   } catch(e) {
-    ss.className = 'status show error'; ss.textContent = '⚠ 送信失敗: ' + e.message;
-    btn.disabled = false; btn.textContent = 'PCに送信する（' + total + '枚）';
+    ss.className = 'status show error';
+    ss.textContent = '⚠ 送信失敗: ' + e.message;
+    btn.disabled = false;
+    btn.textContent = '保存する（' + total + '枚）';
   }
+}
+
+function showDoneScreen() {
+  var total = photos.photoIncoming.length + photos.photoWork.length + photos.photoDone.length;
+  document.getElementById('doneMsg').textContent = total + '枚 クラウドに保存しました！';
+  var done = document.getElementById('doneScreen');
+  done.style.cssText = 'display:block;position:fixed;top:0;left:0;right:0;bottom:0;background:#1a1a2e;z-index:999;padding:40px 20px;';
+  document.getElementById('submitArea').style.display = 'none';
 }
 
 function continueShoot() {
   var done = document.getElementById('doneScreen');
-  done.style.cssText = '';
+  done.style.cssText = 'display:none;';
+  document.getElementById('submitArea').style.display = 'block';
   var ss = document.getElementById('submitStatus');
   ss.className = 'status';
-  renderGrid(); updateCounts();
+  renderGrid();
+  updateCounts();
 }
 
-var initTabEl = document.getElementById('tab-' + initCat);
-if(initTabEl) {
-  document.querySelectorAll('.cat-tab').forEach(function(t){ t.classList.remove('active'); });
-  initTabEl.classList.add('active');
-}
-renderGrid(); updateCounts();
+// 起動
+init();
 </script>
 </body>
 </html>
