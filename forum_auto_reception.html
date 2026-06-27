@@ -859,9 +859,14 @@ async function processOCR(input) {
         method:'POST',
         headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},
         body:JSON.stringify({
-          message:'この自動車検査証（車検証）の画像から以下の情報をJSON形式のみで返してください。余分なテキストは不要です。{"owner_name":"所有者氏名","address":"住所","car_type":"車名","model":"型式","plate":"登録番号","vin":"車台番号","engine":"原動機型式","year":"初度登録年月"}',
-          image_base64:base64b.split(',')[1],
-          image_type:input.files[0].type||'image/jpeg'
+          max_tokens:1000,
+          messages:[{
+            role:'user',
+            content:[
+              {type:'image',source:{type:'base64',media_type:input.files[0].type||'image/jpeg',data:base64b.split(',')[1]}},
+              {type:'text',text:'この自動車検査証（車検証）の画像から以下の情報をJSON形式のみで返してください。余分なテキストは不要です。{"owner_name":"所有者氏名","address":"住所","car_type":"車名","model":"型式","plate":"登録番号","vin":"車台番号","engine":"原動機型式","year":"初度登録年月"}'}
+            ]
+          }]
         })
       });
       var dataB = await respB.json();
