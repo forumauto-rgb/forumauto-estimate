@@ -3421,7 +3421,7 @@ function renderCustomerPanel(){
             }).join('')
             +'<label style="display:flex;align-items:center;justify-content:center;width:64px;height:48px;border:2px dashed '+item.color+';border-radius:5px;cursor:pointer;font-size:9px;color:'+item.color+';font-weight:bold;flex-direction:column;gap:1px;">'
             +'<span style="font-size:16px;">📷</span><span>撮影/選択</span>'
-            +'<input type="file" accept="image/*" multiple style="display:none;" onchange="addPhotos(this,\''+item.cat+'\')">'
+            +'<input type="file" accept="image/*" style="display:none;" onchange="addPhotos(this,\''+item.cat+'\')">'
             +'</label>'
             +'<button onclick="showQRUpload(\''+item.cat+'\')" style="display:flex;align-items:center;justify-content:center;width:64px;height:48px;border:2px dashed #e65100;border-radius:5px;cursor:pointer;font-size:8px;color:#e65100;font-weight:bold;flex-direction:column;gap:1px;background:white;"><span style="font-size:16px;">📱</span><span>QR送信</span></button>'
             +'</div></div>';
@@ -3527,7 +3527,7 @@ function renderEstimate(){
           <span style="margin-left:auto;font-size:10px;color:#888;font-weight:normal;">左＝助手席　右＝運転席</span>
         </div>
         <div class="kw-wrap">
-          <input class="kw-input" placeholder="🔍 部位・作業名・工程名で検索..." value="${kw}" oninput="kw=this.value;var el=this;rIP();var inp=document.querySelector('.kw-input');if(inp){inp.value=kw;inp.focus();}">
+          <input class="kw-input" autocomplete="off" placeholder="🔍 部位・作業名・工程名で検索..." value="${kw}" oninput="kw=this.value;var el=this;rIP();var inp=document.querySelector('.kw-input');if(inp){inp.value=kw;inp.focus();}">
           ${kw?`<button class="btn btn-sm" onclick="kw='';rIP()" style="height:42px;padding:0 12px">✕ クリア</button>`:''}
         </div>
         ${kw?`<div style="font-size:11px;color:#888;margin-bottom:6px;padding:0 4px">「${kw}」の検索結果：<strong>${sr.length}件</strong></div>
@@ -3817,7 +3817,7 @@ function renderMaster(){
       h+='<td><input value="'+(c.insurance||'').replace(/"/g,'&quot;')+'" list="ins-list-'+i+'" oninput="cMaster['+i+'].insurance=this.value" placeholder="東京海上日動" style="width:110px"><datalist id="ins-list-'+i+'">'+INS_LIST.map(function(s){return'<option value="'+s+'">';}).join('')+'</datalist></td>';
       h+='<td><input value="'+(c.aj||'').replace(/"/g,'&quot;')+'" oninput="cMaster['+i+'].aj=this.value" placeholder="金指"></td>';
       h+='<td><input value="'+(c.memo||'').replace(/"/g,'&quot;')+'" oninput="cMaster['+i+'].memo=this.value"></td>';
-      h+='<td><button class="del-btn" onclick="if(confirm(\'削除?\')){{cMaster.splice('+i+',1);render()}}">✕</button></td>';
+      h+='<td><button class="del-btn" onclick="if(confirm(\'削除?\')){{cMaster.splice('+i+',1);localStorage.setItem(\'fa_c6\',JSON.stringify(cMaster));localStorage.setItem(\'fa_cMaster\',JSON.stringify(cMaster));render()}}">✕</button></td>';
       h+='</tr>';
     });
     h+='</tbody></table></div>';
@@ -3892,7 +3892,7 @@ function renderMaster(){
       PAINT_MASTERS.special.forEach(function(o){h+='<option value="'+o.name+'"'+((v.special||'なし')===o.name?' selected':'')+'>'+o.name+'(×'+o.val.toFixed(2)+')</option>';});
       h+='</select></td>';
       h+='<td><input value="'+(v.memo||'').replace(/"/g,'&quot;')+'" oninput="vMaster['+i+'].memo=this.value"></td>';
-      h+='<td><button class="del-btn" onclick="if(confirm(\'削除?\')){{vMaster.splice('+i+',1);render()}}">✕</button></td>';
+      h+='<td><button class="del-btn" onclick="if(confirm(\'削除?\')){{vMaster.splice('+i+',1);localStorage.setItem(\'fa_v6\',JSON.stringify(vMaster));localStorage.setItem(\'fa_vMaster\',JSON.stringify(vMaster));render()}}">✕</button></td>';
       h+='</tr>';
     });
     h+='</tbody></table></div>';
@@ -4653,23 +4653,23 @@ function renderPreview(){
     var row = pc[key] || {};
     var chk = row.check ? '■' : '□';
     return '<tr style="border-bottom:0.5px solid #ddd;">'
-      +'<td style="padding:4px 6px;font-size:9px;font-weight:bold;white-space:nowrap;">'+label+'</td>'
-      +'<td style="padding:4px 6px;font-size:9px;">'+checkLabel+'</td>'
-      +'<td style="padding:4px 6px;font-size:9px;text-align:center;" class="no-print">'
+      +'<td style="padding:6px 7px;font-size:10px;font-weight:bold;white-space:nowrap;">'+label+'</td>'
+      +'<td style="padding:6px 7px;font-size:10px;">'+checkLabel+'</td>'
+      +'<td style="padding:6px 7px;font-size:10px;text-align:center;" class="no-print">'
       +'<input type="checkbox"'+(row.check?' checked':'')
       +' onchange="if(!customer.processCheck)customer.processCheck={};if(!customer.processCheck.'+key+')customer.processCheck.'+key+'={};customer.processCheck.'+key+'.check=this.checked;render();">'
       +'</td>'
-      +'<td style="padding:4px 6px;font-size:9px;text-align:center;" class="print-only">'+chk+'</td>'
-      +'<td style="padding:4px 6px;font-size:9px;border-bottom:1px solid #999;min-width:80px;" class="no-print">'
-      +'<input type="text" value="'+(row.staff||'')+'" placeholder="署名" style="width:100%;font-size:9px;border:none;border-bottom:1px solid #ccc;"'
+      +'<td style="padding:6px 7px;font-size:10px;text-align:center;" class="print-only">'+chk+'</td>'
+      +'<td style="padding:6px 7px;font-size:10px;border-bottom:1px solid #999;min-width:90px;" class="no-print">'
+      +'<input type="text" value="'+(row.staff||'')+'" placeholder="署名" style="width:100%;font-size:10px;border:none;border-bottom:1px solid #ccc;"'
       +' oninput="if(!customer.processCheck)customer.processCheck={};if(!customer.processCheck.'+key+')customer.processCheck.'+key+'={};customer.processCheck.'+key+'.staff=this.value;">'
       +'</td>'
-      +'<td style="padding:4px 6px;font-size:9px;" class="print-only">'+(row.staff||'')+'</td>'
-      +'<td style="padding:4px 6px;font-size:9px;border-bottom:1px solid #999;min-width:70px;" class="no-print">'
-      +'<input type="date" value="'+(row.date||'')+'" style="width:100%;font-size:9px;border:none;border-bottom:1px solid #ccc;"'
+      +'<td style="padding:6px 7px;font-size:10px;" class="print-only">'+(row.staff||'')+'</td>'
+      +'<td style="padding:6px 7px;font-size:10px;border-bottom:1px solid #999;min-width:80px;" class="no-print">'
+      +'<input type="date" value="'+(row.date||'')+'" style="width:100%;font-size:10px;border:none;border-bottom:1px solid #ccc;"'
       +' oninput="if(!customer.processCheck)customer.processCheck={};if(!customer.processCheck.'+key+')customer.processCheck.'+key+'={};customer.processCheck.'+key+'.date=this.value;">'
       +'</td>'
-      +'<td style="padding:4px 6px;font-size:9px;" class="print-only">'+(row.date||'')+'</td>'
+      +'<td style="padding:6px 7px;font-size:10px;" class="print-only">'+(row.date||'')+'</td>'
       +'</tr>';
   }
 
@@ -4702,43 +4702,53 @@ function renderPreview(){
   var page3 = '<div class="ep-page-break" style="font-family:\'Helvetica Neue\',Arial,\'Hiragino Kaku Gothic ProN\',\'Meiryo\',sans-serif;padding:6mm 8mm;box-sizing:border-box;">'
 
     // タイトル
-    +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #1a3a6b;">'
-    +'<div style="font-size:15px;font-weight:bold;letter-spacing:2px;color:#1a3a6b;">総合修理管理表</div>'
-    +'<div style="font-size:9px;text-align:right;color:#666;">有限会社フォーラムオート<br>静岡県袋井市下山梨545<br>TEL: 0538-49-0632</div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;padding-bottom:5px;border-bottom:2px solid #1a3a6b;">'
+    +'<div style="font-size:16px;font-weight:bold;letter-spacing:2px;color:#1a3a6b;">総合修理管理表</div>'
+    +'<div style="font-size:10px;text-align:right;color:#666;line-height:1.7;">有限会社フォーラムオート<br>静岡県袋井市下山梨545　TEL: 0538-49-0632</div>'
     +'</div>'
 
     // 車両情報行
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">'
-    +'<div style="background:#f8f9ff;border:1px solid #c5cae9;border-radius:6px;padding:8px;">'
-    +'<div style="font-size:10px;font-weight:bold;color:#1a3a6b;margin-bottom:6px;border-bottom:1px solid #c5cae9;padding-bottom:3px;">【お客様・車両情報】</div>'
-    +'<table style="width:100%;font-size:9px;border-collapse:collapse;">'
-    +'<tr><td style="padding:2px 4px;color:#666;white-space:nowrap;">お客様氏名</td>'
-    +'<td style="padding:2px 4px;font-weight:bold;border-bottom:1px solid #ddd;" class="no-print"><input type="text" value="'+(customer.name||'')+'" style="width:100%;font-size:9px;border:none;" oninput="customer.name=this.value;"></td>'
-    +'<td style="padding:2px 4px;font-weight:bold;" class="print-only">'+(customer.name||'')+'</td></tr>'
-    +'<tr><td style="padding:2px 4px;color:#666;">連絡先</td>'
-    +'<td style="padding:2px 4px;border-bottom:1px solid #ddd;" class="no-print"><input type="text" value="'+(customer.tel||'')+'" placeholder="電話番号" style="width:100%;font-size:9px;border:none;" oninput="customer.tel=this.value;"></td>'
-    +'<td class="print-only" style="padding:2px 4px;">'+(customer.tel||'')+'</td></tr>'
-    +'<tr><td style="padding:2px 4px;color:#666;">車名</td>'
-    +'<td style="padding:2px 4px;border-bottom:1px solid #ddd;" class="no-print"><input type="text" value="'+(customer.car||'')+'" style="width:100%;font-size:9px;border:none;" oninput="customer.car=this.value;"></td>'
-    +'<td class="print-only" style="padding:2px 4px;">'+(customer.car||'')+'</td></tr>'
-    +'<tr><td style="padding:2px 4px;color:#666;">登録番号</td>'
-    +'<td style="padding:2px 4px;border-bottom:1px solid #ddd;" class="no-print"><input type="text" value="'+(customer.plate||'')+'" style="width:100%;font-size:9px;border:none;" oninput="customer.plate=this.value;"></td>'
-    +'<td class="print-only" style="padding:2px 4px;">'+(customer.plate||'')+'</td></tr>'
-    +'<tr><td style="padding:2px 4px;color:#666;">カラーコード</td>'
-    +'<td style="padding:2px 4px;border-bottom:1px solid #ddd;" class="no-print"><input type="text" value="'+(customer.colorCode||'')+'" placeholder="例: 040" style="width:100%;font-size:9px;border:none;" oninput="customer.colorCode=this.value;"></td>'
-    +'<td class="print-only" style="padding:2px 4px;">'+(customer.colorCode||'')+'</td></tr>'
-    +'<tr><td style="padding:2px 4px;color:#666;">トリム / 塗装種別</td>'
-    +'<td style="padding:2px 4px;border-bottom:1px solid #ddd;" class="no-print">'
-    +'<input type="text" value="'+(customer.trim||'')+'" placeholder="トリム" style="width:45%;font-size:9px;border:none;" oninput="customer.trim=this.value;">'
-    +' / <input type="text" value="'+(customer.paintType||'')+'" placeholder="種別" style="width:40%;font-size:9px;border:none;" oninput="customer.paintType=this.value;">'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">'
+    +'<div style="background:#f8f9ff;border:1px solid #c5cae9;border-radius:6px;padding:10px;">'
+    +'<div style="font-size:11px;font-weight:bold;color:#1a3a6b;margin-bottom:7px;border-bottom:1px solid #c5cae9;padding-bottom:4px;">【お客様・車両情報】</div>'
+    +'<table style="width:100%;font-size:10px;border-collapse:collapse;">'
+    +'<tr><td style="padding:3px 5px;color:#666;white-space:nowrap;width:90px;">お客様氏名</td>'
+    +'<td style="padding:3px 5px;font-weight:bold;border-bottom:1px solid #ddd;" class="no-print"><input type="text" value="'+(customer.name||'')+'" style="width:100%;font-size:10px;border:none;" oninput="customer.name=this.value;"></td>'
+    +'<td style="padding:3px 5px;font-weight:bold;" class="print-only">'+(customer.name||'')+'</td></tr>'
+    +'<tr><td style="padding:3px 5px;color:#666;">連絡先</td>'
+    +'<td style="padding:3px 5px;border-bottom:1px solid #ddd;" class="no-print"><input type="text" value="'+(customer.tel||'')+'" placeholder="電話番号" style="width:100%;font-size:10px;border:none;" oninput="customer.tel=this.value;"></td>'
+    +'<td class="print-only" style="padding:3px 5px;">'+(customer.tel||'')+'</td></tr>'
+    +'<tr><td style="padding:3px 5px;color:#666;">車名</td>'
+    +'<td style="padding:3px 5px;border-bottom:1px solid #ddd;" class="no-print"><input type="text" value="'+(customer.car||'')+'" style="width:100%;font-size:10px;border:none;" oninput="customer.car=this.value;"></td>'
+    +'<td class="print-only" style="padding:3px 5px;">'+(customer.car||'')+'</td></tr>'
+    +'<tr><td style="padding:3px 5px;color:#666;">登録番号</td>'
+    +'<td style="padding:3px 5px;border-bottom:1px solid #ddd;" class="no-print"><input type="text" value="'+(customer.plate||'')+'" style="width:100%;font-size:10px;border:none;" oninput="customer.plate=this.value;"></td>'
+    +'<td class="print-only" style="padding:3px 5px;">'+(customer.plate||'')+'</td></tr>'
+    +'<tr><td style="padding:3px 5px;color:#666;">カラーコード</td>'
+    +'<td style="padding:3px 5px;border-bottom:1px solid #ddd;" class="no-print"><input type="text" value="'+(customer.colorCode||'')+'" placeholder="例: 040" style="width:100%;font-size:10px;border:none;" oninput="customer.colorCode=this.value;"></td>'
+    +'<td class="print-only" style="padding:3px 5px;">'+(customer.colorCode||'')+'</td></tr>'
+    +'<tr><td style="padding:3px 5px;color:#666;">トリム / 塗装種別</td>'
+    +'<td style="padding:3px 5px;border-bottom:1px solid #ddd;" class="no-print">'
+    +'<input type="text" value="'+(customer.trim||'')+'" placeholder="トリム" style="width:45%;font-size:10px;border:none;" oninput="customer.trim=this.value;">'
+    +' / <input type="text" value="'+(customer.paintType||'')+'" placeholder="種別" style="width:40%;font-size:10px;border:none;" oninput="customer.paintType=this.value;">'
     +'</td>'
-    +'<td class="print-only" style="padding:2px 4px;">'+(customer.trim||'')+' / '+(customer.paintType||'')+'</td></tr>'
+    +'<td class="print-only" style="padding:3px 5px;">'+(customer.trim||'')+' / '+(customer.paintType||'')+'</td></tr>'
+    +(customer.repairType!=='own' && customer.ajCompany
+      ?'<tr><td style="padding:3px 5px;color:#666;">AJ鑑定会社</td>'
+      +'<td style="padding:3px 5px;border-bottom:1px solid #ddd;font-weight:bold;color:#1a3a6b;" class="no-print"><input type="text" value="'+(customer.ajCompany||'')+'" style="width:100%;font-size:10px;border:none;font-weight:bold;color:#1a3a6b;" oninput="customer.ajCompany=this.value;"></td>'
+      +'<td class="print-only" style="padding:3px 5px;font-weight:bold;color:#1a3a6b;">'+(customer.ajCompany||'')+'</td></tr>'
+      :'')
+    +(customer.repairType!=='own' && customer.ajStaff
+      ?'<tr><td style="padding:3px 5px;color:#666;">支払担当者</td>'
+      +'<td style="padding:3px 5px;border-bottom:1px solid #ddd;font-weight:bold;color:#1a3a6b;" class="no-print"><input type="text" value="'+(customer.ajStaff||'')+'" style="width:100%;font-size:10px;border:none;font-weight:bold;color:#1a3a6b;" oninput="customer.ajStaff=this.value;"></td>'
+      +'<td class="print-only" style="padding:3px 5px;font-weight:bold;color:#1a3a6b;">'+(customer.ajStaff||'')+'</td></tr>'
+      :'')
     +'</table></div>'
 
     // 写真チェックリスト
-    +'<div style="background:#f8f9ff;border:1px solid #c5cae9;border-radius:6px;padding:8px;">'
-    +'<div style="font-size:10px;font-weight:bold;color:#1a3a6b;margin-bottom:6px;border-bottom:1px solid #c5cae9;padding-bottom:3px;">【写真チェックリスト】</div>'
-    +'<table style="width:100%;font-size:9px;border-collapse:collapse;">'
+    +'<div style="background:#f8f9ff;border:1px solid #c5cae9;border-radius:6px;padding:10px;">'
+    +'<div style="font-size:11px;font-weight:bold;color:#1a3a6b;margin-bottom:7px;border-bottom:1px solid #c5cae9;padding-bottom:4px;">【写真チェックリスト】</div>'
+    +'<table style="width:100%;font-size:10px;border-collapse:collapse;">'
     +[
       ['zenkai','□ 全景（車全体）　写真No.'],
       ['kinsetsu','□ 近接（傷アップ）　写真No.'],
@@ -4747,42 +4757,42 @@ function renderPreview(){
       ['kansei','□ 完成後　写真No.']
     ].map(function(item){
       var key=item[0], label=item[1];
-      return '<tr><td style="padding:3px 4px;color:#333;">' + label + '</td>'
-        +'<td style="padding:3px 4px;" class="no-print">'
-        +'<input type="text" value="'+(pcl[key]||'')+'" style="width:60px;font-size:9px;border:none;border-bottom:1px solid #ccc;"'
+      return '<tr><td style="padding:4px 5px;color:#333;">' + label + '</td>'
+        +'<td style="padding:4px 5px;" class="no-print">'
+        +'<input type="text" value="'+(pcl[key]||'')+'" style="width:60px;font-size:10px;border:none;border-bottom:1px solid #ccc;"'
         +' oninput="if(!customer.photoCheckList)customer.photoCheckList={};customer.photoCheckList.'+key+'=this.value;">'
         +'</td>'
-        +'<td class="print-only" style="padding:3px 4px;border-bottom:1px solid #eee;">'+(pcl[key]||'')+'</td></tr>';
+        +'<td class="print-only" style="padding:4px 5px;border-bottom:1px solid #eee;">'+(pcl[key]||'')+'</td></tr>';
     }).join('')
     +'</table></div></div>'
 
     // 展開図
-    +'<div style="margin-bottom:8px;">'
-    +'<div style="font-size:10px;font-weight:bold;color:#1a3a6b;margin-bottom:4px;border-bottom:1px solid #c5cae9;padding-bottom:3px;">【展開図】<span style="font-size:8px;font-weight:normal;color:#888;" class="no-print">　タップで損傷箇所をマーク</span></div>'
-    +'<div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;">'
+    +'<div style="margin-bottom:10px;">'
+    +'<div style="font-size:11px;font-weight:bold;color:#1a3a6b;margin-bottom:5px;border-bottom:1px solid #c5cae9;padding-bottom:4px;">【展開図】<span style="font-size:9px;font-weight:normal;color:#888;" class="no-print">　タップで損傷箇所をマーク</span></div>'
+    +'<div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">'
     + diagramSVG
     +'<div style="flex:1;min-width:120px;">'
-    +'<div style="font-size:9px;color:#555;margin-bottom:4px;">損傷箇所リスト</div>'
-    +'<div id="damageList" style="font-size:9px;">'
-    +(dp.length===0?'<span style="font-size:9px;color:#aaa;">クリックでマーク追加</span>':dp.map(function(p,i){
-      return '<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;">'
-        +'<span style="background:#dc3232;color:white;border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:bold;">'+(i+1)+'</span>'
-        +'<input type="text" value="'+(p.label||'')+'" placeholder="部位・状態" style="font-size:9px;border:none;border-bottom:1px solid #ccc;flex:1;" oninput="customer.damagePoints['+i+'].label=this.value;">'
-        +'<button onclick="customer.damagePoints.splice('+i+',1);render();" style="font-size:9px;border:none;background:none;color:#e53935;cursor:pointer;">✕</button>'
+    +'<div style="font-size:10px;color:#555;margin-bottom:5px;">損傷箇所リスト</div>'
+    +'<div id="damageList" style="font-size:10px;">'
+    +(dp.length===0?'<span style="font-size:10px;color:#aaa;">クリックでマーク追加</span>':dp.map(function(p,i){
+      return '<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;">'
+        +'<span style="background:#dc3232;color:white;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;">'+(i+1)+'</span>'
+        +'<input type="text" value="'+(p.label||'')+'" placeholder="部位・状態" style="font-size:10px;border:none;border-bottom:1px solid #ccc;flex:1;" oninput="customer.damagePoints['+i+'].label=this.value;">'
+        +'<button onclick="customer.damagePoints.splice('+i+',1);render();" style="font-size:10px;border:none;background:none;color:#e53935;cursor:pointer;">✕</button>'
         +'</div>';
     }).join(''))
     +'</div></div></div></div>'
 
     // 工程品質管理チェック
-    +'<div style="margin-bottom:8px;">'
-    +'<div style="font-size:10px;font-weight:bold;color:#1a3a6b;margin-bottom:4px;border-bottom:1px solid #c5cae9;padding-bottom:3px;">【工程ごとの品質管理チェック】</div>'
-    +'<table style="width:100%;font-size:9px;border-collapse:collapse;border:1px solid #ddd;">'
+    +'<div style="margin-bottom:10px;">'
+    +'<div style="font-size:11px;font-weight:bold;color:#1a3a6b;margin-bottom:5px;border-bottom:1px solid #c5cae9;padding-bottom:4px;">【工程ごとの品質管理チェック】</div>'
+    +'<table style="width:100%;font-size:10px;border-collapse:collapse;border:1px solid #ddd;">'
     +'<thead><tr style="background:#1a3a6b;color:white;">'
-    +'<th style="padding:4px 6px;text-align:left;width:70px;">工程</th>'
-    +'<th style="padding:4px 6px;text-align:left;">チェック項目</th>'
-    +'<th style="padding:4px 6px;text-align:center;width:30px;">確認</th>'
-    +'<th style="padding:4px 6px;text-align:center;width:100px;">担当者署名</th>'
-    +'<th style="padding:4px 6px;text-align:center;width:80px;">日付</th>'
+    +'<th style="padding:5px 7px;text-align:left;width:70px;">工程</th>'
+    +'<th style="padding:5px 7px;text-align:left;">チェック項目</th>'
+    +'<th style="padding:5px 7px;text-align:center;width:35px;">確認</th>'
+    +'<th style="padding:5px 7px;text-align:center;width:110px;">担当者署名</th>'
+    +'<th style="padding:5px 7px;text-align:center;width:90px;">日付</th>'
     +'</tr></thead><tbody>'
     + pcRow('sakugyomae','作業前','車全体の損傷確認・修理箇所以外の傷記録・修理箇所付近の色差確認')
     + pcRow('bankin','板金工程','修正状態・形状確認')
@@ -4791,18 +4801,18 @@ function renderPreview(){
     + pcRow('noshamen','納車前','全体確認・清掃・保証書確認')
     +'</tbody></table></div>'
 
-    // 最終署名
-    +'<div style="background:#f8f9ff;border:1px solid #c5cae9;border-radius:6px;padding:8px;">'
-    +'<div style="font-size:10px;font-weight:bold;color:#1a3a6b;margin-bottom:6px;border-bottom:1px solid #c5cae9;padding-bottom:3px;">【最終署名】</div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
+    // 最終署名（大きめ）
+    +'<div style="background:#f8f9ff;border:1px solid #c5cae9;border-radius:6px;padding:10px;">'
+    +'<div style="font-size:11px;font-weight:bold;color:#1a3a6b;margin-bottom:8px;border-bottom:1px solid #c5cae9;padding-bottom:4px;">【最終署名】</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
     +[['uketsuke','受付担当'],['bankin','板金担当'],['toso','塗装担当'],['nosha','納車確認']].map(function(item){
       var key=item[0], label=item[1];
-      return '<div style="display:flex;align-items:center;gap:6px;">'
-        +'<span style="font-size:9px;color:#666;white-space:nowrap;width:60px;">'+label+'：</span>'
-        +'<div class="no-print" style="flex:1;border-bottom:1px solid #999;">'
-        +'<input type="text" value="'+(fs[key]||'')+'" style="width:100%;font-size:9px;border:none;" oninput="if(!customer.finalSign)customer.finalSign={};customer.finalSign.'+key+'=this.value;">'
+      return '<div style="display:flex;align-items:center;gap:8px;">'
+        +'<span style="font-size:10px;color:#666;white-space:nowrap;width:65px;">'+label+'：</span>'
+        +'<div class="no-print" style="flex:1;border-bottom:1.5px solid #999;min-height:22px;">'
+        +'<input type="text" value="'+(fs[key]||'')+'" style="width:100%;font-size:10px;border:none;" oninput="if(!customer.finalSign)customer.finalSign={};customer.finalSign.'+key+'=this.value;">'
         +'</div>'
-        +'<div class="print-only" style="flex:1;border-bottom:1px solid #999;font-size:9px;min-height:16px;">'+(fs[key]||'')+'</div>'
+        +'<div class="print-only" style="flex:1;border-bottom:1.5px solid #999;font-size:10px;min-height:22px;">'+(fs[key]||'')+'</div>'
         +'</div>';
     }).join('')
     +'</div></div>'
@@ -5057,14 +5067,14 @@ function showCL(){
   showMasterModal('customer','');
 }
 function renderCList(kw){
-  showMasterModal('customer',kw);
+  showMasterModal('customer', kw||'');
 }
 function showVL(){
   if(!vMaster.length){showNotify('車両マスターにデータがありません → マスター管理タブで登録してください');return;}
   showMasterModal('vehicle','');
 }
 function renderVList(kw){
-  showMasterModal('vehicle',kw);
+  showMasterModal('vehicle', kw||'');
 }
 
 function showMasterModal(type, kw){
@@ -5086,7 +5096,7 @@ function showMasterModal(type, kw){
   var modal=document.createElement('div');
   modal.id='__masterModal';
   modal.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding-top:80px;box-sizing:border-box;';
-  modal.innerHTML='<div style="background:white;border-radius:12px;width:90%;max-width:480px;max-height:70vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.25);">'    +'<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #eee;">'    +'<div style="font-size:14px;font-weight:bold;color:#1a3a6b;">'+(isCust?'👤 顧客を選択':'🚗 車両を選択')+'</div>'    +'<button onclick="document.getElementById(\'__masterModal\').remove()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#888;">✕</button>'    +'</div>'    +'<div style="padding:10px 14px;border-bottom:1px solid #eee;">'    +'<input id="masterSearchBox" type="text" placeholder="'+(isCust?'顧客名・電話で絞込...':'車種名・ナンバーで絞込...')+'" value="'+kw+'" oninput="showMasterModal(\''+type+'\',this.value)" style="width:100%;padding:8px 12px;font-size:13px;border:1.5px solid '+(isCust?'#c5cae9':'#c8e6c9')+';border-radius:8px;box-sizing:border-box;">'    +'</div>'    +'<div style="overflow-y:auto;flex:1;">'+rows+'</div>'    +'</div>';
+  modal.innerHTML='<div style="background:white;border-radius:12px;width:90%;max-width:480px;max-height:70vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.25);">'    +'<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #eee;">'    +'<div style="font-size:14px;font-weight:bold;color:#1a3a6b;">'+(isCust?'👤 顧客を選択':'🚗 車両を選択')+'</div>'    +'<button onclick="document.getElementById(\'__masterModal\').remove()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#888;">✕</button>'    +'</div>'    +'<div style="padding:10px 14px;border-bottom:1px solid #eee;">'    +'<input id="masterSearchBox" type="text" autocomplete="off" placeholder="'+(isCust?'顧客名・電話で絞込...':'車種名・ナンバーで絞込...')+'" value="'+kw+'" oninput="showMasterModal(\''+type+'\',this.value)" style="width:100%;padding:8px 12px;font-size:13px;border:1.5px solid '+(isCust?'#c5cae9':'#c8e6c9')+';border-radius:8px;box-sizing:border-box;">'    +'</div>'    +'<div style="overflow-y:auto;flex:1;">'+rows+'</div>'    +'</div>';
   modal.onclick=function(e){if(e.target===modal)modal.remove();};
   document.body.appendChild(modal);
   setTimeout(function(){var sb=document.getElementById('masterSearchBox');if(sb)sb.focus();},50);
@@ -6379,10 +6389,26 @@ function loadPhotoFromHistory(estNo){
 
 // ===== 写真取込後の自動クラウド保存 =====
 async function autoSavePhotosToCloud(){
-  // 見積番号がない場合はスキップ（保存後に自動紐付けされる）
-  if(!customer.no || !customer._estId){
-    showNotify('📷 写真を取込みました（見積保存後にクラウドへ自動送信されます）');
-    return;
+  // ★ _estIdがない場合は見積番号でIDを検索してから写真保存
+  if(!customer._estId){
+    if(!customer.no){
+      showNotify('📷 写真を取込みました（見積保存後にクラウドへ自動送信されます）');
+      return;
+    }
+    try {
+      var r = await fetch(SUPABASE_URL+'/rest/v1/estimates?estimate_no=eq.'+encodeURIComponent(customer.no)+'&select=id&limit=1',
+        {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+      var d = await r.json();
+      if(Array.isArray(d) && d[0] && d[0].id){
+        customer._estId = d[0].id;
+      } else {
+        showNotify('📷 写真を取込みました（見積保存後にクラウドへ自動送信されます）');
+        return;
+      }
+    } catch(e){
+      showNotify('📷 写真を取込みました（見積保存後にクラウドへ自動送信されます）');
+      return;
+    }
   }
   try {
     var cats = ['photoIncoming','photoWork','photoDone'];
@@ -6939,18 +6965,49 @@ function clearChatHistory(){ try{ localStorage.removeItem(AI_CHAT_HISTORY_KEY); 
 var qrPollTimer = null;
 var qrSessionId = null;
 
-function showQRUpload(targetCat){
+async function showQRUpload(targetCat){
   targetCat = targetCat || 'photoIncoming';
+  // ★ QR生成前に必ずSupabaseに保存してIDを確保
+  if(!customer._estId){
+    if(!customer.name){
+      showNotify('⚠ 顧客名を入力してからQRを生成してください');
+      return;
+    }
+    showNotify('📷 見積を保存してからQRを生成します...');
+    // saveEstimateを呼ぶ（Supabaseに保存してcustomer._estIdをセット）
+    try{
+      await saveEstimate();
+      // saveEstimate後にIDが取れているか確認
+      if(!customer._estId && customer.no){
+        var r=await fetch(SUPABASE_URL+'/rest/v1/estimates?estimate_no=eq.'+encodeURIComponent(customer.no)+'&select=id&limit=1',
+          {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+        var d=await r.json();
+        if(Array.isArray(d)&&d[0]&&d[0].id) customer._estId=d[0].id;
+      }
+    }catch(e){
+      showNotify('⚠ 見積保存に失敗しました。手動で保存後にQRを押してください');
+      return;
+    }
+    if(!customer._estId){
+      showNotify('⚠ 見積IDが取得できません。一度保存ボタンを押してから再度QRを押してください');
+      return;
+    }
+    showNotify('✅ 保存完了。QRを生成します');
+  }
   // セッションIDを生成
   qrSessionId = 'fa_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
   var name = encodeURIComponent(customer.name||'');
   var car  = encodeURIComponent((customer.car||'') + ' ' + (customer.plate||''));
+  // ★ eidにはestimate_no（見積番号）を渡す（photo_upload.htmlが番号で検索）
   var eid  = encodeURIComponent(customer.no||'');
+  // ★ eidnum（DB UUID）も渡す → photo_upload.htmlが直接使えて検索不要
+  var eidnum = encodeURIComponent(customer._estId||'');
   var uploadUrl = 'https://forumauto-rgb.github.io/forumauto-estimate/photo_upload.html'
     + '?session=' + qrSessionId
     + '&name=' + name
     + '&car=' + car
     + '&eid=' + eid
+    + '&eidnum=' + eidnum
     + '&cat=' + encodeURIComponent(targetCat);
 
   // モーダル表示
@@ -6993,27 +7050,37 @@ var qrLastReceivedCount = 0; // 前回受信枚数を記録
 async function pollQRPhotos(){
   if(!qrSessionId) return;
   try{
-    // ★ estimate_idで絞り込む（session_idが変わっても正確に取得）
+    // ★ photo_upload.htmlはestimate_photosテーブルに保存するのでそちらを監視
+    var estId = customer._estId || '';
     var estNo = customer.no || '';
-    var filterUrl = '';
-    if(estNo){
-      // estimate_idがある場合はそちらを優先（最も正確）
-      filterUrl = SUPABASE_URL + '/rest/v1/photo_sessions?estimate_id=eq.' + encodeURIComponent(estNo) + '&select=id,session_id,category,data_url&order=id.asc';
-    } else {
-      // estimate_idがない場合はsession_idで検索
-      filterUrl = SUPABASE_URL + '/rest/v1/photo_sessions?session_id=eq.' + encodeURIComponent(qrSessionId) + '&select=id,session_id,category,data_url&order=id.asc';
-    }
-    var resp = await fetch(filterUrl, {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
-    if(!resp.ok) return;
-    var rows = await resp.json();
+    var rows = [];
 
-    // estimate_idで取れなかった場合のフォールバック（session_id検索）
-    if((!rows || !rows.length) && estNo){
-      var resp2 = await fetch(
-        SUPABASE_URL + '/rest/v1/photo_sessions?session_id=eq.' + encodeURIComponent(qrSessionId) + '&select=id,session_id,category,data_url&order=id.asc',
+    if(estId){
+      // UUIDで直接検索（最も正確）
+      var resp = await fetch(
+        SUPABASE_URL + '/rest/v1/estimate_photos?estimate_id=eq.' + encodeURIComponent(estId)
+        + '&select=id,category,data_url&order=id.asc',
         {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
       );
-      if(resp2.ok) rows = await resp2.json();
+      if(resp.ok) rows = await resp.json();
+    } else if(estNo){
+      // 見積番号でestimate_idを取得してから検索
+      var rNo = await fetch(
+        SUPABASE_URL + '/rest/v1/estimates?estimate_no=eq.' + encodeURIComponent(estNo) + '&select=id&limit=1',
+        {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
+      );
+      if(rNo.ok){
+        var dNo = await rNo.json();
+        if(Array.isArray(dNo) && dNo[0] && dNo[0].id){
+          customer._estId = dNo[0].id;
+          var resp2 = await fetch(
+            SUPABASE_URL + '/rest/v1/estimate_photos?estimate_id=eq.' + encodeURIComponent(customer._estId)
+            + '&select=id,category,data_url&order=id.asc',
+            {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
+          );
+          if(resp2.ok) rows = await resp2.json();
+        }
+      }
     }
 
     if(!rows || !rows.length) return;
@@ -7215,7 +7282,10 @@ function closeQRModal(){
 }
 var aiChatHistory = loadChatHistory();
 var aiChatLoading = false;
-var aiChatProposals = null;
+// ★ 提案をlocalStorageから復元（見積タブから戻っても消えない）
+var aiChatProposals = (function(){
+  try{ var s=localStorage.getItem('fa_ai_proposals'); return s?JSON.parse(s):null; }catch(e){ return null; }
+})();
 var aiChatCheckedItems = {};
 
 
@@ -7520,19 +7590,31 @@ async function aiChatCallAPI(){
     + '【アジャスター対応の本質】'
     + 'アジャスターは会社ルールと現場の板挟み。「敵」でなく「救済する相手」。完璧な証拠と論理を提供し、彼らが会社へ報告しやすいレポートを書けるよう支援する。圧力でなく友好的な問題解決提案で、アジャスター自身のSOSをこちらへ向けさせる。'
     + '【約款・法規の根拠】保険法21条（算定根拠の開示義務）・消費者基本法5条（事業者の情報提供義務）を根拠に正当な権利主張を行う。'
-    + '【最重要ルール】'
-    + '1.ユーザーが損傷内容・作業内容を述べたら追加質問なしに即座に作業リストをJSON提案してください。'
-    + '2.同じ質問を2回繰り返さないでください。'
-    + '3.会話履歴に既にある情報は再度聞かないでください。'
-    + '4.「リヤーバンパー交換」「2色塗装」など作業が明確な場合は即提案。'
-    + '5.不明点は提案後に1つだけ質問。提案前に質問しないこと。'
-    + '【提案フォーマット】必ず以下のJSONを返してください：'
-    + '```json\n{"ready":true,"summary":"一言まとめ","comment":"補足","tasks":[{"name":"作業名","process":"工程名","tag":"タグ","hours":時間数,"reason":"理由15字以内"}]}\n```'
+    + '【最重要ルール — 必ず守ること】'
+    + '1.部位名・作業内容・損傷程度のいずれかが分かれば即座にJSON提案。絶対に質問を先にしない。'
+    + '2.会話履歴に既にある情報は絶対に再質問しない。'
+    + '3.提案後に追加質問が必要な場合はcommentフィールドに1つだけ記載。'
+    + '4.作業が明確な場合（例：リヤーバンパー交換・2色塗装）は100%即提案。'
+    + '5.情報が全くゼロの場合のみ{"ready":false}で損傷部位を1つ質問。'
+    + '【整合性の必須チェック — 提案前に必ず確認】'
+    + '塗装工程がある場合：①下地処理（中）②養生（中）③ブース使用④焼付乾燥 を必ずセットで追加。'
+    + '取外しがある場合：必ず対応する取付を追加。'
+    + 'バンパー塗装の場合：バンパー塗装＋下地処理（中）＋養生（中）＋ブース使用＋焼付乾燥＋磨き肌調整を必ずセット。'
+    + '【難易度塗料の自動判定 — 必須】'
+    + '以下のカラーコードが車両情報にある場合、commentに必ず割増警告を記載：'
+    + 'MAZDA 46G/51K → 3コート特殊塗装・難易度S・割増30%推奨'
+    + 'MAZDA 41V/46V → パールホワイト・難易度A・割増15%推奨'
+    + 'Lexus 8X9 → 白ゴールドマイカ4コート・難易度S・割増40%推奨'
+    + 'Toyota 070 → スーパーホワイト・難易度B・標準'
+    + 'Nissan KAB → ブリリアントシルバー・難易度B・標準'
+    + 'Mercedes Magno/BMW Frozen → マット塗装・難易度S・割増50%推奨・通常ポリッシャー使用禁止'
+    + '【提案フォーマット】必ず以下のJSONのみ返してください（前後に説明文不要）：'
+    + '```json\n{"ready":true,"summary":"一言まとめ（20字以内）","comment":"補足・難易度警告・追加質問があればここに","tasks":[{"name":"作業名","process":"工程名","tag":"タグ","hours":時間数,"reason":"理由15字以内（省略禁止）"}]}\n```'
     + 'タグ：remove/body/paint/booth/replace/attach/confirm/other'
-    + '工程：取外し、脱着、修正、修理、交換、パネル塗装、バンパー塗装、下地処理（中）、養生（中）、使用、乾燥、磨き肌調整、取付、確認、エーミング、清掃'
-    + '【2色塗装】各色のバンパー塗装を別行で追加・養生（中）必須。'
-    + '【色なし部品】塗装工程不要・取外し交換取付のみ。'
-    + '情報が全くない場合のみ{"ready":false}で損傷箇所を1つ質問。返答は日本語で簡潔に。'
+    + '工程（この中から選択）：取外し、脱着、修正、修理、交換、パネル塗装、バンパー塗装、下地処理（中）、養生（中）、使用、乾燥、磨き肌調整、取付、確認、エーミング、清掃'
+    + '【2色塗装】各色のバンパー塗装を別行・養生（中）必須・ブース使用2回。'
+    + '【色なし部品（黒バンパー等）】塗装工程不要・取外し交換取付のみ。'
+    + '【reason必須】全作業に15字以内の理由を必ず記載。省略した場合は再提案すること。'
 
     + '【工数マスターデータ（必ずこの数値を使用すること・推測禁止）】\n部位名|工程名|標準工数\nABSセンサー|交換|1h\nABSセンサー|取外し|0.4h\nABSセンサー|修理|1.5h\nABSセンサー|処理|0.1h\nABSセンサー|取付|0.5h\nエアコン|交換|1h\nエアコン|取外し|0.4h\nエアコン|処理|0.1h\nエアコン|取付|0.5h\nエアコン|調整|1.5h\nエンジン|交換|1h\nエンジン|取外し|0.5h\nエンジン|処理|0.2h\nエンジン|修理|1h\nエンジン|修正|1.5h\nエンジン|確認|0.3h\nエンジン|取付|0.5h\nエンドパネル（バックパネル）|交換|6h\nエンドパネル（バックパネル）|取外し|3h\nエンドパネル（バックパネル）|取外し|0.2h\nエンドパネル（バックパネル）|修理|4h\nエンドパネル（バックパネル）|下地処理（少）|0.5h\nエンドパネル（バックパネル）|下地処理（中）|2.5h\nエンドパネル（バックパネル）|下地処理（大）|3.5h\nエンドパネル（バックパネル）|パネル塗装|3h\nエンドパネル（バックパネル）|ぼかし塗装|2h\nエンドパネル（バックパネル）|裏面塗装|2h\nエンドパネル（バックパネル）|磨き肌調整|0.5h\nエンドパネル（バックパネル）|取付|3h\nエンドパネル（バックパネル）|取付|0.2h\nゲート（バックドア）|交換|1.5h\nゲート（バックドア）|取外し|0.6h\nゲート（バックドア）|取外し|0.7h\nゲート（バックドア）|取外し|0.4h\nゲート（バックドア）|修理|1.5h\nゲート（バックドア）|処理|0.3h\nゲート（バックドア）|下地処理（少）|1.5h\nゲート（バックドア）|下地処理（中）|2.5h\nゲート（バックドア）|下地処理（大）|3.5h\nゲート（バックドア）|パネル塗装|4h\nゲート（バックドア）|ぼかし塗装|3h\nゲート（バックドア）|裏面塗装|2h\nゲート（バックドア）|磨き肌調整|1h\nゲート（バックドア）|取付|0.9h\nゲート（バックドア）|取付|0.9h\nゲート（バックドア）|取付|0.5h\nゲート（バックドア）|調整|0.6h\nサイドステップ（右）|交換|5h\nサイドステップ（右）|取外し|0.1h\nサイドステップ（右）|取外し|5h\nサイドステップ（右）|修理|3h\nサイドステップ（右）|処理|0.1h\nサイドステップ（右）|下地処理（少）|1h\nサイドステップ（右）|下地処理（中）|2h\nサイドステップ（右）|下地処理（大）|3h\nサイドステップ（右）|パネル塗装|3.5h\nサイドステップ（右）|ぼかし塗装|2h\nサイドステップ（右）|裏面塗装|0.5h\nサイドステップ（右）|磨き肌調整|0.5h\nサイドステップ（右）|取付|0.1h\nサイドステップ（右）|取付|3h\nサイドステップ（左）|交換|5h\nサイドステップ（左）|取外し|0.1h\nサイドステップ（左）|取外し|5h\nサイドステップ（左）|修理|3h\nサイドステップ（左）|処理|0.1h\nサイドステップ（左）|下地処理（少）|1h\nサイドステップ（左）|下地処理（中）|2h\nサイドステップ（左）|下地処理（大）|3h\nサイドステップ（左）|パネル塗装|3.5h\nサイドステップ（左）|ぼかし塗装|2h\nサイドステップ（左）|裏面塗装|0.5h\nサイドステップ（左）|磨き肌調整|0.5h\nサイドステップ（左）|取付|0.1h\nサイドステップ（左）|取付|3h\nセンターコンソール|交換|1h\nセンターコンソール|取外し|0.5h\nセンターコンソール|処理|0.2h\nセンターコンソール|修理|1h\nセンターコンソール|修正|1.5h\nセンターコンソール|確認|0.3h\nセンターコンソール|取付|0.5h\nタイヤ|交換|1h\nタイヤ|交換|0.3h\nタイヤ|取外し|0.4h\nタイヤ|取外し|0.2h\nタイヤ|修理|1.5h\nタイヤ|処理|0.1h\nタイヤ|取付|0.5h\nタイヤ|取付|0.2h\nタイヤ|交換|1h\nタイヤ|交換|1.3h\nタイヤハウス（右）|交換|5h\nタイヤハウス（右）|取外し|3h\nタイヤハウス（右）|修理|1.5h\nタイヤハウス（右）|取付|2h\nタイヤハウス（左）|交換|5h\nタイヤハウス（左）|取外し|3h\nタイヤハウス（左）|修理|1.5h\nタイヤハウス（左）|取付|2h\nテール（右）|交換|0.9h\nテール（右）|取外し|0.4h\nテール（右）|修理|1.5h\nテール（右）|処理|0.2h\nテール（右）|取付|0.5h\nテール（左）|交換|0.9h\nテール（左）|取外し|0.4h\nテール（左）|修理|1.5h\nテール（左）|処理|0.2h\nテール（左）|取付|0.5h\nドアガラス（右）|交換|0.3h\nドアガラス（右）|取外し|0.2h\nドアガラス（右）|処理|0.3h\nドアガラス（右）|取付|0.2h\nドアガラス（右）|調整|0.3h\nドアガラス（左）|交換|0.3h\nドアガラス（左）|取外し|0.2h\nドアガラス（左）|処理|0.3h\nドアガラス（左）|取付|0.2h\nドアガラス（左）|調整|0.3h\nナンバープレート|交換|1h\nナンバープレート|取外し|0.4h\nナンバープレート|取付|0.5h\nフェンダーエプロン（右）|交換|7h\nフェンダーエプロン（右）|取外し|4h\nフェンダーエプロン（右）|取外し|4h\nフェンダーエプロン（右）|取外し|4h\nフェンダーエプロン（右）|修理|3h\nフェンダーエプロン（右）|取付|4h\nフェンダーエプロン（右）|取付|4h\nフェンダーエプロン（右）|取付|4h\nフェンダーエプロン（左）|交換|7h\nフェンダーエプロン（左）|取外し|4h\nフェンダーエプロン（左）|取外し|4h\nフェンダーエプロン（左）|取外し|4h\nフェンダーエプロン（左）|修理|3h\nフェンダーエプロン（左）|取付|4h\nフェンダーエプロン（左）|取付|4h\nフェンダーエプロン（左）|取付|4h\nフロントガラス|交換|3.2h\nフロントガラス|取外し|1.5h\nフロントガラス|修理|1.5h\nフロントガラス|処理|0.1h\nフロントガラス|取付|2h\nフロントコーナーパネル（右）|交換|0.5h\nフロントコーナーパネル（右）|取外し|0.3h\nフロントコーナーパネル（右）|修理|0.5h\nフロントコーナーパネル（右）|下地処理（少）|0.5h\nフロントコーナーパネル（右）|下地処理（中）|0.8h\nフロントコーナーパネル（右）|下地処理（大）|1.2h\nフロントコーナーパネル（右）|パネル塗装|1.5h\nフロントコーナーパネル（右）|ぼかし塗装|1h\nフロントコーナーパネル（右）|裏面塗装|0.5h\nフロントコーナーパネル（右）|磨き肌調整|0.5h\nフロントコーナーパネル（右）|取付|0.2h\nフロントコーナーパネル（左）|交換|0.5h\nフロントコーナーパネル（左）|取外し|0.3h\nフロントコーナーパネル（左）|修理|0.5h\nフロントコーナーパネル（左）|下地処理（少）|0.5h\nフロントコーナーパネル（左）|下地処理（中）|0.8h\nフロントコーナーパネル（左）|下地処理（大）|1.2h\nフロントコーナーパネル（左）|パネル塗装|1.5h\nフロントコーナーパネル（左）|ぼかし塗装|1h\nフロントコーナーパネル（左）|裏面塗装|0.5h\nフロントコーナーパネル（左）|磨き肌調整|0.5h\nフロントコーナーパネル（左）|取付|0.2h\nフロントサイドメンバー（右）|交換|7.5h\nフロントサイドメンバー（右）|取外し|4h\nフロントサイドメンバー（右）|取外し|4h\nフロントサイドメンバー（右）|修理|3h\nフロントサイドメンバー（右）|取付|4h\nフロントサイドメンバー（右）|取付|4h\nフロントサイドメンバー（左）|交換|7.5h\nフロントサイドメンバー（左）|取外し|4h\nフロントサイドメンバー（左）|取外し|4h\nフロントサイドメンバー（左）|修理|3h\nフロントサイドメンバー（左）|取付|4h\nフロントサイドメンバー（左）|取付|4h\nフロントシート（右）|交換|1h\nフロントシート（右）|取外し|0.4h\nフロントシート（右）|処理|0.3h\nフロントシート（右）|取付|0.5h\nフロントシート（左）|交換|1h\nフロントシート（左）|取外し|0.4h\nフロントシート（左）|処理|0.3h\nフロントシート（左）|取付|0.5h\nフロントドア（右）|交換|1.5h\nフロントドア（右）|取外し|0.8h\nフロントドア（右）|取外し|1h\nフロントドア（右）|取外し|0.8h\nフロントドア（右）|取外し|0.3h\nフロントドア（右）|取外し|0.3h\nフロントドア（右）|取外し|0.2h\nフロントドア（右）|修理|2h\nフロントドア（右）|処理|0.3h\nフロントドア（右）|下地処理（少）|1.5h\nフロントドア（右）|下地処理（中）|2.5h\nフロントドア（右）|下地処理（大）|3.5h\nフロントドア（右）|修正パネル塗装|2h\nフロントドア（右）|新品パネル塗装|3h\nフロントドア（右）|ぼかし塗装|2h\nフロントドア（右）|裏面塗装|2h\nフロントドア（右）|磨き肌調整|2h\nフロントドア（右）|取付|1.5h\nフロントドア（右）|取付|1.5h\nフロントドア（右）|取付|1h\nフロントドア（右）|取付|0.2h\nフロントドア（右）|取付|0.3h\nフロントドア（右）|取付|0.2h\nフロントドア（右）|調整|0.5h\nフロントドア（右）|交換|0.7h\nフロントドア（左）|交換|1.5h\nフロントドア（左）|取外し|0.8h\nフロントドア（左）|取外し|1h\nフロントドア（左）|取外し|0.8h\nフロントドア（左）|取外し|0.3h\nフロントドア（左）|取外し|0.3h\nフロントドア（左）|取外し|0.2h\nフロントドア（左）|修理|2h\nフロントドア（左）|処理|0.3h\nフロントドア（左）|下地処理（少）|1.5h\nフロントドア（左）|下地処理（中）|2.5h\nフロントドア（左）|下地処理（大）|3.5h\nフロントドア（左）|修正パネル塗装|2h\nフロントドア（左）|新品パネル塗装|3h\nフロントドア（左）|ぼかし塗装|2h\nフロントドア（左）|裏面塗装|2h\nフロントドア（左）|磨き肌調整|1h\nフロントドア（左）|取付|1.5h\nフロントドア（左）|取付|1.5h\nフロントドア（左）|取付|1h\nフロントドア（左）|取付|0.2h\nフロントドア（左）|取付|0.3h\nフロントドア（左）|取付|0.2h\nフロントドア（左）|調整|0.5h\nフロントドア（左）|交換|0.7h\nフロントバンパー|交換|1h\nフロントバンパー|取外し|0.4h\nフロントバンパー|取外し|0.6h\nフロントバンパー|取外し|0.5h\nフロントバンパー|取外し|0.4h\nフロントバンパー|取外し|0.2h\nフロントバンパー|取外し|0.3h\nフロントバンパー|修理|2h\nフロントバンパー|処理|0.2h\nフロントバンパー|下地処理（少）|1h\nフロントバンパー|下地処理（中）|1.5h\nフロントバンパー|下地処理（大）|1.8h\nフロントバンパー|バンパー塗装|3h\nフロントバンパー|ぼかし塗装|1h\nフロントバンパー|磨き肌調整|1h\nフロントバンパー|取付|0.6h\nフロントバンパー|取付|0.8h\nフロントバンパー|取付|0.5h\nフロントバンパー|取付|0.6h\nフロントバンパー|取付|0.2h\nフロントバンパー|取付|0.3h\nフロントフェンダー（右）|交換|1.2h\nフロントフェンダー（右）|取外し|0.5h\nフロントフェンダー（右）|取外し|0.7h\nフロントフェンダー（右）|取外し|0.6h\nフロントフェンダー（右）|取外し|0.2h\nフロントフェンダー（右）|取外し|0.4h\nフロントフェンダー（右）|取外し|0.1h\nフロントフェンダー（右）|修理|1.5h\nフロントフェンダー（右）|処理|0.2h\nフロントフェンダー（右）|下地処理（少）|1h\nフロントフェンダー（右）|下地処理（中）|2.5h\nフロントフェンダー（右）|下地処理（大）|3h\nフロントフェンダー（右）|パネル塗装|3h\nフロントフェンダー（右）|ぼかし塗装|2h\nフロントフェンダー（右）|裏面塗装|1h\nフロントフェンダー（右）|磨き肌調整|1h\nフロントフェンダー（右）|取付|0.8h\nフロントフェンダー（右）|取付|0.9h\nフロントフェンダー（右）|取付|0.6h\nフロントフェンダー（右）|取付|0.2h\nフロントフェンダー（右）|取付|0.5h\nフロントフェンダー（右）|取付|0.2h\nフロントフェンダー（左）|交換|1.2h\nフロントフェンダー（左）|取外し|0.5h\nフロントフェンダー（左）|取外し|0.7h\nフロントフェンダー（左）|取外し|0.6h\nフロントフェンダー（左）|取外し|0.2h\nフロントフェンダー（左）|取外し|0.4h\nフロントフェンダー（左）|取外し|0.1h\nフロントフェンダー（左）|修理|1.5h\nフロントフェンダー（左）|処理|0.2h\nフロントフェンダー（左）|下地処理（少）|1h\nフロントフェンダー（左）|下地処理（中）|2.5h\nフロントフェンダー（左）|下地処理（大）|3h\nフロントフェンダー（左）|パネル塗装|3h\nフロントフェンダー（左）|ぼかし塗装|2h\nフロントフェンダー（左）|裏面塗装|1h\nフロントフェンダー（左）|磨き肌調整|1h\nフロントフェンダー（左）|取付|0.8h\nフロントフェンダー（左）|取付|0.9h\nフロントフェンダー（左）|取付|0.6h\nフロントフェンダー（左）|取付|0.2h\nフロントフェンダー（左）|取付|0.5h\nフロントフェンダー（左）|取付|0.2h\nボンネット|交換|1.5h\nボンネット|取外し|0.6h\nボンネット|取外し|0.7h\nボンネット|取外し|0.5h\nボンネット|修理|1.5h\nボンネット|処理|0.2h\nボンネット|下地処理（少）|1h\nボンネット|下地処理（中）|2.5h\nボンネット|下地処理（大）|3h\nボンネット|パネル塗装|5h\nボンネット|ぼかし塗装|3h\nボンネット|裏面塗装|3h\nボンネット|磨き肌調整|2h\nボンネット|取付|0.9h\nボンネット|取付|0.9h\nボンネット|取付|0.7h\nボンネット|交換|0.6h\nライト（右）|交換|1h\nライト（右）|取外し|0.3h\nライト（右）|修理|1.5h\nライト（右）|処理|0.2h\nライト（右）|取付|0.3h\nライト（左）|交換|1h\nライト（左）|取外し|0.3h\nライト（左）|修理|1.5h\nライト（左）|処理|0.2h\nライト（左）|取付|0.3h\nラジエター|交換|1h\nラジエター|取外し|0.5h\nラジエター|処理|0.2h\nラジエター|修理|1h\nラジエター|修正|1.5h\nラジエター|確認|0.3h\nラジエター|下地処理（中）|1h\nラジエター|パネル塗装|2h\nラジエター|磨き肌調整|0.5h\nラジエター|取付|0.5h\nラジエター|交換|2h\nラジエターサポート|交換|3h\nラジエターサポート|交換|3h\nラジエターサポート|交換|3h\nラジエターサポート|交換|3h\nラジエターサポート|取外し|1.5h\nラジエターサポート|取外し|1.5h\nラジエターサポート|修理|1.5h\nラジエターサポート|修理|1.5h\nラジエターサポート|修理|1.5h\nラジエターサポート|取付|1.5h\nラジエターサポート|取付|1.5h\nラジエターサポートアッパー|交換|3.5h\nラジエターサポートアッパー|交換|3.5h\nラジエターサポートアッパー|交換|3.5h\nラジエターサポートアッパー|交換|3.5h\nラジエターサポートアッパー|取外し|2h\nラジエターサポートアッパー|取外し|2h\nラジエターサポートアッパー|修理|2h\nラジエターサポートアッパー|取付|2h\nラジエターサポートアッパー|取付|2h\nリヤーガラス|交換|5.7h\nリヤーガラス|取外し|3h\nリヤーガラス|処理|0.5h\nリヤーガラス|取付|3h\nリヤーサスペンション（右）|交換|2.8h\nリヤーサスペンション（右）|交換|2.8h\nリヤーサスペンション（右）|交換|2.8h\nリヤーサスペンション（右）|交換|2.8h\nリヤーサスペンション（右）|交換|2.8h\nリヤーサスペンション（右）|交換|2.8h\nリヤーサスペンション（右）|交換|2.8h\nリヤーサスペンション（右）|取外し|2h\nリヤーサスペンション（右）|取付|2h\nリヤースポイラー|下地処理（少）|0.5h\nリヤースポイラー|下地処理（中）|1h\nリヤースポイラー|バンパー塗装|2h\nリヤースポイラー|ぼかし塗装|1h\nリヤースポイラー|磨き肌調整|0.5h\nリヤードア（右）|交換|1.5h\nリヤードア（右）|取外し|0.8h\nリヤードア（右）|取外し|1h\nリヤードア（右）|取外し|0.8h\nリヤードア（右）|取外し|0.3h\nリヤードア（右）|取外し|0.3h\nリヤードア（右）|取外し|0.2h\nリヤードア（右）|修理|2h\nリヤードア（右）|処理|0.3h\nリヤードア（右）|下地処理（少）|1.5h\nリヤードア（右）|下地処理（中）|2.5h\nリヤードア（右）|下地処理（大）|3.5h\nリヤードア（右）|修正パネル塗装|2h\nリヤードア（右）|新品パネル塗装|3h\nリヤードア（右）|ぼかし塗装|2h\nリヤードア（右）|裏面塗装|2h\nリヤードア（右）|磨き肌調整|1h\nリヤードア（右）|取付|1.5h\nリヤードア（右）|取付|1.5h\nリヤードア（右）|取付|1h\nリヤードア（右）|取付|0.3h\nリヤードア（右）|取付|0.3h\nリヤードア（右）|取付|0.2h\nリヤードア（右）|調整|0.5h\nリヤードア（右）|交換|0.7h\nスライドドア（左）|交換|1.5h\nスライドドア（左）|取外し|0.8h\nスライドドア（左）|取外し|1h\nスライドドア（左）|取外し|0.8h\nスライドドア（左）|取外し|0.3h\nスライドドア（左）|取外し|0.3h\nスライドドア（左）|取外し|0.2h\nスライドドア（左）|修理|2h\nスライドドア（左）|処理|0.3h\nスライドドア（左）|下地処理（少）|1.5h\nスライドドア（左）|下地処理（中）|2.5h\nスライドドア（左）|下地処理（大）|3.5h\nスライドドア（左）|修正パネル塗装|2h\nスライドドア（左）|新品パネル塗装|3h\nスライドドア（左）|ぼかし塗装|2h\nスライドドア（左）|裏面塗装|2h\nスライドドア（左）|磨き肌調整|1h\nスライドドア（左）|取付|1.5h\nスライドドア（左）|取付|2h\nスライドドア（左）|取付|1h\nスライドドア（左）|取付|0.3h\nスライドドア（左）|取付|0.3h\nスライドドア（左）|取付|0.2h\nスライドドア（左）|調整|0.5h\nスライドドア（右）|交換|1.5h\nスライドドア（右）|取外し|0.8h\nスライドドア（右）|取外し|1h\nスライドドア（右）|取外し|0.8h\nスライドドア（右）|取外し|0.3h\nスライドドア（右）|取外し|0.3h\nスライドドア（右）|取外し|0.2h\nスライドドア（右）|修理|2h\nスライドドア（右）|処理|0.3h\nスライドドア（右）|下地処理（少）|1.5h\nスライドドア（右）|下地処理（中）|2.5h\nスライドドア（右）|下地処理（大）|3.5h\nスライドドア（右）|修正パネル塗装|2h\nスライドドア（右）|新品パネル塗装|3h\nスライドドア（右）|ぼかし塗装|2h\nスライドドア（右）|裏面塗装|2h\nスライドドア（右）|磨き肌調整|1h\nスライドドア（右）|取付|1.5h\nスライドドア（右）|取付|2h\nスライドドア（右）|取付|1h\nスライドドア（右）|取付|0.3h\nスライドドア（右）|取付|0.3h\nスライドドア（右）|取付|0.2h\nスライドドア（右）|調整|0.5h\nリヤードア（左）|交換|1.5h\nリヤードア（左）|取外し|0.8h\nリヤードア（左）|取外し|1h\nリヤードア（左）|取外し|0.8h\nリヤードア（左）|取外し|0.3h\nリヤードア（左）|取外し|0.3h\nリヤードア（左）|取外し|0.2h\nリヤードア（左）|修理|2h\nリヤードア（左）|処理|0.3h\nリヤードア（左）|下地処理（少）|1.5h\nリヤードア（左）|下地処理（中）|2.5h\nリヤードア（左）|下地処理（大）|3.5h\nリヤードア（左）|修正パネル塗装|2h\nリヤードア（左）|新品パネル塗装|3h\nリヤードア（左）|ぼかし塗装|2h\nリヤードア（左）|裏面塗装|2h\nリヤードア（左）|磨き肌調整|1h\nリヤードア（左）|取付|1.5h\nリヤードア（左）|取付|1.5h\nリヤードア（左）|取付|1h\nリヤードア（左）|取付|0.3h\nリヤードア（左）|取付|0.3h\nリヤードア（左）|取付|0.2h\nリヤードア（左）|調整|0.5h\nリヤードア（左）|交換|0.7h\nリヤーバンパー|交換|1.2h\nリヤーバンパー|取外し|0.6h\nリヤーバンパー|取外し|0.6h\nリヤーバンパー|取外し|0.4h\nリヤーバンパー|取外し|0.3h\nリヤーバンパー|取外し|0.1h\nリヤーバンパー|取外し|0.2h\nリヤーバンパー|修理|1.5h\nリヤーバンパー|処理|0.2h\nリヤーバンパー|下地処理（少）|1.5h\nリヤーバンパー|下地処理（中）|2.5h\nリヤーバンパー|下地処理（大）|3.5h\nリヤーバンパー|バンパー塗装|3.5h\nリヤーバンパー|ぼかし塗装|2h\nリヤーバンパー|磨き肌調整|0.5h\nリヤーバンパー|取付|0.8h\nリヤーバンパー|取付|0.8h\nリヤーバンパー|取付|0.6h\nリヤーバンパー|取付|0.4h\nリヤーバンパー|取付|0.2h\nリヤーバンパー|取付|0.3h\nリヤーフェンダー（右）|交換|11.5h\nリヤーフェンダー（右）|取外し|7h\nリヤーフェンダー（右）|取外し|0.1h\nリヤーフェンダー（右）|取外し|0.2h\nリヤーフェンダー（右）|取外し|0.1h\nリヤーフェンダー（右）|修理|3h\nリヤーフェンダー（右）|処理|0.1h\nリヤーフェンダー（右）|下地処理（少）|2h\nリヤーフェンダー（右）|下地処理（中）|2.5h\nリヤーフェンダー（右）|下地処理（大）|3h\nリヤーフェンダー（右）|パネル塗装|6.2h\nリヤーフェンダー（右）|パネル塗装|7.8h\nリヤーフェンダー（右）|ぼかし塗装|4.5h\nリヤーフェンダー（右）|裏面塗装|2h\nリヤーフェンダー（右）|磨き肌調整|2.5h\nリヤーフェンダー（右）|取付|5h\nリヤーフェンダー（右）|取付|0.1h\nリヤーフェンダー（右）|取付|0.2h\nリヤーフェンダー（右）|取付|0.1h\nリヤーフェンダー（左）|交換|11.5h\nリヤーフェンダー（左）|取外し|7h\nリヤーフェンダー（左）|取外し|0.1h\nリヤーフェンダー（左）|取外し|0.2h\nリヤーフェンダー（左）|取外し|0.1h\nリヤーフェンダー（左）|修理|3h\nリヤーフェンダー（左）|処理|0.1h\nリヤーフェンダー（左）|下地処理（少）|2h\nリヤーフェンダー（左）|下地処理（中）|2.5h\nリヤーフェンダー（左）|下地処理（大）|3h\nリヤーフェンダー（左）|パネル塗装|6.2h\nリヤーフェンダー（左）|パネル塗装|7.8h\nリヤーフェンダー（左）|ぼかし塗装|4.5h\nリヤーフェンダー（左）|裏面塗装|2h\nリヤーフェンダー（左）|磨き肌調整|2.5h\nリヤーフェンダー（左）|取付|5h\nリヤーフェンダー（左）|取付|0.1h\nリヤーフェンダー（左）|取付|0.2h\nリヤーフェンダー（左）|取付|0.1h\nルーフ|交換|7.5h\nルーフ|取外し|4h\nルーフ|取外し|1h\nルーフ|修理|2h\nルーフ|処理|0.2h\nルーフ|下地処理（少）|1h\nルーフ|下地処理（中）|3h\nルーフ|下地処理（大）|5h\nルーフ|パネル塗装|10h\nルーフ|ぼかし塗装|9h\nルーフ|裏面塗装|2h\nルーフ|磨き肌調整|2h\nルーフ|取付|3.5h\nルーフ|取付|1h\nルーフサイドパネル（右）|交換|9h\nルーフサイドパネル（右）|取外し|6h\nルーフサイドパネル（右）|修理|2h\nルーフサイドパネル（右）|下地処理（少）|0.8h\nルーフサイドパネル（右）|下地処理（中）|1.5h\nルーフサイドパネル（右）|下地処理（大）|2h\nルーフサイドパネル（右）|パネル塗装|3.5h\nルーフサイドパネル（右）|ぼかし塗装|3.5h\nルーフサイドパネル（右）|裏面塗装|0.5h\nルーフサイドパネル（右）|磨き肌調整|0.5h\nルーフサイドパネル（右）|取付|4h\nルーフサイドパネル（左）|交換|9h\nルーフサイドパネル（左）|取外し|6h\nルーフサイドパネル（左）|修理|2h\nルーフサイドパネル（左）|下地処理（少）|0.8h\nルーフサイドパネル（左）|下地処理（中）|1.5h\nルーフサイドパネル（左）|下地処理（大）|2h\nルーフサイドパネル（左）|パネル塗装|3.5h\nルーフサイドパネル（左）|ぼかし塗装|3.5h\nルーフサイドパネル（左）|裏面塗装|0.5h\nルーフサイドパネル（左）|磨き肌調整|0.5h\nルーフサイドパネル（左）|取付|4h\nフロントバンパースポイラー|交換|0.7h\nフロントバンパースポイラー|取外し|0.3h\nフロントバンパースポイラー|処理|0.1h\nフロントバンパースポイラー|下地処理（少）|0.5h\nフロントバンパースポイラー|下地処理（中）|1h\nフロントバンパースポイラー|バンパー塗装|2h\nフロントバンパースポイラー|ぼかし塗装|1h\nフロントバンパースポイラー|磨き肌調整|0.5h\nフロントバンパースポイラー|取付|0.4h\nサイドスポイラー（右）|交換|1h\nサイドスポイラー（右）|取外し|0.4h\nサイドスポイラー（右）|処理|0.1h\nサイドスポイラー（右）|修理|1.5h\nサイドスポイラー（右）|下地処理（少）|0.5h\nサイドスポイラー（右）|下地処理（中）|1h\nサイドスポイラー（右）|パネル塗装|2h\nサイドスポイラー（右）|ぼかし塗装|1h\nサイドスポイラー（右）|磨き肌調整|0.5h\nサイドスポイラー（右）|取付|0.5h\nサイドスポイラー（左）|交換|1h\nサイドスポイラー（左）|取外し|0.4h\nサイドスポイラー（左）|処理|0.1h\nサイドスポイラー（左）|修理|1.5h\nサイドスポイラー（左）|下地処理（少）|0.5h\nサイドスポイラー（左）|下地処理（中）|1h\nサイドスポイラー（左）|パネル塗装|2h\nサイドスポイラー（左）|ぼかし塗装|1h\nサイドスポイラー（左）|磨き肌調整|0.5h\nサイドスポイラー（左）|取付|0.5h\nリヤーゲートスポイラー|交換|0.7h\nリヤーゲートスポイラー|取外し|0.3h\nリヤーゲートスポイラー|処理|0.1h\nリヤーゲートスポイラー|修理|1h\nリヤーゲートスポイラー|下地処理（少）|0.5h\nリヤーゲートスポイラー|下地処理（中）|1h\nリヤーゲートスポイラー|パネル塗装|2h\nリヤーゲートスポイラー|ぼかし塗装|1h\nリヤーゲートスポイラー|磨き肌調整|0.5h\nリヤーゲートスポイラー|取付|0.4h\nリヤーゲートルーフスポイラー|交換|0.9h\nリヤーゲートルーフスポイラー|取外し|0.4h\nリヤーゲートルーフスポイラー|処理|0.1h\nリヤーゲートルーフスポイラー|修理|1.2h\nリヤーゲートルーフスポイラー|下地処理（少）|0.5h\nリヤーゲートルーフスポイラー|下地処理（中）|1h\nリヤーゲートルーフスポイラー|パネル塗装|2h\nリヤーゲートルーフスポイラー|ぼかし塗装|1h\nリヤーゲートルーフスポイラー|磨き肌調整|0.5h\nリヤーゲートルーフスポイラー|取付|0.5h\n最後に入れる物|計測|1h\n最後に入れる物|計測|1.5h\n最後に入れる物|計測|2h\n最後に入れる物|測定|2h\n最後に入れる物|診断|1.5h\n最後に入れる物|設定|0.5h\n最後に入れる物|点検|0.5h\n最後に入れる物|エーミング|1h\n最後に入れる物|手続|1.5h\n最後に入れる物|手続|1.5h\n最後に入れる物|セッティング|3h\n最後に入れる物|書類|0.5h\n最後に入れる物|脱着|0.4h\n最後に入れる物|取替|0.5h\n最後に入れる物|脱着|0.5h\n最後に入れる物|脱着|0.5h\n最後に入れる物|脱着|0.5h\n最後に入れる物|清掃|1h\n最後に入れる物|清掃|1h\n最後に入れる物|清掃|1h\n最後に入れる物|清掃|0.5h\n最後に入れる物|修理後確認|0.5h\n錆・腐食処理|処理|1h\n錆・腐食処理|処理|2h\n錆・腐食処理|処理|3.5h\n錆・腐食処理|処理|5h\n錆・腐食処理|塗布|0.5h\n錆・腐食処理|塗布|1h\n錆・腐食処理|塗布|2h\n錆・腐食処理|補修|2h\n錆・腐食処理|補修|4h\n錆・腐食処理|補修|6h\n錆・腐食処理|塗布|0.5h\n錆・腐食処理|塗布|1.5h\nブース使用|使用|1h\nブース使用|使用（2h）|2h\nブース使用|使用（3h）|3h\nブース使用|使用（0.5h）|0.5h\n焼付乾燥|乾燥|1h\n焼付乾燥|乾燥（2h）|2h\n焼付乾燥|乾燥（3h）|3h\n焼付乾燥|乾燥（0.5h）|0.5h\n塗装前 支度・養生|養生（小）|1h\n塗装前 支度・養生|養生（中）|2h\n塗装前 支度・養生|養生（大）|3h\n塗装前 支度・養生|養生（特大）|4h\n納車・引渡し作業|室内清掃|0.5h\n納車・引渡し作業|外装洗車・仕上げ|1h\n納車・引渡し作業|走行テスト（一般道）|0.5h\n納車・引渡し作業|走行テスト（高速道路含む）|1h\n納車・引渡し作業|修理後点検・確認|0.5h\n納車・引渡し作業|エンジンルーム清掃|0.5h\n納車・引渡し作業|下回り洗浄|0.5h\n納車・引渡し作業|ガラス清掃・仕上げ|0.3h\nタイヤ・ホイール左F|交換|1h\nタイヤ・ホイール左F|取外し|0.5h\nタイヤ・ホイール左F|処理|0.2h\nタイヤ・ホイール左F|修理|1h\nタイヤ・ホイール左F|修正|1.5h\nタイヤ・ホイール左F|確認|0.3h\nタイヤ・ホイール左F|取付|0.5h\nタイヤ・ホイール左F|取外し取付|0.5h\nタイヤ・ホイール右F|交換|1h\nタイヤ・ホイール右F|取外し|0.5h\nタイヤ・ホイール右F|処理|0.2h\nタイヤ・ホイール右F|修理|1h\nタイヤ・ホイール右F|修正|1.5h\nタイヤ・ホイール右F|確認|0.3h\nタイヤ・ホイール右F|取付|0.5h\nタイヤ・ホイール右F|取外し取付|0.5h\nタイヤ・ホイール左R|交換|1h\nタイヤ・ホイール左R|取外し|0.5h\nタイヤ・ホイール左R|処理|0.2h\nタイヤ・ホイール左R|修理|1h\nタイヤ・ホイール左R|修正|1.5h\nタイヤ・ホイール左R|確認|0.3h\nタイヤ・ホイール左R|取付|0.5h\nタイヤ・ホイール左R|取外し取付|0.5h\nタイヤ・ホイール右R|交換|1h\nタイヤ・ホイール右R|取外し|0.5h\nタイヤ・ホイール右R|処理|0.2h\nタイヤ・ホイール右R|修理|1h\nタイヤ・ホイール右R|修正|1.5h\nタイヤ・ホイール右R|確認|0.3h\nタイヤ・ホイール右R|取付|0.5h\nタイヤ・ホイール右R|取外し取付|0.5h\nリフトアップ・タイヤ取外し|脱着|0.5h\n3次元計測|計測|1h\nタイロッドエンド左|交換|1h\nタイロッドエンド左|取外し|0.5h\nタイロッドエンド左|処理|0.2h\nタイロッドエンド左|修理|1h\nタイロッドエンド左|修正|1.5h\nタイロッドエンド左|確認|0.3h\nタイロッドエンド左|取付|0.5h\nタイロッドエンド左|交換|1h\nタイロッドエンド右|交換|1h\nタイロッドエンド右|取外し|0.5h\nタイロッドエンド右|処理|0.2h\nタイロッドエンド右|修理|1h\nタイロッドエンド右|修正|1.5h\nタイロッドエンド右|確認|0.3h\nタイロッドエンド右|取付|0.5h\nタイロッドエンド右|交換|1h\nロアアーム左|交換|5.4h\nロアアーム左|取外し|2h\nロアアーム左|処理|0.2h\nロアアーム左|修理|1h\nロアアーム左|修正|1.5h\nロアアーム左|確認|0.3h\nロアアーム左|取付|3h\nロアアーム左|交換|1.5h\nロアアーム右|交換|5.4h\nロアアーム右|取外し|2h\nロアアーム右|処理|0.2h\nロアアーム右|修理|1h\nロアアーム右|修正|1.5h\nロアアーム右|確認|0.3h\nロアアーム右|取付|3h\nロアアーム右|交換|1.5h\nハブベアリング左F|交換|4h\nハブベアリング左F|取外し|2h\nハブベアリング左F|処理|0.2h\nハブベアリング左F|修理|1h\nハブベアリング左F|修正|1.5h\nハブベアリング左F|確認|0.3h\nハブベアリング左F|取付|2h\nハブベアリング左F|交換|2h\nハブベアリング右F|交換|4h\nハブベアリング右F|取外し|2h\nハブベアリング右F|処理|0.2h\nハブベアリング右F|修理|1h\nハブベアリング右F|修正|1.5h\nハブベアリング右F|確認|0.3h\nハブベアリング右F|取付|2h\nハブベアリング右F|交換|2h\nハブベアリング左R|交換|2h\nハブベアリング左R|取外し|1h\nハブベアリング左R|処理|0.2h\nハブベアリング左R|修理|1h\nハブベアリング左R|修正|1.5h\nハブベアリング左R|確認|0.3h\nハブベアリング左R|取付|1h\nハブベアリング左R|交換|2h\nハブベアリング右R|交換|2h\nハブベアリング右R|取外し|1h\nハブベアリング右R|処理|0.2h\nハブベアリング右R|修理|1h\nハブベアリング右R|修正|1.5h\nハブベアリング右R|確認|0.3h\nハブベアリング右R|取付|1h\nハブベアリング右R|交換|2h\nラテラルロッド左|交換|1h\nラテラルロッド左|取外し|0.5h\nラテラルロッド左|処理|0.2h\nラテラルロッド左|修理|1h\nラテラルロッド左|修正|1.5h\nラテラルロッド左|確認|0.3h\nラテラルロッド左|取付|0.5h\nラテラルロッド左|交換|1h\nラテラルロッド右|交換|1h\nラテラルロッド右|取外し|0.5h\nラテラルロッド右|処理|0.2h\nラテラルロッド右|修理|1h\nラテラルロッド右|修正|1.5h\nラテラルロッド右|確認|0.3h\nラテラルロッド右|取付|0.5h\nラテラルロッド右|交換|1h\nラジエターサポート上|修正|2h\nラジエターサポート上|交換|3h\nFサイドメンバー左|修正|3h\nFサイドメンバー左|交換|5h\nFサイドメンバー右|修正|3h\nFサイドメンバー右|交換|5h\nストラットタワー左|交換|4h\nストラットタワー左|取外し|2h\nストラットタワー左|処理|0.2h\nストラットタワー左|修理|2h\nストラットタワー左|修正|2h\nストラットタワー左|確認|0.3h\nストラットタワー左|下地処理（中）|1h\nストラットタワー左|パネル塗装|2h\nストラットタワー左|磨き肌調整|0.5h\nストラットタワー左|取付|2h\nストラットタワー右|交換|4h\nストラットタワー右|取外し|2h\nストラットタワー右|処理|0.2h\nストラットタワー右|修理|2h\nストラットタワー右|修正|2h\nストラットタワー右|確認|0.3h\nストラットタワー右|下地処理（中）|1h\nストラットタワー右|パネル塗装|2h\nストラットタワー右|磨き肌調整|0.5h\nストラットタワー右|取付|2h\nカウルトップ|交換|2h\nカウルトップ|取外し|1h\nカウルトップ|処理|0.2h\nカウルトップ|修理|1h\nカウルトップ|修正|1h\nカウルトップ|確認|0.3h\nカウルトップ|下地処理（中）|1h\nカウルトップ|パネル塗装|2h\nカウルトップ|磨き肌調整|0.5h\nカウルトップ|取付|1h\nクロスメンバー|交換|1.5h\nクロスメンバー|取外し|1h\nクロスメンバー|処理|0.2h\nクロスメンバー|修理|1h\nクロスメンバー|修正|1h\nクロスメンバー|確認|0.3h\nクロスメンバー|下地処理（中）|1h\nクロスメンバー|パネル塗装|2h\nクロスメンバー|磨き肌調整|0.5h\nクロスメンバー|取付|1h\nダッシュボード|交換|1h\nダッシュボード|取外し|0.5h\nダッシュボード|処理|0.2h\nダッシュボード|修理|1h\nダッシュボード|修正|1.5h\nダッシュボード|確認|0.3h\nダッシュボード|取付|0.5h\nダッシュボード|交換|3h\nインパネ|交換|1h\nインパネ|取外し|0.5h\nインパネ|処理|0.2h\nインパネ|修理|1h\nインパネ|修正|1.5h\nインパネ|確認|0.3h\nインパネ|取付|0.5h\nインパネ|脱着|1.5h\nFシート左|交換|1h\nFシート左|取外し|0.5h\nFシート左|処理|0.2h\nFシート左|修理|1h\nFシート左|修正|1.5h\nFシート左|確認|0.3h\nFシート左|取付|0.5h\nFシート左|脱着|0.5h\nFシート右|交換|1h\nFシート右|取外し|0.5h\nFシート右|処理|0.2h\nFシート右|修理|1h\nFシート右|修正|1.5h\nFシート右|確認|0.3h\nFシート右|取付|0.5h\nFシート右|脱着|0.5h\nRシート左|交換|1h\nRシート左|取外し|0.5h\nRシート左|処理|0.2h\nRシート左|修理|1h\nRシート左|修正|1.5h\nRシート左|確認|0.3h\nRシート左|取付|0.5h\nRシート左|脱着|0.5h\nRシート右|交換|1h\nRシート右|取外し|0.5h\nRシート右|処理|0.2h\nRシート右|修理|1h\nRシート右|修正|1.5h\nRシート右|確認|0.3h\nRシート右|取付|0.5h\nRシート右|脱着|0.5h\nフロアカーペット|交換|1h\nフロアカーペット|取外し|0.5h\nフロアカーペット|処理|0.2h\nフロアカーペット|修理|1h\nフロアカーペット|修正|1.5h\nフロアカーペット|確認|0.3h\nフロアカーペット|取付|0.5h\nトランクルーム内装|交換|1h\nトランクルーム内装|取外し|0.5h\nトランクルーム内装|処理|0.2h\nトランクルーム内装|修理|1h\nトランクルーム内装|修正|1.5h\nトランクルーム内装|確認|0.3h\nトランクルーム内装|取付|0.5h\nAピラー内装左|交換|1h\nAピラー内装左|取外し|0.5h\nAピラー内装左|処理|0.2h\nAピラー内装左|修理|1h\nAピラー内装左|修正|1.5h\nAピラー内装左|確認|0.3h\nAピラー内装左|取付|0.5h\nAピラー内装右|交換|1h\nAピラー内装右|取外し|0.5h\nAピラー内装右|処理|0.2h\nAピラー内装右|修理|1h\nAピラー内装右|修正|1.5h\nAピラー内装右|確認|0.3h\nAピラー内装右|取付|0.5h\nBピラー内装左|交換|1h\nBピラー内装左|取外し|0.5h\nBピラー内装左|処理|0.2h\nBピラー内装左|修理|1h\nBピラー内装左|修正|1.5h\nBピラー内装左|確認|0.3h\nBピラー内装左|取付|0.5h\nBピラー内装右|交換|1h\nBピラー内装右|取外し|0.5h\nBピラー内装右|処理|0.2h\nBピラー内装右|修理|1h\nBピラー内装右|修正|1.5h\nBピラー内装右|確認|0.3h\nBピラー内装右|取付|0.5h\nCピラー内装左|交換|1h\nCピラー内装左|取外し|0.5h\nCピラー内装左|処理|0.2h\nCピラー内装左|修理|1h\nCピラー内装左|修正|1.5h\nCピラー内装左|確認|0.3h\nCピラー内装左|取付|0.5h\nCピラー内装右|交換|1h\nCピラー内装右|取外し|0.5h\nCピラー内装右|処理|0.2h\nCピラー内装右|修理|1h\nCピラー内装右|修正|1.5h\nCピラー内装右|確認|0.3h\nCピラー内装右|取付|0.5h\nラジエターサポート アッパー|修正|2h\nラジエターサポート アッパー|交換|3.5h\nラジエターサポート ロアー|修正|1.5h\nラジエターサポート ロアー|交換|2.5h\nサイドフレーム左|修正|3h\nサイドフレーム左|交換|5h\nサイドフレーム右|修正|3h\nサイドフレーム右|交換|5h\nFフェンダーエプロン左|修正|2h\nFフェンダーエプロン左|交換|3h\nFフェンダーエプロン右|修正|2h\nFフェンダーエプロン右|交換|3h\nFフェンダーライナー取外し（右）|取外し|0.5h\nFフェンダーライナー取外し（左）|取外し|0.5h\nRフェンダーライナー取外し（右）|取外し|0.5h\nRフェンダーライナー取外し（左）|取外し|0.5h\nフロアパネル|交換|8h\nフロアパネル|取外し|4h\nフロアパネル|処理|0.2h\nフロアパネル|修理|3h\nフロアパネル|修正|3h\nフロアパネル|確認|0.3h\nフロアパネル|下地処理（中）|1h\nフロアパネル|パネル塗装|2h\nフロアパネル|磨き肌調整|0.5h\nフロアパネル|取付|4h\nリヤーフロアパネル|交換|13h\nリヤーフロアパネル|取外し|6h\nリヤーフロアパネル|処理|0.2h\nリヤーフロアパネル|修理|4h\nリヤーフロアパネル|修正|4h\nリヤーフロアパネル|確認|0.3h\nリヤーフロアパネル|下地処理（中）|1h\nリヤーフロアパネル|パネル塗装|2h\nリヤーフロアパネル|磨き肌調整|0.5h\nリヤーフロアパネル|取付|7h\nルーフパネル|交換|7.9h\nルーフパネル|取外し|4h\nルーフパネル|処理|0.2h\nルーフパネル|修理|3h\nルーフパネル|修正|3h\nルーフパネル|確認|0.3h\nルーフパネル|下地処理（中）|1h\nルーフパネル|パネル塗装|2h\nルーフパネル|磨き肌調整|0.5h\nルーフパネル|取付|4h\nルーフパネル|交換|4h\nルーフサイドレール左|交換|7.5h\nルーフサイドレール左|取外し|4h\nルーフサイドレール左|処理|0.2h\nルーフサイドレール左|修理|3h\nルーフサイドレール左|修正|3h\nルーフサイドレール左|確認|0.3h\nルーフサイドレール左|下地処理（中）|1h\nルーフサイドレール左|パネル塗装|2h\nルーフサイドレール左|磨き肌調整|0.5h\nルーフサイドレール左|取付|4h\nルーフサイドレール右|交換|7.5h\nルーフサイドレール右|取外し|4h\nルーフサイドレール右|処理|0.2h\nルーフサイドレール右|修理|3h\nルーフサイドレール右|修正|3h\nルーフサイドレール右|確認|0.3h\nルーフサイドレール右|下地処理（中）|1h\nルーフサイドレール右|パネル塗装|2h\nルーフサイドレール右|磨き肌調整|0.5h\nルーフサイドレール右|取付|4h\nセンタートンネル|交換|5h\nセンタートンネル|取外し|3h\nセンタートンネル|処理|0.2h\nセンタートンネル|修理|2h\nセンタートンネル|修正|2h\nセンタートンネル|確認|0.3h\nセンタートンネル|下地処理（中）|1h\nセンタートンネル|パネル塗装|2h\nセンタートンネル|磨き肌調整|0.5h\nセンタートンネル|取付|3h\nフロントフロア左|交換|4h\nフロントフロア左|取外し|2h\nフロントフロア左|処理|0.2h\nフロントフロア左|修理|2h\nフロントフロア左|修正|2h\nフロントフロア左|確認|0.3h\nフロントフロア左|下地処理（中）|1h\nフロントフロア左|パネル塗装|2h\nフロントフロア左|磨き肌調整|0.5h\nフロントフロア左|取付|2h\nフロントフロア右|交換|4h\nフロントフロア右|取外し|2h\nフロントフロア右|処理|0.2h\nフロントフロア右|修理|2h\nフロントフロア右|修正|2h\nフロントフロア右|確認|0.3h\nフロントフロア右|下地処理（中）|1h\nフロントフロア右|パネル塗装|2h\nフロントフロア右|磨き肌調整|0.5h\nフロントフロア右|取付|2h\nリヤーフロア左|交換|5h\nリヤーフロア左|取外し|3h\nリヤーフロア左|処理|0.2h\nリヤーフロア左|修理|2h\nリヤーフロア左|修正|2h\nリヤーフロア左|確認|0.3h\nリヤーフロア左|下地処理（中）|1h\nリヤーフロア左|パネル塗装|2h\nリヤーフロア左|磨き肌調整|0.5h\nリヤーフロア左|取付|3h\nリヤーフロア右|交換|5h\nリヤーフロア右|取外し|3h\nリヤーフロア右|処理|0.2h\nリヤーフロア右|修理|2h\nリヤーフロア右|修正|2h\nリヤーフロア右|確認|0.3h\nリヤーフロア右|下地処理（中）|1h\nリヤーフロア右|パネル塗装|2h\nリヤーフロア右|磨き肌調整|0.5h\nリヤーフロア右|取付|3h\n3次元計測（全体）|計測|2h\nアンダーボディ確認|確認|1h\nAピラーインナー左|交換|16.5h\nAピラーインナー左|取外し|8h\nAピラーインナー左|処理|0.2h\nAピラーインナー左|修理|5h\nAピラーインナー左|修正|5h\nAピラーインナー左|確認|0.3h\nAピラーインナー左|下地処理（中）|1h\nAピラーインナー左|パネル塗装|2h\nAピラーインナー左|磨き肌調整|0.5h\nAピラーインナー左|取付|8h\nAピラーインナー右|交換|16.5h\nAピラーインナー右|取外し|8h\nAピラーインナー右|処理|0.2h\nAピラーインナー右|修理|5h\nAピラーインナー右|修正|5h\nAピラーインナー右|確認|0.3h\nAピラーインナー右|下地処理（中）|1h\nAピラーインナー右|パネル塗装|2h\nAピラーインナー右|磨き肌調整|0.5h\nAピラーインナー右|取付|8h\nセンターピラーインナー左|交換|13.8h\nセンターピラーインナー左|取外し|6h\nセンターピラーインナー左|処理|0.2h\nセンターピラーインナー左|修理|5h\nセンターピラーインナー左|修正|5h\nセンターピラーインナー左|確認|0.3h\nセンターピラーインナー左|下地処理（中）|1h\nセンターピラーインナー左|パネル塗装|2h\nセンターピラーインナー左|磨き肌調整|0.5h\nセンターピラーインナー左|取付|7h\nセンターピラーインナー右|交換|13.8h\nセンターピラーインナー右|取外し|6h\nセンターピラーインナー右|処理|0.2h\nセンターピラーインナー右|修理|5h\nセンターピラーインナー右|修正|5h\nセンターピラーインナー右|確認|0.3h\nセンターピラーインナー右|下地処理（中）|1h\nセンターピラーインナー右|パネル塗装|2h\nセンターピラーインナー右|磨き肌調整|0.5h\nセンターピラーインナー右|取付|7h\nCピラーインナー左|交換|2.8h\nCピラーインナー左|取外し|2h\nCピラーインナー左|処理|0.2h\nCピラーインナー左|修理|2h\nCピラーインナー左|修正|2h\nCピラーインナー左|確認|0.3h\nCピラーインナー左|下地処理（中）|1h\nCピラーインナー左|パネル塗装|2h\nCピラーインナー左|磨き肌調整|0.5h\nCピラーインナー左|取付|2h\nCピラーインナー右|交換|2.8h\nCピラーインナー右|取外し|2h\nCピラーインナー右|処理|0.2h\nCピラーインナー右|修理|2h\nCピラーインナー右|修正|2h\nCピラーインナー右|確認|0.3h\nCピラーインナー右|下地処理（中）|1h\nCピラーインナー右|パネル塗装|2h\nCピラーインナー右|磨き肌調整|0.5h\nCピラーインナー右|取付|2h\nロッカーパネル左|交換|2.4h\nロッカーパネル左|取外し|2h\nロッカーパネル左|処理|0.2h\nロッカーパネル左|修理|2h\nロッカーパネル左|修正|2h\nロッカーパネル左|確認|0.3h\nロッカーパネル左|下地処理（中）|1h\nロッカーパネル左|パネル塗装|2h\nロッカーパネル左|磨き肌調整|0.5h\nロッカーパネル左|取付|2h\nロッカーパネル右|交換|2.4h\nロッカーパネル右|取外し|2h\nロッカーパネル右|処理|0.2h\nロッカーパネル右|修理|2h\nロッカーパネル右|修正|2h\nロッカーパネル右|確認|0.3h\nロッカーパネル右|下地処理（中）|1h\nロッカーパネル右|パネル塗装|2h\nロッカーパネル右|磨き肌調整|0.5h\nロッカーパネル右|取付|2h\nフロントタイヤハウスインナー左|交換|6h\nフロントタイヤハウスインナー左|取外し|3h\nフロントタイヤハウスインナー左|処理|0.2h\nフロントタイヤハウスインナー左|修理|2h\nフロントタイヤハウスインナー左|修正|2h\nフロントタイヤハウスインナー左|確認|0.3h\nフロントタイヤハウスインナー左|下地処理（中）|1h\nフロントタイヤハウスインナー左|パネル塗装|2h\nフロントタイヤハウスインナー左|磨き肌調整|0.5h\nフロントタイヤハウスインナー左|取付|3h\nフロントタイヤハウスインナー右|交換|6h\nフロントタイヤハウスインナー右|取外し|3h\nフロントタイヤハウスインナー右|処理|0.2h\nフロントタイヤハウスインナー右|修理|2h\nフロントタイヤハウスインナー右|修正|2h\nフロントタイヤハウスインナー右|確認|0.3h\nフロントタイヤハウスインナー右|下地処理（中）|1h\nフロントタイヤハウスインナー右|パネル塗装|2h\nフロントタイヤハウスインナー右|磨き肌調整|0.5h\nフロントタイヤハウスインナー右|取付|3h\nリヤータイヤハウスインナー左|交換|6h\nリヤータイヤハウスインナー左|取外し|3h\nリヤータイヤハウスインナー左|処理|0.2h\nリヤータイヤハウスインナー左|修理|2h\nリヤータイヤハウスインナー左|修正|2h\nリヤータイヤハウスインナー左|確認|0.3h\nリヤータイヤハウスインナー左|下地処理（中）|1h\nリヤータイヤハウスインナー左|パネル塗装|2h\nリヤータイヤハウスインナー左|磨き肌調整|0.5h\nリヤータイヤハウスインナー左|取付|3h\nリヤータイヤハウスインナー右|交換|6h\nリヤータイヤハウスインナー右|取外し|3h\nリヤータイヤハウスインナー右|処理|0.2h\nリヤータイヤハウスインナー右|修理|2h\nリヤータイヤハウスインナー右|修正|2h\nリヤータイヤハウスインナー右|確認|0.3h\nリヤータイヤハウスインナー右|下地処理（中）|1h\nリヤータイヤハウスインナー右|パネル塗装|2h\nリヤータイヤハウスインナー右|磨き肌調整|0.5h\nリヤータイヤハウスインナー右|取付|3h\nフロントサスペンション（左）|交換|3.2h\nフロントサスペンション（左）|交換|3.2h\nフロントサスペンション（左）|交換|3.2h\nフロントサスペンション（左）|交換|3.2h\nフロントサスペンション（左）|交換|3.2h\nフロントサスペンション（左）|交換|3.2h\nフロントサスペンション（左）|交換|3.2h\nフロントサスペンション（左）|交換|3.2h\nフロントサスペンション（左）|アライメント|1h\nフロントサスペンション（右）|交換|3.2h\nフロントサスペンション（右）|交換|3.2h\nフロントサスペンション（右）|交換|3.2h\nフロントサスペンション（右）|交換|3.2h\nフロントサスペンション（右）|交換|3.2h\nフロントサスペンション（右）|交換|3.2h\nフロントサスペンション（右）|交換|3.2h\nフロントサスペンション（右）|交換|3.2h\nフロントサスペンション（右）|アライメント|1h\nバッテリー|交換|1h\nバッテリー|取外し|0.5h\nバッテリー|処理|0.2h\nバッテリー|修理|1h\nバッテリー|修正|1.5h\nバッテリー|確認|0.3h\nバッテリー|取付|0.5h\nヒューズボックス|交換|1h\nヒューズボックス|取外し|0.5h\nヒューズボックス|処理|0.2h\nヒューズボックス|修理|1h\nヒューズボックス|修正|1.5h\nヒューズボックス|確認|0.3h\nヒューズボックス|取付|0.5h\nエアクリーナー|交換|1h\nエアクリーナー|取外し|0.5h\nエアクリーナー|処理|0.2h\nエアクリーナー|修理|1h\nエアクリーナー|修正|1.5h\nエアクリーナー|確認|0.3h\nエアクリーナー|取付|0.5h\nリヤーパッケージトレイ|交換|1h\nリヤーパッケージトレイ|取外し|0.5h\nリヤーパッケージトレイ|処理|0.2h\nリヤーパッケージトレイ|修理|1h\nリヤーパッケージトレイ|修正|1.5h\nリヤーパッケージトレイ|確認|0.3h\nリヤーパッケージトレイ|取付|0.5h\nルーフサイドレールアウター（左）|交換|7.5h\nルーフサイドレールアウター（左）|取外し|4h\nルーフサイドレールアウター（左）|修理|3h\nルーフサイドレールアウター（左）|取付|4h\nルーフサイドレールアウター（右）|交換|7.5h\nルーフサイドレールアウター（右）|取外し|4h\nルーフサイドレールアウター（右）|修理|3h\nルーフサイドレールアウター（右）|取付|4h\nフロントグリル|交換|0.38h\nフロントグリル|取外し|0.38h\nフロントグリル|取付|0.38h\nトランクリッド|取外し|0.9h\nトランクリッド|交換|2.4h\nトランクリッド|修理|1.5h\nトランクリッド|取付|0.9h\nリヤードアガラス（左）|交換|0.9h\nリヤードアガラス（左）|取外し|0.5h\nリヤードアガラス（左）|取付|0.5h\nリヤードアガラス（右）|交換|0.9h\nリヤードアガラス（右）|取外し|0.5h\nリヤードアガラス（右）|取付|0.5h\nサンルーフガラス|交換|3h\nサンルーフガラス|取外し|1.5h\nエアコンコンプレッサー|交換|1.5h\nエアコンコンプレッサー|取外し|1.5h\nエアコンコンプレッサー|処理|0.1h\nエアコンコンプレッサー|修理|1h\nエアコンコンプレッサー|確認|0.3h\nエアコンコンプレッサー|取付|1.5h\nラジエターファン|交換|2h\nラジエターファン|取外し|2h\nラジエターファン|処理|0.1h\nラジエターファン|修理|1h\nラジエターファン|確認|0.3h\nラジエターファン|取付|2h\nインタークーラー|交換|1.5h\nインタークーラー|取外し|1.5h\nインタークーラー|処理|0.1h\nインタークーラー|修理|1h\nインタークーラー|確認|0.3h\nインタークーラー|取付|1.5h\nABSユニット|交換|1.9h\nABSユニット|取外し|1.9h\nABSユニット|処理|0.1h\nABSユニット|修理|1h\nABSユニット|確認|0.3h\nABSユニット|取付|1.9h\nエンジンメンバー|交換|19.8h\nエンジンメンバー|取外し|10h\nエンジンメンバー|処理|0.1h\nエンジンメンバー|修理|5h\nエンジンメンバー|確認|0.3h\nエンジンメンバー|取付|10h\nパワステポンプ|交換|1.5h\nパワステポンプ|取外し|1.5h\nパワステポンプ|処理|0.1h\nパワステポンプ|修理|1h\nパワステポンプ|確認|0.3h\nパワステポンプ|取付|1.5h\nオルタネーター|交換|0.9h\nオルタネーター|取外し|0.9h\nオルタネーター|処理|0.1h\nオルタネーター|修理|0.5h\nオルタネーター|確認|0.3h\nオルタネーター|取付|0.9h\nウォッシャータンク|交換|0.4h\nウォッシャータンク|取外し|0.4h\nウォッシャータンク|処理|0.1h\nウォッシャータンク|修理|0.3h\nウォッシャータンク|確認|0.3h\nウォッシャータンク|取付|0.4h\nブラケット（エンジン系）|交換|0.5h\nブラケット（エンジン系）|取外し|0.5h\nブラケット（エンジン系）|処理|0.1h\nブラケット（エンジン系）|修理|0.5h\nブラケット（エンジン系）|確認|0.3h\nブラケット（エンジン系）|取付|0.5h\nホーン|交換|0.6h\nホーン|取外し|0.6h\nホーン|処理|0.1h\nホーン|修理|0.3h\nホーン|確認|0.3h\nホーン|取付|0.6h\n【工数ルール】①上記テーブルに該当する作業は必ずその工数を使用②テーブルにない作業のみ合理的推定③毎回同じ工数を使用④推測で変えない\n'
     + rulesText
@@ -7625,6 +7707,60 @@ async function aiChatCallAPI(){
   }, 100);
 }
 
+// ★ 提案テーブル ドラッグ&ドロップ並び替え
+var _aiDragSrc = null;
+
+function aiRowDragStart(event, idx){
+  _aiDragSrc = idx;
+  event.dataTransfer.effectAllowed = 'move';
+  var row = document.getElementById('aic_row_' + idx);
+  if(row) row.style.opacity = '0.4';
+}
+
+function aiRowDragOver(event, idx){
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+  // ドロップ先をハイライト
+  document.querySelectorAll('#aic-tbody tr').forEach(function(r){ r.style.borderTop = ''; });
+  var row = document.getElementById('aic_row_' + idx);
+  if(row && idx !== _aiDragSrc) row.style.borderTop = '2px solid #534AB7';
+}
+
+function aiRowDrop(event, idx){
+  event.preventDefault();
+  if(_aiDragSrc === null || _aiDragSrc === idx) return;
+  // 配列の並び替え
+  var tasks = aiChatProposals.tasks;
+  var moved = tasks.splice(_aiDragSrc, 1)[0];
+  tasks.splice(idx, 0, moved);
+  try{ localStorage.setItem('fa_ai_proposals', JSON.stringify(aiChatProposals)); }catch(e){}
+  _aiDragSrc = null;
+  rAI();
+}
+
+function aiRowDragEnd(){
+  _aiDragSrc = null;
+  document.querySelectorAll('#aic-tbody tr').forEach(function(r){
+    r.style.opacity = '';
+    r.style.borderTop = '';
+  });
+}
+
+function aiChatAddRow(){
+  if(!aiChatProposals) aiChatProposals = {summary:'手動追加',comment:'',tasks:[]};
+  aiChatProposals.tasks.push({
+    name:'', process:'取外し', tag:'remove', hours:1, reason:'手動追加'
+  });
+  try{ localStorage.setItem('fa_ai_proposals', JSON.stringify(aiChatProposals)); }catch(e){}
+  rAI();
+  // 追加した行の作業名inputにフォーカス
+  setTimeout(function(){
+    var idx = aiChatProposals.tasks.length - 1;
+    var el = document.getElementById('aic_name_' + idx);
+    if(el){ el.focus(); el.select(); }
+  }, 100);
+}
+
 function aiChatApplyChecked(){
   if(!aiChatProposals || !aiChatProposals.tasks) return;
   var added = 0;
@@ -7649,8 +7785,8 @@ function aiChatApplyChecked(){
     added++;
   });
   if(added===0){ showNotify('⚠ 追加できる作業がありません'); return; }
-  aiChatProposals = null;
-  aiChatHistory = [];
+  // ★ 提案・履歴はクリアしない → 見積タブから戻っても残る
+  try{ localStorage.setItem('fa_ai_proposals', JSON.stringify(aiChatProposals)); }catch(e){}
   autoSaveM();
   showNotify('✅ AI提案から ' + added + ' 件追加しました');
   ST('estimate', document.querySelector('.tab'));
@@ -7680,22 +7816,44 @@ function renderAiChat(){
   var proposalHtml = '';
   if(aiChatProposals && aiChatProposals.tasks && aiChatProposals.tasks.length){
     var rows = '';
+    var procs = ['取外し','脱着','修正','修理','交換','パネル塗装','バンパー塗装','下地処理（中）','養生（中）','使用','乾燥','磨き肌調整','取付','確認','エーミング','清掃'];
     aiChatProposals.tasks.forEach(function(t,i){
-      rows += '<tr style="border-bottom:1px solid #f0f0f0;">'
-        + '<td style="padding:6px 8px;width:30px;"><input type="checkbox" id="aic_cb_'+i+'" checked style="width:15px;height:15px;accent-color:#534AB7;"></td>'
-        + '<td style="padding:6px 8px;font-size:12px;font-weight:bold;">'+t.name+'</td>'
-        + '<td style="padding:6px 6px;"><span style="background:#EEEDFE;color:#534AB7;padding:2px 7px;border-radius:10px;font-size:11px;">'+t.process+'</span></td>'
-        + '<td style="padding:6px 6px;font-size:12px;text-align:right;">'+(t.hours?t.hours+'h':'')+'</td>'
-        + '<td style="padding:6px 6px;font-size:11px;color:#888;">'+(t.reason||'')+'</td>'
+      var procOpts = procs.map(function(p){ return '<option value="'+p+'"'+(p===t.process?' selected':'')+'>'+p+'</option>'; }).join('');
+      rows += '<tr draggable="true" id="aic_row_'+i+'" ondragstart="aiRowDragStart(event,'+i+')" ondragover="aiRowDragOver(event,'+i+')" ondrop="aiRowDrop(event,'+i+')" ondragend="aiRowDragEnd()" style="border-bottom:1px solid #f0f0f0;cursor:default;">'
+        + '<td style="padding:5px 4px;width:20px;text-align:center;color:#bbb;font-size:14px;cursor:grab;" title="ドラッグして並び替え">☰</td>'
+        + '<td style="padding:5px 6px;width:28px;"><input type="checkbox" id="aic_cb_'+i+'" checked style="width:15px;height:15px;accent-color:#534AB7;"></td>'
+        + '<td style="padding:5px 4px;"><input id="aic_name_'+i+'" value="'+t.name+'" onchange="aiChatProposals.tasks['+i+'].name=this.value;try{localStorage.setItem(\'fa_ai_proposals\',JSON.stringify(aiChatProposals));}catch(e){}" style="width:100%;border:1px solid #ddd;border-radius:5px;padding:3px 6px;font-size:12px;font-weight:bold;"></td>'
+        + '<td style="padding:5px 4px;"><select id="aic_proc_'+i+'" onchange="aiChatProposals.tasks['+i+'].process=this.value;try{localStorage.setItem(\'fa_ai_proposals\',JSON.stringify(aiChatProposals));}catch(e){}" style="border:1px solid #ddd;border-radius:5px;padding:3px 4px;font-size:11px;color:#534AB7;background:#EEEDFE;">'+procOpts+'</select></td>'
+        + '<td style="padding:5px 4px;width:60px;"><input id="aic_h_'+i+'" type="number" step="0.1" min="0" value="'+(t.hours||0)+'" onchange="aiChatProposals.tasks['+i+'].hours=parseFloat(this.value)||0;try{localStorage.setItem(\'fa_ai_proposals\',JSON.stringify(aiChatProposals));}catch(e){}" style="width:54px;border:1px solid #ddd;border-radius:5px;padding:3px 4px;font-size:12px;text-align:right;"></td>'
+        + '<td style="padding:5px 4px;font-size:11px;color:#888;max-width:90px;">'+(t.reason||'')+'</td>'
+        + '<td style="padding:5px 2px;"><button onclick="aiChatProposals.tasks.splice('+i+',1);try{localStorage.setItem(\'fa_ai_proposals\',JSON.stringify(aiChatProposals));}catch(e){}rAI()" style="border:none;background:transparent;color:#e57373;font-size:14px;cursor:pointer;padding:2px 5px;">✕</button></td>'
         + '</tr>';
     });
+    // ★ A: 整合性チェック警告
+    var warnings = [];
+    var hasPaint = aiChatProposals.tasks.some(function(t){ return t.tag==='paint'||t.process.indexOf('塗装')>=0; });
+    var hasPrep  = aiChatProposals.tasks.some(function(t){ return t.process.indexOf('下地処理')>=0; });
+    var hasBooth = aiChatProposals.tasks.some(function(t){ return t.tag==='booth'||t.process==='使用'; });
+    var hasDry   = aiChatProposals.tasks.some(function(t){ return t.process==='乾燥'||t.process.indexOf('乾燥')>=0; });
+    var hasRemove= aiChatProposals.tasks.some(function(t){ return t.process==='取外し'||t.process==='脱着'; });
+    var hasAttach= aiChatProposals.tasks.some(function(t){ return t.process==='取付'; });
+    if(hasPaint && !hasPrep)  warnings.push('⚠️ 塗装があるのに下地処理がありません');
+    if(hasPaint && !hasBooth) warnings.push('⚠️ 塗装があるのにブース使用がありません');
+    if(hasPaint && !hasDry)   warnings.push('⚠️ 塗装があるのに焼付乾燥がありません');
+    if(hasRemove && !hasAttach) warnings.push('⚠️ 取外しがあるのに取付がありません');
+    var warnHtml = warnings.length ? '<div style="background:#fff3e0;border-left:3px solid #ff9800;padding:8px 12px;font-size:12px;color:#e65100;">' + warnings.join('<br>') + '</div>' : '';
     proposalHtml = '<div style="border:2px solid #AFA9EC;border-radius:10px;overflow:hidden;margin-top:10px;">'
       + '<div style="background:linear-gradient(135deg,#534AB7,#7F77DD);color:white;padding:9px 14px;font-size:13px;font-weight:bold;">🤖 AI提案 — '+(aiChatProposals.summary||'')+'</div>'
       + '<div style="background:#EEEDFE;padding:8px 14px;font-size:12px;color:#3C3489;">'+(aiChatProposals.comment||'')+'</div>'
-      + '<table style="width:100%;border-collapse:collapse;"><tbody>'+rows+'</tbody></table>'
+      + warnHtml
+      + '<div style="font-size:11px;color:#777;padding:5px 12px 2px;background:#fafafa;">✏️ 作業名・工程・工数を直接編集できます。✕で行削除。</div>'
+      + '<table id="aic-table" style="width:100%;border-collapse:collapse;"><thead><tr style="background:#f0eeff;"><th style="padding:4px 4px;width:20px;"></th><th style="padding:4px 6px;width:28px;"></th><th style="padding:4px 4px;font-size:11px;text-align:left;">作業名</th><th style="padding:4px 4px;font-size:11px;">工程</th><th style="padding:4px 4px;font-size:11px;text-align:right;">工数</th><th style="padding:4px 4px;font-size:11px;">理由</th><th></th></tr></thead><tbody id="aic-tbody">'+rows+'</tbody></table>'
+      + '<div style="padding:6px 14px;background:#f9f6ff;border-top:1px solid #e8e4ff;">'
+      + '<button onclick="aiChatAddRow()" style="width:100%;border:1.5px dashed #AFA9EC;border-radius:8px;padding:7px;font-size:12px;color:#534AB7;background:white;cursor:pointer;font-weight:600;">➕ 行を追加する</button>'
+      + '</div>'
       + '<div style="padding:10px 14px;display:flex;gap:8px;background:#f9f6ff;">'
       + '<button onclick="aiChatApplyChecked()" style="flex:1;background:linear-gradient(135deg,#534AB7,#7F77DD);color:white;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:bold;cursor:pointer;">✅ チェックした作業を見積に追加</button>'
-      + '<button onclick="aiChatProposals=null;aiChatHistory=[];render()" style="background:#e0e0e0;color:#555;border:none;border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;">✕</button>'
+      + '<button onclick="aiChatProposals=null;try{localStorage.removeItem(\'fa_ai_proposals\');}catch(e){}aiChatHistory=[];saveChatHistory([]);rAI()" style="background:#e0e0e0;color:#555;border:none;border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;">🗑 リセット</button>'
       + '</div></div>';
   }
   return '<div style="display:flex;flex-direction:column;gap:10px;">'
@@ -7706,7 +7864,7 @@ function renderAiChat(){
     + '<div style="display:flex;gap:6px;">'
     + '<button id="ai-mic-btn" onclick="aiStartMic()" title="音声入力" '
     + 'style="width:42px;height:42px;border-radius:50%;border:1.5px solid #ce93d8;background:#f3e5f5;color:#7b1fa2;font-size:18px;cursor:pointer;flex-shrink:0;">🎤</button>'
-    + '<input id="ai-chat-input" type="text" placeholder="テキスト入力またはマイクで話しかけてください..." '
+    + '<input id="ai-chat-input" type="text" autocomplete="off" placeholder="テキスト入力またはマイクで話しかけてください..." '
     + 'onkeydown="if(event.key===\'Enter\')aiChatSend()" '
     + 'style="flex:1;height:42px;padding:0 14px;border:1.5px solid #AFA9EC;border-radius:21px;font-size:13px;outline:none;box-sizing:border-box;">'
     + '<button onclick="aiChatSend()" style="padding:0 20px;height:42px;background:linear-gradient(135deg,#534AB7,#7F77DD);color:white;border:none;border-radius:21px;font-size:13px;font-weight:bold;cursor:pointer;">送信</button>'
