@@ -281,6 +281,12 @@ textarea{resize:vertical;min-height:80px;}
             <div id="customerDropdown" style="display:none;position:absolute;z-index:200;background:#fff;border:1px solid #d8dde8;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.15);width:100%;max-height:220px;overflow-y:auto;margin-top:2px;top:100%;"></div>
           </div>
           <div class="form-group"><label>電話番号</label><input type="tel" id="phone" placeholder="090-0000-0000"></div>
+          <!-- 車両検索 -->
+          <div class="form-group full" style="position:relative;">
+            <label>🔍 車両検索（車名またはナンバーで検索）</label>
+            <input type="text" id="vehicleSearch" placeholder="例：プリウス　または　静岡300" oninput="searchVehicle(this.value)" autocomplete="off" style="border-color:#3b82f6;">
+            <div id="vehicleDropdown" style="display:none;position:absolute;z-index:200;background:#fff;border:1px solid #93c5fd;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.15);width:100%;max-height:220px;overflow-y:auto;margin-top:2px;top:100%;"></div>
+          </div>
           <div class="form-group"><label>車名</label><input type="text" id="carName" placeholder="プリウス"></div>
           <div class="form-group"><label>ナンバー</label><input type="text" id="carNum" placeholder="静岡 300 あ 1234"></div>
           <div class="form-group">
@@ -1344,6 +1350,82 @@ function clearForm() {
   document.querySelectorAll('.type-select-btn').forEach(function(b){b.classList.remove('active');});
   goStep(1);
 }
+
+// ===== 車両検索 =====
+var vehicleSearchTimer = null;
+async function searchVehicle(val) {
+  var dd = document.getElementById('vehicleDropdown');
+  if(!val||val.length<2){if(dd)dd.style.display='none';return;}
+  clearTimeout(vehicleSearchTimer);
+  vehicleSearchTimer = setTimeout(async function(){
+    try {
+      // 車名検索とナンバー検索を並行実行
+      var q1 = '?name=ilike.%25'+encodeURIComponent(val)+'%25&select=id,name,plate,color_name,color_code,customer_id&limit=8';
+      var q2 = '?plate=ilike.%25'+encodeURIComponent(val)+'%25&select=id,name,plate,color_name,color_code,customer_id&limit=8';
+      var r1 = await supabaseQuery('vehicles','GET',null,q1);
+      var r2 = await supabaseQuery('vehicles','GET',null,q2);
+      // 重複除去してマージ
+      var seen = {};
+      var results = [];
+      (r1||[]).concat(r2||[]).forEach(function(v){
+        if(!seen[v.id]){seen[v.id]=true;results.push(v);}
+      });
+      if(!dd)return;
+      if(!results.length){dd.style.display='none';return;}
+      // 顧客名も取得して表示
+      var html = '';
+      for(var i=0;i<results.length;i++){
+        var v = results[i];
+        var custName = '';
+        if(v.customer_id){
+          try{
+            var cd = await supabaseQuery('customers','GET',null,'?customer_no=eq.'+encodeURIComponent(v.customer_id)+'&select=name,tel&limit=1');
+            if(cd&&cd.length) custName = cd[0].name||'';
+            results[i]._custName = custName;
+            results[i]._custTel = (cd&&cd.length)?cd[0].tel||'':'';
+          }catch(e){}
+        }
+        var vJson = JSON.stringify(results[i]).replace(/"/g,'&quot;');
+        html += '<div onclick="fillVehicle(this)" data-vjson="'+vJson+'" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:13px;">'
+          +'<div style="font-weight:700;color:#1a2744;">🚗 '+(v.name||'不明')+'　<span style="font-size:11px;color:#6b7a99;">'+(v.plate||'')+'</span></div>'
+          +'<div style="font-size:11px;color:#6b7a99;">顧客：'+(custName||'不明')+'　色：'+(v.color_name||'')+(v.color_code?' ('+v.color_code+')':'')+'</div>'
+          +'</div>';
+      }
+      dd.innerHTML = html;
+      dd.style.display = 'block';
+    } catch(e){if(dd)dd.style.display='none';}
+  },300);
+}
+
+function fillVehicle(el) {
+  var vJson = el.getAttribute('data-vjson');
+  if(!vJson)return;
+  try {
+    var v = JSON.parse(vJson.replace(/&quot;/g,'"'));
+    var set = function(id,val){var e=document.getElementById(id);if(e&&val)e.value=val;};
+    set('carName', v.name||'');
+    set('carNum', v.plate||'');
+    set('carColor', v.color_name||'');
+    set('colorCode', v.color_code||'');
+    if(v.color_code) lookupColorName(v.color_code);
+    // 顧客情報も反映
+    if(v._custName){
+      set('customerName', v._custName);
+      set('phone', v._custTel||'');
+    }
+    var dd = document.getElementById('vehicleDropdown');
+    if(dd) dd.style.display='none';
+    var vs = document.getElementById('vehicleSearch');
+    if(vs) vs.value='';
+    showToast('🚗 '+(v.name||'車両')+' を選択しました ✅','success');
+  } catch(e){console.warn('fillVehicleエラー',e);}
+}
+
+document.addEventListener('click',function(e){
+  var dd = document.getElementById('vehicleDropdown');
+  var inp = document.getElementById('vehicleSearch');
+  if(dd&&inp&&!inp.contains(e.target)&&!dd.contains(e.target)) dd.style.display='none';
+});
 
 // ===== 顧客検索 =====
 var searchTimer = null;
