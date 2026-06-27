@@ -6787,6 +6787,9 @@ function applyReceptionParams() {
       // 入庫時写真を引き継ぎ
       if(td.photos && td.photos.length > 0){
         customer.photoIncoming = td.photos;
+        // fa_photos_tempにも保存（下書き保存なしで表示されるよう）
+        var photoData = {photoIncoming: td.photos, photoWork:[], photoDone:[]};
+        try{ localStorage.setItem('fa_photos_temp', JSON.stringify(photoData)); }catch(e){}
         showNotify('📷 入庫時写真 ' + td.photos.length + '枚 を引き継ぎました');
       }
 
