@@ -6771,6 +6771,68 @@ function applyReceptionParams() {
   if (window.history && window.history.replaceState) {
     window.history.replaceState({}, '', window.location.pathname);
   }
+
+  // ★ 受付からの引き継ぎ（写真・色番号・マスター登録）
+  try {
+    var transferRaw = localStorage.getItem('fa_reception_transfer');
+    if(transferRaw){
+      var td = JSON.parse(transferRaw);
+
+      // 色番号・色名を引き継ぎ
+      if(td.color_code) customer.colorCode = td.color_code;
+      if(td.color_name) customer.colorName = td.color_name;
+      if(td.insurance)  customer.insurance = td.insurance;
+      if(td.reception_id) customer.receptionId = td.reception_id;
+
+      // 入庫時写真を引き継ぎ
+      if(td.photos && td.photos.length > 0){
+        customer.photoIncoming = td.photos;
+        showNotify('📷 入庫時写真 ' + td.photos.length + '枚 を引き継ぎました');
+      }
+
+      // cMasterに顧客登録（未登録の場合）
+      if(td.customer_name){
+        var existCM = cMaster.find(function(c){ return c.name === td.customer_name; });
+        if(!existCM){
+          var newCid = 'C' + Date.now().toString(36).toUpperCase().slice(-5);
+          cMaster.unshift({
+            id: newCid,
+            name: td.customer_name,
+            honorific: '様',
+            tel: td.phone || '',
+            postal: '', address: '', insurance: td.insurance || '',
+            aj: '', memo: '受付種別：' + (td.type||''),
+            date: new Date().toISOString().split('T')[0]
+          });
+        }
+      }
+
+      // vMasterに車両登録（未登録の場合）
+      if(td.plate){
+        var existVM = vMaster.find(function(v){ return v.plate === td.plate; });
+        if(!existVM){
+          var custId = (cMaster.find(function(c){ return c.name === td.customer_name; })||{}).id || '';
+          vMaster.unshift({
+            id: 'V' + Date.now().toString(36).toUpperCase().slice(-5),
+            cid: custId,
+            name: td.car_model || '',
+            plate: td.plate || '',
+            colorCode: td.color_code || '',
+            colorName: td.color_name || '',
+            maker: '', grade: '', year: '', fuel: '', drive: ''
+          });
+        }
+      }
+
+      // マスター保存
+      autoSaveM();
+      render();
+
+      // 使用済みフラグ（写真データは削除してIDだけ残す）
+      td.photos = [];
+      localStorage.setItem('fa_reception_transfer', JSON.stringify(td));
+    }
+  } catch(te){ console.warn('受付引き継ぎエラー:', te); }
 }
 
 // 新規顧客案内ダイアログ
