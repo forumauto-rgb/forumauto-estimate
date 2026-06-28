@@ -7045,16 +7045,19 @@ async function showQRUpload(targetCat){
   qrSessionId = 'fa_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
   var name = encodeURIComponent(customer.name||'');
   var car  = encodeURIComponent((customer.car||'') + ' ' + (customer.plate||''));
-  // ★ eidにはestimate_no（見積番号）を渡す（photo_upload.htmlが番号で検索）
   var eid  = encodeURIComponent(customer.no||'');
-  // ★ eidnum（DB UUID）も渡す → photo_upload.htmlが直接使えて検索不要
-  var eidnum = encodeURIComponent(customer._estId||'');
+  // REC-プレフィックスを除いた純粋なUUIDのみ渡す
+  var rawEstId = (customer._estId||'').replace(/^REC-/,'');
+  var eidnum = encodeURIComponent(rawEstId.match(/^[0-9a-f-]{36}$/i) ? rawEstId : '');
+  // reception_idを別パラメータで渡す
+  var recid = encodeURIComponent(customer.receptionId||'');
   var uploadUrl = 'https://forumauto-rgb.github.io/forumauto-estimate/photo_upload.html'
     + '?session=' + qrSessionId
     + '&name=' + name
     + '&car=' + car
     + '&eid=' + eid
     + '&eidnum=' + eidnum
+    + '&recid=' + recid
     + '&cat=' + encodeURIComponent(targetCat);
 
   // モーダル表示
