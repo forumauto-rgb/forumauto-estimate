@@ -7010,32 +7010,36 @@ var qrSessionId = null;
 
 async function showQRUpload(targetCat){
   targetCat = targetCat || 'photoIncoming';
-  // ★ QR生成前に必ずSupabaseに保存してIDを確保
+
+  // ★ reception_idがある場合はそのままQR生成（見積保存不要）
   if(!customer._estId){
-    if(!customer.name){
+    // 受付からの引き継ぎIDがある場合はそれを使う
+    if(customer.receptionId){
+      customer._estId = 'REC-' + customer.receptionId;
+    } else if(!customer.name){
       showNotify('⚠ 顧客名を入力してからQRを生成してください');
       return;
-    }
-    showNotify('📷 見積を保存してからQRを生成します...');
-    // saveEstimateを呼ぶ（Supabaseに保存してcustomer._estIdをセット）
-    try{
-      await saveEstimate();
-      // saveEstimate後にIDが取れているか確認
-      if(!customer._estId && customer.no){
-        var r=await fetch(SUPABASE_URL+'/rest/v1/estimates?estimate_no=eq.'+encodeURIComponent(customer.no)+'&select=id&limit=1',
-          {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
-        var d=await r.json();
-        if(Array.isArray(d)&&d[0]&&d[0].id) customer._estId=d[0].id;
+    } else {
+      // 受付IDもestIdもない場合のみ自動保存
+      showNotify('📷 見積を保存してからQRを生成します...');
+      try{
+        await saveEstimate();
+        if(!customer._estId && customer.no){
+          var r=await fetch(SUPABASE_URL+'/rest/v1/estimates?estimate_no=eq.'+encodeURIComponent(customer.no)+'&select=id&limit=1',
+            {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+          var d=await r.json();
+          if(Array.isArray(d)&&d[0]&&d[0].id) customer._estId=d[0].id;
+        }
+      }catch(e){
+        showNotify('⚠ 見積保存に失敗しました。手動で保存後にQRを押してください');
+        return;
       }
-    }catch(e){
-      showNotify('⚠ 見積保存に失敗しました。手動で保存後にQRを押してください');
-      return;
+      if(!customer._estId){
+        showNotify('⚠ 見積IDが取得できません。一度保存ボタンを押してから再度QRを押してください');
+        return;
+      }
+      showNotify('✅ 保存完了。QRを生成します');
     }
-    if(!customer._estId){
-      showNotify('⚠ 見積IDが取得できません。一度保存ボタンを押してから再度QRを押してください');
-      return;
-    }
-    showNotify('✅ 保存完了。QRを生成します');
   }
   // セッションIDを生成
   qrSessionId = 'fa_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
@@ -7096,9 +7100,10 @@ async function pollQRPhotos(){
     // ★ photo_upload.htmlはestimate_photosテーブルに保存するのでそちらを監視
     var estId = customer._estId || '';
     var estNo = customer.no || '';
+    var recId = customer.receptionId || '';
     var rows = [];
 
-    if(estId){
+    if(estId && !estId.startsWith('REC-')){
       // UUIDで直接検索（最も正確）
       var resp = await fetch(
         SUPABASE_URL + '/rest/v1/estimate_photos?estimate_id=eq.' + encodeURIComponent(estId)
@@ -7106,6 +7111,14 @@ async function pollQRPhotos(){
         {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
       );
       if(resp.ok) rows = await resp.json();
+    } else if(recId){
+      // 受付IDで検索（受付からの引き継ぎ）
+      var respR = await fetch(
+        SUPABASE_URL + '/rest/v1/estimate_photos?reception_id=eq.' + encodeURIComponent(recId)
+        + '&select=id,category,data_url&order=id.asc',
+        {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
+      );
+      if(respR.ok) rows = await respR.json();
     } else if(estNo){
       // 見積番号でestimate_idを取得してから検索
       var rNo = await fetch(
