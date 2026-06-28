@@ -1769,9 +1769,20 @@ function showReturnDialog(c) {
   var box=document.createElement('div');
   box.style.cssText='background:white;border-radius:16px;padding:24px;max-width:360px;width:100%;';
   var today=new Date().toISOString().split('T')[0];
-  box.innerHTML='<div style="font-size:16px;font-weight:700;margin-bottom:16px;">🚗 返却処理：'+(c.rental_type||c.car_model||'')+'</div>'
-    +'<div style="margin-bottom:10px;"><label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px;">返却日</label><input type="date" id="returnDate" value="'+today+'" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;"></div>'
-    +'<div style="margin-bottom:10px;"><label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px;">返却時キロ</label><input type="number" id="returnKm" placeholder="例：12800" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;"></div>'
+  var cl={};try{cl=JSON.parse(c.checklist||'{}');}catch(e){}
+  var startKm=cl.startKm||'';
+  var rentalStart=cl.rentalStart||'';
+  box.innerHTML='<div style="font-size:16px;font-weight:700;margin-bottom:4px;">🚗 返却処理：'+(c.rental_type||c.car_model||'')+'</div>'
+    +'<div style="font-size:12px;color:#6b7a99;margin-bottom:16px;">顧客：'+(c.customer_name||'')+'　貸出日：'+rentalStart+'</div>'
+    +'<div style="margin-bottom:10px;"><label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px;">返却日<span style="color:#e8392a;">★必須</span></label><input type="date" id="returnDate" value="'+today+'" required style="width:100%;padding:8px;border:2px solid #e8392a;border-radius:8px;"></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">'
+    +'<div><label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px;">貸出時キロ</label><input type="number" id="returnStartKm" value="'+startKm+'" readonly style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;background:#f5f5f5;"></div>'
+    +'<div><label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px;">返却時キロ<span style="color:#e8392a;">★必須</span></label><input type="number" id="returnKm" placeholder="例：12800" required oninput="calcReturnKm()" style="width:100%;padding:8px;border:2px solid #e8392a;border-radius:8px;"></div>'
+    +'</div>'
+    +'<div id="returnCalcResult" style="background:#e8f5e9;border-radius:8px;padding:10px;margin-bottom:10px;display:none;">'
+    +'<div style="font-size:12px;color:#2e7d32;font-weight:700;">📊 自動計算結果</div>'
+    +'<div style="font-size:13px;margin-top:4px;">走行距離：<span id="calcKm" style="font-weight:700;">-</span> km　｜　実日数：<span id="calcDays" style="font-weight:700;">-</span> 日　｜　請求金額：<span id="calcFee" style="font-weight:700;color:#e8392a;">-</span> 円</div>'
+    +'</div>'
     +'<div style="margin-bottom:16px;"><label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px;">備考</label><input type="text" id="returnNote" placeholder="傷など" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;"></div>'
     +'<div style="display:flex;gap:8px;">'
     +'<button onclick="closeReturnDialog()" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;cursor:pointer;">キャンセル</button>'
@@ -1782,13 +1793,49 @@ function showReturnDialog(c) {
 }
 function closeReturnDialog(){var el=document.getElementById('returnDialog');if(el)el.remove();}
 
+// ===== 返却時自動計算 =====
+function calcReturnKm() {
+  var km=parseInt(document.getElementById('returnKm').value)||0;
+  var startKm=parseInt(document.getElementById('returnStartKm').value)||0;
+  var returnDate=document.getElementById('returnDate').value;
+  if(!km) return;
+  var actualKm=km-startKm;
+  var calcEl=document.getElementById('returnCalcResult');
+  var kmEl=document.getElementById('calcKm');
+  var daysEl=document.getElementById('calcDays');
+  var feeEl=document.getElementById('calcFee');
+  if(!calcEl)return;
+  calcEl.style.display='block';
+  if(kmEl)kmEl.textContent=actualKm>0?actualKm.toLocaleString():'0';
+  // 日数計算
+  var lendDate=document.getElementById('returnDate');
+  // 貸出日はダイアログ生成時のrentalStartから取る
+  var actualDays='-';
+  if(feeEl)feeEl.textContent='-';
+  if(daysEl)daysEl.textContent='-';
+}
+
 var returnProcessing=false;
 async function saveReturn(c) {
   if(returnProcessing)return;
   returnProcessing=true;
-  var km=document.getElementById('returnKm').value;
+  var km=parseInt(document.getElementById('returnKm').value)||0;
+  var startKm=parseInt(document.getElementById('returnStartKm').value)||0;
   var returnDate=document.getElementById('returnDate').value;
   var note=document.getElementById('returnNote').value;
+  // 必須チェック
+  if(!returnDate){showToast('返却日は必須です','error');returnProcessing=false;return;}
+  if(!km){showToast('返却時キロは必須です','error');returnProcessing=false;return;}
+  // 実計算
+  var cl={};try{cl=JSON.parse(c.checklist||'{}');}catch(e){}
+  var rentalStart=cl.rentalStart||c.reception_datetime||'';
+  var actualDays=rentalStart?Math.max(1,Math.ceil((new Date(returnDate)-new Date(rentalStart))/86400000)):1;
+  var actualKm=km-startKm;
+  // 車種区分取得
+  var matchCar2=rentalCars.find(function(rc){return (rc['車種']||'')===(c.rental_type||'');});
+  var carType=(matchCar2&&matchCar2['車種区分'])||'軽自動車';
+  var dailyFare=matchCar2?parseInt(matchCar2['金額']||0):0;
+  var actualFee=actualDays*dailyFare;
   showLoading('返却処理中...');
   try {
     await supabaseQuery('receptions','POST',{
@@ -1796,8 +1843,16 @@ async function saveReturn(c) {
       customer_name:c.customer_name||'',phone:c.phone||'',
       car_model:c.rental_type||c.car_model||'',rental_type:c.rental_type||'',
       staff:c.staff||'',
-      note:(c.note||'')+(km?' 返却時'+km+'km':'')+(note?' '+note:''),
+      note:(c.note||'')+' 返却時'+km+'km'+(note?' '+note:''),
       rental_needed:false,
+      rental_fee:actualFee,
+      actual_days:actualDays,
+      actual_km:actualKm,
+      actual_fee:actualFee,
+      start_km:startKm,
+      car_type:carType,
+      rental_start_date:rentalStart?rentalStart.slice(0,10):null,
+      rental_end_date:returnDate,
       reception_datetime:returnDate?new Date(returnDate).toISOString():new Date().toISOString()
     });
     var cl={};try{cl=JSON.parse(c.checklist||'{}');}catch(e){}
@@ -1998,6 +2053,7 @@ async function renderMasterCars() {
         +'<div style="font-weight:700;font-size:15px;">'+(car['車種']||'不明')+'</div>'
         +'<div style="font-size:12px;color:#666;">📋 '+(car['登録番号']||'-')+'</div>'
         +'<div style="font-size:12px;color:#666;">💴 日額 ¥'+Number(car['金額']||0).toLocaleString()+'</div>'
+        +'<div style="font-size:11px;color:#888;">🚗 '+(car['車種区分']||'未設定')+'</div>'
         +'</div>'
         +'<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">'
         +'<span style="background:'+sb+';color:'+sc+';border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700;">'+stLabel+'</span>'
@@ -2048,6 +2104,8 @@ function showAddCarDialog() {
     +'<div style="font-size:18px;font-weight:700;margin-bottom:16px;">🚗 車両追加</div>'
     +'<div style="margin-bottom:10px;"><label style="font-size:12px;font-weight:700;color:#666;display:block;margin-bottom:4px;">車種名</label><input id="ncName" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;" placeholder="例：ムーヴ"></div>'
     +'<div style="margin-bottom:10px;"><label style="font-size:12px;font-weight:700;color:#666;display:block;margin-bottom:4px;">登録番号</label><input id="ncPlate" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;" placeholder="例：浜松580わ1234"></div>'
+    +'<div style="margin-bottom:10px;"><label style="font-size:12px;font-weight:700;color:#666;display:block;margin-bottom:4px;">車種区分<span style="color:#e8392a;">★必須（陸運局報告用）</span></label>'
+    +'<select id="ncCarType" style="width:100%;padding:10px;border:1.5px solid #e8392a;border-radius:8px;font-size:14px;"><option value="軽自動車">軽自動車</option><option value="普通車">普通車</option></select></div>'
     +'<div style="margin-bottom:18px;"><label style="font-size:12px;font-weight:700;color:#666;display:block;margin-bottom:4px;">日額料金（円）</label><input id="ncPrice" type="number" style="width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;"></div>'
     +'<div style="display:flex;gap:8px;">'
     +'<button onclick="closeAddCarBox()" style="flex:1;padding:12px;border:1.5px solid #ddd;border-radius:8px;cursor:pointer;">キャンセル</button>'
@@ -2059,12 +2117,13 @@ async function saveNewCar() {
   var name=document.getElementById('ncName').value.trim();
   var plate=document.getElementById('ncPlate').value.trim();
   var price=parseInt(document.getElementById('ncPrice').value)||0;
+  var carType2=document.getElementById('ncCarType')?document.getElementById('ncCarType').value:'軽自動車';
   if(!name||!plate){alert('車種名と登録番号は必須です');return;}
   try {
     var postRes=await fetch(SUPABASE_URL+'/rest/v1/'+encodeURIComponent('レンタカーマスタ'),{
       method:'POST',
       headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation'},
-      body:JSON.stringify({'車種':name,'登録番号':plate,'現在の状況':'空き','金額':price})
+      body:JSON.stringify({'車種':name,'登録番号':plate,'現在の状況':'空き','金額':price,'車種区分':carType2})
     });
     if(!postRes.ok)throw new Error(await postRes.text());
     closeAddCarBox();
