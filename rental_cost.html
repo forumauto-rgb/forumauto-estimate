@@ -594,6 +594,134 @@ document.getElementById('simRate').addEventListener('input',function(){
   if(cars.length) render();
 });
 
+// ===== ⑤ 陸運局報告用年次集計 =====
+(function initYearSelect(){
+  var sel=document.getElementById('reportYear');
+  if(!sel)return;
+  var now=new Date().getFullYear();
+  for(var y=now;y>=now-5;y--){
+    var opt=document.createElement('option');
+    opt.value=y; opt.textContent=y+'年';
+    sel.appendChild(opt);
+  }
+})();
+
+async function loadAnnualReport(){
+  var year=document.getElementById('reportYear').value;
+  var ds=year+'-01-01';
+  var de=year+'-12-31';
+  document.getElementById('annualReportArea').style.display='block';
+  document.getElementById('annualReportContent').innerHTML='<div style="text-align:center;padding:20px;color:#888;">集計中...</div>';
+  try{
+    // 返却レコードから実績を取得
+    var url=SB+'/rest/v1/receptions?type=eq.'+encodeURIComponent('レンタカー返却')
+      +'&reception_datetime=gte.'+ds+'T00:00:00'
+      +'&reception_datetime=lte.'+de+'T23:59:59'
+      +'&order=reception_datetime.asc&limit=1000';
+    var res=await fetch(url,{headers:HDR});
+    var recs=await res.json();
+
+    // 軽・普通で分類
+    var summary={
+      '軽自動車':{count:0,days:0,km:0,fee:0,cars:{}},
+      '普通車':{count:0,days:0,km:0,fee:0,cars:{}}
+    };
+
+    recs.forEach(function(r){
+      var ct=r.car_type||'軽自動車';
+      if(!summary[ct])summary[ct]={count:0,days:0,km:0,fee:0,cars:{}};
+      summary[ct].count++;
+      summary[ct].days+=parseInt(r.actual_days)||0;
+      summary[ct].km+=parseInt(r.actual_km)||0;
+      summary[ct].fee+=parseInt(r.actual_fee)||r.rental_fee||0;
+      var cn=r.rental_type||r.car_model||'不明';
+      if(!summary[ct].cars[cn])summary[ct].cars[cn]={count:0,days:0,km:0,fee:0};
+      summary[ct].cars[cn].count++;
+      summary[ct].cars[cn].days+=parseInt(r.actual_days)||0;
+      summary[ct].cars[cn].km+=parseInt(r.actual_km)||0;
+      summary[ct].cars[cn].fee+=parseInt(r.actual_fee)||r.rental_fee||0;
+    });
+
+    // HTML生成
+    var html='<div id="printableReport">';
+    html+='<div style="text-align:center;margin-bottom:20px;">';
+    html+='<div style="font-size:18px;font-weight:700;color:#1a3a6b;">レンタカー事業報告書</div>';
+    html+='<div style="font-size:14px;color:#666;margin-top:4px;">対象年度：'+year+'年（'+ds+' 〜 '+de+'）</div>';
+    html+='<div style="font-size:13px;color:#666;">フォーラムオート　袋井市下山梨545</div>';
+    html+='</div>';
+
+    ['軽自動車','普通車'].forEach(function(ct){
+      var s=summary[ct];
+      var carCount=Object.keys(s.cars).length;
+      html+='<div style="margin-bottom:20px;">';
+      html+='<div style="background:#1a3a6b;color:white;padding:10px 16px;border-radius:8px 8px 0 0;font-size:14px;font-weight:700;">'+ct+'（'+carCount+'台）</div>';
+      html+='<table style="width:100%;border-collapse:collapse;border:1px solid #ddd;">';
+      html+='<tr style="background:#f5f7fa;">';
+      html+='<th style="padding:8px;border:1px solid #ddd;text-align:left;font-size:12px;">項目</th>';
+      html+='<th style="padding:8px;border:1px solid #ddd;text-align:right;font-size:12px;">数値</th></tr>';
+      html+='<tr><td style="padding:8px;border:1px solid #ddd;">台数</td><td style="padding:8px;border:1px solid #ddd;text-align:right;font-weight:700;">'+carCount+' 台</td></tr>';
+      html+='<tr><td style="padding:8px;border:1px solid #ddd;">貸出件数</td><td style="padding:8px;border:1px solid #ddd;text-align:right;font-weight:700;">'+s.count+' 件</td></tr>';
+      html+='<tr><td style="padding:8px;border:1px solid #ddd;">総稼働日数</td><td style="padding:8px;border:1px solid #ddd;text-align:right;font-weight:700;">'+s.days+' 日</td></tr>';
+      html+='<tr><td style="padding:8px;border:1px solid #ddd;">総走行距離</td><td style="padding:8px;border:1px solid #ddd;text-align:right;font-weight:700;">'+s.km.toLocaleString()+' km</td></tr>';
+      html+='<tr style="background:#fff8e1;"><td style="padding:8px;border:1px solid #ddd;font-weight:700;">総売上金額</td><td style="padding:8px;border:1px solid #ddd;text-align:right;font-weight:700;color:#e8392a;">¥'+s.fee.toLocaleString()+'</td></tr>';
+      html+='</table>';
+
+      // 車両別明細
+      if(Object.keys(s.cars).length>0){
+        html+='<div style="font-size:12px;font-weight:700;color:#666;margin-top:8px;margin-bottom:4px;">車両別明細</div>';
+        html+='<table style="width:100%;border-collapse:collapse;border:1px solid #ddd;">';
+        html+='<tr style="background:#f5f7fa;">';
+        html+='<th style="padding:6px 8px;border:1px solid #ddd;font-size:11px;">車種</th>';
+        html+='<th style="padding:6px 8px;border:1px solid #ddd;font-size:11px;text-align:right;">件数</th>';
+        html+='<th style="padding:6px 8px;border:1px solid #ddd;font-size:11px;text-align:right;">稼働日数</th>';
+        html+='<th style="padding:6px 8px;border:1px solid #ddd;font-size:11px;text-align:right;">走行km</th>';
+        html+='<th style="padding:6px 8px;border:1px solid #ddd;font-size:11px;text-align:right;">売上</th>';
+        html+='</tr>';
+        Object.keys(s.cars).forEach(function(cn){
+          var cv=s.cars[cn];
+          html+='<tr>';
+          html+='<td style="padding:6px 8px;border:1px solid #ddd;font-size:12px;">'+cn+'</td>';
+          html+='<td style="padding:6px 8px;border:1px solid #ddd;text-align:right;font-size:12px;">'+cv.count+'件</td>';
+          html+='<td style="padding:6px 8px;border:1px solid #ddd;text-align:right;font-size:12px;">'+cv.days+'日</td>';
+          html+='<td style="padding:6px 8px;border:1px solid #ddd;text-align:right;font-size:12px;">'+cv.km.toLocaleString()+'km</td>';
+          html+='<td style="padding:6px 8px;border:1px solid #ddd;text-align:right;font-size:12px;">¥'+cv.fee.toLocaleString()+'</td>';
+          html+='</tr>';
+        });
+        html+='</table>';
+      }
+      html+='</div>';
+    });
+
+    // 合計
+    var totalCount=summary['軽自動車'].count+summary['普通車'].count;
+    var totalDays=summary['軽自動車'].days+summary['普通車'].days;
+    var totalKm=summary['軽自動車'].km+summary['普通車'].km;
+    var totalFee=summary['軽自動車'].fee+summary['普通車'].fee;
+    html+='<div style="background:#1a3a6b;color:white;border-radius:8px;padding:14px 16px;margin-top:8px;">';
+    html+='<div style="font-size:14px;font-weight:700;margin-bottom:8px;">📊 合計</div>';
+    html+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;">';
+    html+='<div><div style="font-size:11px;opacity:0.8;">総件数</div><div style="font-size:20px;font-weight:700;">'+totalCount+'件</div></div>';
+    html+='<div><div style="font-size:11px;opacity:0.8;">総稼働日数</div><div style="font-size:20px;font-weight:700;">'+totalDays+'日</div></div>';
+    html+='<div><div style="font-size:11px;opacity:0.8;">総走行距離</div><div style="font-size:20px;font-weight:700;">'+totalKm.toLocaleString()+'km</div></div>';
+    html+='<div><div style="font-size:11px;opacity:0.8;">総売上</div><div style="font-size:20px;font-weight:700;">¥'+totalFee.toLocaleString()+'</div></div>';
+    html+='</div></div>';
+    html+='</div>';
+
+    document.getElementById('annualReportContent').innerHTML=html;
+  }catch(e){
+    document.getElementById('annualReportContent').innerHTML='<div style="color:red;padding:20px;">エラー: '+e.message+'</div>';
+  }
+}
+
+function printAnnualReport(){
+  var el=document.getElementById('printableReport');
+  if(!el){alert('先に集計してください');return;}
+  var w=window.open('','_blank');
+  w.document.write('<html><head><title>陸運局報告書</title><style>body{font-family:sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ddd;padding:6px 8px;}</style></head><body>'+el.innerHTML+'</body></html>');
+  w.document.close();
+  w.print();
+}
+
 window.addEventListener('load',loadData);
 </script>
 </body>
