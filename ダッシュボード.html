@@ -1264,6 +1264,8 @@ async function openEditModal(receptionId, estimateNo, customerName) {
   document.getElementById('editModalTitle').textContent = '受付情報の編集';
   document.getElementById('editModalSub').textContent = estimateNo + ' — ' + customerName + ' 様';
   document.getElementById('deleteConfirmArea').style.display = 'none';
+  var delBtn = document.getElementById('deleteConfirmBtn');
+  if(delBtn) delBtn.style.display = 'block';
 
   // Supabaseから最新データ取得
   try {
@@ -1355,6 +1357,8 @@ async function saveReceptionEdit() {
 }
 
 function showDeleteConfirm() {
+  var delBtn = document.getElementById('deleteConfirmBtn');
+  if(delBtn) delBtn.style.display = 'none';
   document.getElementById('deleteConfirmArea').style.display = 'block';
 }
 
