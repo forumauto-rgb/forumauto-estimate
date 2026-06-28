@@ -6916,27 +6916,54 @@ function autoSaveM(){
 async function savePaintToVehicle(){
   if(!customer.plate&&!customer.car){alert('見積作成タブで車両を選択してください');return;}
   const vi=vMaster.findIndex(v=>v.plate===customer.plate||(v.name===customer.car&&!customer.plate));
+  const g=GRADE_MASTER.find(x=>x.name===customer.grade)||{coef:1.1,foreign:1.0};
   if(vi<0){
-    const g=GRADE_MASTER.find(x=>x.name===customer.grade)||{coef:1.1,foreign:1.0};
     const newVid='V'+(vMaster.length+1).toString().padStart(4,'0');
-    vMaster.unshift({id:newVid,cid:'',plate:customer.plate||'',maker:'',name:customer.car||'',vin:'',year:'',drive:'2WD',
+    const newV={id:newVid,cid:'',plate:customer.plate||'',maker:'',name:customer.car||'',vin:'',year:'',drive:'2WD',
       grade:customer.grade,gradeCoef:g.coef,foreignCoef:g.foreign||1.0,evhv:'',
-      color:customer.color||'',film:pc4.film,paint:pc4.paint,clear:pc4.clear,special:pc4.special,memo:''});
+      color:customer.color||'',colorCode:customer.colorCode||'',
+      film:pc4.film,paint:pc4.paint,clear:pc4.clear,special:pc4.special,memo:''};
+    vMaster.unshift(newV);
     try{localStorage.setItem('fa_v6',JSON.stringify(vMaster));}catch(e){}
     showNotify('✅ 新規車両として登録しました\n'+customer.car+' '+customer.plate);
+    // Supabaseに新規登録
+    try{
+      const res=await fetch(SUPABASE_URL+'/rest/v1/vehicles',{
+        method:'POST',
+        headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation'},
+        body:JSON.stringify({
+          vehicle_no:newVid,
+          plate:customer.plate||'',
+          name:customer.car||'',
+          color_name:customer.color||'',
+          color_code:customer.colorCode||'',
+          film_type:pc4.film,
+          paint_type:pc4.paint,
+          clear_type:pc4.clear,
+          special:pc4.special,
+          grade:customer.grade||'中型'
+        })
+      });
+      if(res.ok) showNotify('🌥 新規車両をSupabaseに保存しました');
+      else showNotify('⚠ Supabase保存失敗: '+res.status);
+    }catch(e){console.warn('Supabase新規車両保存失敗:',e);}
   } else {
     vMaster[vi]={...vMaster[vi],film:pc4.film,paint:pc4.paint,clear:pc4.clear,special:pc4.special,
       grade:customer.grade,color:customer.color||vMaster[vi].color||''};
     try{localStorage.setItem('fa_v6',JSON.stringify(vMaster));}catch(e){}
-    showNotify('✅ 塗装係数を車両マスターに登録しました\n'+customer.car+' '+customer.plate+'\n塗膜：'+pc4.film+'\n塗料：'+pc4.paint+'\nクリヤー：'+pc4.clear+'\n特殊：'+pc4.special);
-  }
-  // Supabaseにも保存
-  try{
-      const vId=vi>=0?vMaster[vi].id:null;
+    showNotify('✅ 塗装係数を車両マスターに登録しました\n'+customer.car+' '+customer.plate);
+    // Supabaseに更新
+    try{
+      const vId=vMaster[vi].supabase_id||vMaster[vi].id||null;
       if(!vId){showNotify('⚠ 車両IDが見つかりません');return;}
-      const res=await fetch(SUPABASE_URL+'/rest/v1/vehicles?id=eq.'+encodeURIComponent(vId),{method:'PATCH',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({film_type:pc4.film,paint_type:pc4.paint,clear_type:pc4.clear,special:pc4.special})});
-      if(res.ok)showNotify('🌥 Supabaseにも保存しました');
-  }catch(e){console.warn('Supabase保存失敗:',e);}
+      const res=await fetch(SUPABASE_URL+'/rest/v1/vehicles?vehicle_no=eq.'+encodeURIComponent(vId),{
+        method:'PATCH',
+        headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+        body:JSON.stringify({film_type:pc4.film,paint_type:pc4.paint,clear_type:pc4.clear,special:pc4.special})
+      });
+      if(res.ok) showNotify('🌥 Supabaseにも保存しました');
+    }catch(e){console.warn('Supabase保存失敗:',e);}
+  }
   render();
 }
 function showNotify(msg){
