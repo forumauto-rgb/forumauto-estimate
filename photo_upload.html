@@ -180,6 +180,7 @@ var params = new URLSearchParams(location.search);
 var sessionId = params.get('session');
 var estimateId = params.get('eid') || '';
 var estimateDbId = params.get('eidnum') || ''; // 数値ID（DB直書き込み用、わかれば優先利用）
+var receptionId = params.get('recid') || ''; // 受付ID（見積保存前のQR撮影用）
 var customerNameParam = params.get('name') || '';
 var carInfoParam = params.get('car') || '';
 var initCat = params.get('cat') || 'photoIncoming';
@@ -465,6 +466,8 @@ function hideStatus() { document.getElementById('status').className = 'status'; 
 
 async function resolveEstimateDbId() {
   if (estimateDbId) return estimateDbId;
+  // reception_idだけある場合はdbId不要でOK（nullを返して保存続行）
+  if (receptionId && !estimateId) return null;
   if (!estimateId) return '';
   try {
     var r = await fetch(
@@ -488,11 +491,14 @@ async function submitPhotos() {
   ss.textContent = '📤 案件を確認中...';
   try {
     var dbId = await resolveEstimateDbId();
-    if (!dbId) throw new Error('案件IDが見つかりません。案件選択からやり直してください。');
+    // reception_idがある場合はdbIdなしでも保存可能
+    if (!dbId && !receptionId) throw new Error('案件IDが見つかりません。案件選択からやり直してください。');
 
     ss.textContent = '📤 既存写真を確認中...';
-    var existResp = await fetch(
-      SUPABASE_URL + '/rest/v1/estimate_photos?estimate_id=eq.' + dbId + '&select=category,sort_order,data_url',
+    var existUrl = dbId
+      ? SUPABASE_URL + '/rest/v1/estimate_photos?estimate_id=eq.' + dbId + '&select=category,sort_order,data_url'
+      : SUPABASE_URL + '/rest/v1/estimate_photos?reception_id=eq.' + receptionId + '&select=category,sort_order,data_url';
+    var existResp = await fetch(existUrl,
       { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
     );
     var existRows = existResp.ok ? (await existResp.json()) : [];
@@ -508,13 +514,15 @@ async function submitPhotos() {
       photos[cat].forEach(function(dataUrl) {
         if(!existSet[cat + '||' + dataUrl]) {
           maxSort[cat]++;
-          rows.push({
-            estimate_id: dbId,
+          var row = {
             estimate_no: estimateId || '',
             category: cat,
             data_url: dataUrl,
             sort_order: maxSort[cat]
-          });
+          };
+          if(dbId) row.estimate_id = dbId;
+          if(receptionId) row.reception_id = receptionId;
+          rows.push(row);
         }
       });
     });
