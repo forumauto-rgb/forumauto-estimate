@@ -6955,13 +6955,34 @@ async function savePaintToVehicle(){
     // Supabaseに更新
     try{
       const vId=vMaster[vi].supabase_id||vMaster[vi].id||null;
-      if(!vId){showNotify('⚠ 車両IDが見つかりません');return;}
-      const res=await fetch(SUPABASE_URL+'/rest/v1/vehicles?vehicle_no=eq.'+encodeURIComponent(vId),{
-        method:'PATCH',
-        headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
-        body:JSON.stringify({film_type:pc4.film,paint_type:pc4.paint,clear_type:pc4.clear,special:pc4.special})
-      });
-      if(res.ok) showNotify('🌥 Supabaseにも保存しました');
+      if(!vId){
+        // vIdがない場合は新規車両としてPOSTで登録
+        const newVid='V'+(vMaster.length).toString().padStart(4,'0');
+        vMaster[vi].id=newVid;
+        try{localStorage.setItem('fa_v6',JSON.stringify(vMaster));}catch(e){}
+        const res=await fetch(SUPABASE_URL+'/rest/v1/vehicles',{
+          method:'POST',
+          headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation'},
+          body:JSON.stringify({
+            vehicle_no:newVid,
+            plate:customer.plate||'',
+            name:customer.car||'',
+            color_name:customer.color||'',
+            color_code:customer.colorCode||'',
+            film_type:pc4.film,paint_type:pc4.paint,clear_type:pc4.clear,special:pc4.special,
+            grade:customer.grade||'中型'
+          })
+        });
+        if(res.ok) showNotify('🌥 新規車両としてSupabaseに登録しました');
+        else showNotify('⚠ Supabase登録失敗: '+res.status);
+      } else {
+        const res=await fetch(SUPABASE_URL+'/rest/v1/vehicles?vehicle_no=eq.'+encodeURIComponent(vId),{
+          method:'PATCH',
+          headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+          body:JSON.stringify({film_type:pc4.film,paint_type:pc4.paint,clear_type:pc4.clear,special:pc4.special})
+        });
+        if(res.ok) showNotify('🌥 Supabaseにも保存しました');
+      }
     }catch(e){console.warn('Supabase保存失敗:',e);}
   }
   render();
