@@ -281,6 +281,7 @@ textarea{resize:vertical;min-height:80px;}
             <div id="customerDropdown" style="display:none;position:absolute;z-index:200;background:#fff;border:1px solid #d8dde8;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.15);width:100%;max-height:220px;overflow-y:auto;margin-top:2px;top:100%;"></div>
           </div>
           <div class="form-group"><label>電話番号</label><input type="tel" id="phone" placeholder="090-0000-0000"></div>
+          <div class="form-group full"><label>住所</label><input type="text" id="ownerAddress" placeholder="静岡県袋井市..."></div>
           <!-- 車両検索 -->
           <div class="form-group full" style="position:relative;">
             <label>🔍 車両検索（車名またはナンバーで検索）</label>
@@ -289,6 +290,9 @@ textarea{resize:vertical;min-height:80px;}
           </div>
           <div class="form-group"><label>車名</label><input type="text" id="carName" placeholder="プリウス"></div>
           <div class="form-group"><label>ナンバー</label><input type="text" id="carNum" placeholder="静岡 300 あ 1234"></div>
+          <div class="form-group"><label>型式</label><input type="text" id="carModel" placeholder="ZVW30"></div>
+          <div class="form-group"><label>車体番号</label><input type="text" id="carVin" placeholder="ZVW30-1234567"></div>
+          <div class="form-group"><label>年式（初度登録）</label><input type="text" id="carYear" placeholder="令和2年3月"></div>
           <div class="form-group">
             <label>色番号<span style="font-size:10px;font-weight:400;text-transform:none;color:#888;"> ※ 塗料台帳の番号</span></label>
             <input type="text" id="colorCode" placeholder="例：040・1F7・PAX" oninput="lookupColorName(this.value);checkPaintDifficulty(this.value)" autocomplete="off">
@@ -909,8 +913,12 @@ function applyOCR() {
   var get = function(id){ var el=document.getElementById(id); return el?el.value:''; };
   var set = function(id,val){ var el=document.getElementById(id); if(el&&val)el.value=val; };
   set('customerName', get('ocr_owner_name'));
+  set('ownerAddress', get('ocr_address'));
   set('carName', get('ocr_car_type'));
   set('carNum', get('ocr_plate'));
+  set('carModel', get('ocr_model'));
+  set('carVin', get('ocr_vin'));
+  set('carYear', get('ocr_year'));
   showToast('✅ 車検証の情報を入力しました','success');
   document.getElementById('ocrResultArea').style.display='none';
   document.getElementById('ocrDropArea').style.display='block';
@@ -1196,7 +1204,7 @@ async function saveReception() {
       var custNo = '';
       if(!existing||existing.length===0){
         custNo = 'C'+String(Date.now()).slice(-6);
-        await supabaseQuery('customers','POST',{name:custName,tel:get('phone')||'',customer_no:custNo});
+        await supabaseQuery('customers','POST',{name:custName,tel:get('phone')||'',customer_no:custNo,address:get('ownerAddress')||''});
       } else {
         custNo = existing[0].customer_no||existing[0].id||'';
       }
@@ -1209,14 +1217,22 @@ async function saveReception() {
             name:carName2,plate:carNum2,
             color_name:carColor,color_code:colorCode,
             customer_id:custNo,
-            vehicle_no:'V'+String(Date.now()).slice(-6)
+            vehicle_no:'V'+String(Date.now()).slice(-6),
+            model:get('carModel')||'',
+            vin:get('carVin')||'',
+            year:get('carYear')||''
           });
         } else {
-          if(colorCode){
+          var patchData = {};
+          if(colorCode){patchData.color_code=colorCode;patchData.color_name=carColor;}
+          if(get('carModel')) patchData.model=get('carModel');
+          if(get('carVin'))   patchData.vin=get('carVin');
+          if(get('carYear'))  patchData.year=get('carYear');
+          if(Object.keys(patchData).length>0){
             await fetch(SUPABASE_URL+'/rest/v1/vehicles?plate=eq.'+encodeURIComponent(carNum2),{
               method:'PATCH',
               headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
-              body:JSON.stringify({color_code:colorCode,color_name:carColor})
+              body:JSON.stringify(patchData)
             });
           }
         }
