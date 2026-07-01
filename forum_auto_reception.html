@@ -1158,8 +1158,8 @@ async function saveReception() {
 
   var payload = {
     type: selectedBusinessType,
-    customer_name: name||get('outsourceCompany'),
-    phone: get('phone'),
+    customer_name: (selectedBusinessType==='外注受付') ? get('outsourceCompany') : (name||get('outsourceCompany')),
+    phone: (selectedBusinessType==='外注受付') ? get('outsourcePhone') : get('phone'),
     plate: get('carNum'),
     car_model: get('carName'),
     staff: get('staff')||'',
@@ -1199,12 +1199,14 @@ async function saveReception() {
 
     // 顧客・車両マスター自動登録
     try {
-      var custName = name||get('outsourceCompany');
+      // 外注受付は外注先（依頼会社）を顧客として登録。所有者名（customerName）は登録しない
+      var custName = (selectedBusinessType==='外注受付') ? get('outsourceCompany') : (name||get('outsourceCompany'));
+      var custTel  = (selectedBusinessType==='外注受付') ? get('outsourcePhone') : get('phone');
       var existing = await supabaseQuery('customers','GET',null,'?name=eq.'+encodeURIComponent(custName)+'&limit=1');
       var custNo = '';
       if(!existing||existing.length===0){
         custNo = 'C'+String(Date.now()).slice(-6);
-        await supabaseQuery('customers','POST',{name:custName,tel:get('phone')||'',customer_no:custNo,address:get('ownerAddress')||''});
+        await supabaseQuery('customers','POST',{name:custName,tel:custTel||'',customer_no:custNo,address:get('ownerAddress')||''});
       } else {
         custNo = existing[0].customer_no||existing[0].id||'';
       }
@@ -1266,8 +1268,8 @@ async function saveReception() {
 
     // localStorageに引き継ぎデータをセット
     var transferData = {
-      customer_name: name||get('outsourceCompany'),
-      phone: get('phone'),
+      customer_name: (selectedBusinessType==='外注受付') ? get('outsourceCompany') : (name||get('outsourceCompany')),
+      phone: (selectedBusinessType==='外注受付') ? get('outsourcePhone') : get('phone'),
       car_model: get('carName'),
       plate: get('carNum'),
       color_code: colorCode,
