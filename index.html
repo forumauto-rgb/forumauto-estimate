@@ -6740,7 +6740,7 @@ function applyReceptionParams() {
           var newCid = 'C' + Date.now().toString(36).toUpperCase().slice(-5);
           cMaster.unshift({
             id: newCid, name: td.customer_name, honorific: '様',
-            tel: td.phone || '', postal: '', address: '',
+            tel: td.phone || '', postal: '', address: td.address || '',
             insurance: td.insurance || '', aj: '',
             memo: '受付種別：' + (td.type||''),
             date: new Date().toISOString().split('T')[0]
@@ -6757,7 +6757,8 @@ function applyReceptionParams() {
             id: 'V' + Date.now().toString(36).toUpperCase().slice(-5),
             cid: custId, name: td.car_model || '', plate: td.plate || '',
             colorCode: td.color_code || '', colorName: td.color_name || '',
-            maker: '', grade: '', year: '', fuel: '', drive: ''
+            maker: '', grade: td.car_type || '', year: td.year || '',
+            vin: td.vin || '', fuel: '', drive: ''
           });
         }
       }

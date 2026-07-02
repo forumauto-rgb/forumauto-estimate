@@ -1286,8 +1286,12 @@ async function saveReception() {
     var transferData = {
       customer_name: (selectedBusinessType==='外注受付') ? get('outsourceCompany') : (name||get('outsourceCompany')),
       phone: (selectedBusinessType==='外注受付') ? get('outsourcePhone') : get('phone'),
+      address: get('ownerAddress'),
       car_model: get('carName'),
       plate: get('carNum'),
+      vin: get('carVin'),
+      year: get('carYear'),
+      car_type: get('carModel'),
       color_code: colorCode,
       color_name: carColor,
       insurance: get('insurance'),
