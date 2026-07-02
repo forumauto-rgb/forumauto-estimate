@@ -145,6 +145,10 @@ textarea{resize:vertical;min-height:80px;}
 .car-diagram-tabs{display:flex;gap:6px;margin-bottom:12px;}
 .diagram-tab{padding:6px 14px;border:1.5px solid var(--border);border-radius:6px;background:white;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:12px;font-weight:700;color:var(--text-light);transition:all 0.2s;}
 .diagram-tab.active{background:var(--primary);color:white;border-color:var(--primary);}
+/* 外注依頼会社ボタン */
+.outsource-co-btn{padding:8px 14px;border:2px solid var(--accent2);border-radius:8px;background:white;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:700;color:#e65100;transition:all 0.2s;white-space:nowrap;}
+.outsource-co-btn:hover{background:#fff3e0;border-color:#e65100;}
+.outsource-co-btn.selected{background:#fff3e0;border-color:#e65100;box-shadow:0 0 0 2px rgba(230,81,0,0.25);}
 /* ローディング */
 .loading-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(26,39,68,0.5);z-index:500;align-items:center;justify-content:center;}
 .loading-overlay.show{display:flex;}
@@ -244,13 +248,24 @@ textarea{resize:vertical;min-height:80px;}
         <!-- 外注受付：依頼会社 -->
         <div id="outsourceArea" style="display:none;margin-bottom:16px;padding:14px;background:#fff8e1;border:2px solid var(--accent2);border-radius:10px;">
           <div style="font-size:13px;font-weight:700;color:#e65100;margin-bottom:10px;">📦 外注受付 — 依頼会社（請求先）</div>
+          <!-- 依頼会社クイック選択 -->
+          <div style="margin-bottom:12px;">
+            <div style="font-size:11px;font-weight:700;color:#e65100;margin-bottom:8px;letter-spacing:0.5px;">▼ 登録済み依頼会社から選択</div>
+            <div id="outsourceCompanyBtns" style="display:flex;flex-wrap:wrap;gap:6px;min-height:36px;align-items:center;">
+              <div style="font-size:12px;color:#bbb;">読み込み中...</div>
+            </div>
+          </div>
           <div class="form-grid">
-            <div class="form-group"><label>依頼会社名<span class="required">*</span></label><input type="text" id="outsourceCompany" placeholder="例：〇〇自動車販売"></div>
+            <div class="form-group"><label>依頼会社名<span class="required">*</span></label><input type="text" id="outsourceCompany" placeholder="例：〇〇自動車販売" oninput="onOutsourceCompanyInput()"></div>
             <div class="form-group"><label>担当者名</label><input type="text" id="outsourceContact" placeholder="田中 様"></div>
             <div class="form-group"><label>電話番号</label><input type="tel" id="outsourcePhone" placeholder="053-000-0000"></div>
             <div class="form-group"><label>請求方法</label>
               <select id="outsourceBilling"><option>月締め請求</option><option>都度請求</option><option>その他</option></select>
             </div>
+          </div>
+          <div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <button type="button" onclick="saveOutsourceCompany()" style="padding:7px 16px;background:white;border:1.5px solid var(--accent2);border-radius:8px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:12px;font-weight:700;color:#e65100;">＋ この会社をマスターに保存</button>
+            <span style="font-size:11px;color:#aaa;">次回から選択ボタンに表示されます</span>
           </div>
         </div>
 
@@ -791,6 +806,7 @@ function selectBusinessType(type, btn) {
 
   // 外注受付エリア
   document.getElementById('outsourceArea').style.display = (type==='外注受付'?'block':'none');
+  if(type==='外注受付') loadOutsourceCompanies();
 
   // 車検証OCRエリア（レッカーは非表示）
   document.getElementById('ocrArea').style.display = (type==='レッカー'?'none':'block');
@@ -1282,6 +1298,11 @@ async function saveReception() {
     };
     localStorage.setItem('fa_reception_transfer', JSON.stringify(transferData));
 
+    // 外注受付：依頼会社をマスターに自動追加
+    if(selectedBusinessType==='外注受付'){
+      upsertOutsourceMaster(get('outsourceCompany'), get('outsourceContact'), get('outsourcePhone'), get('outsourceBilling'));
+    }
+
     hideLoading();
     afterReceptionSaved(caseNum, custName, rentalNeeded, selectedRentalCar);
   } catch(e) {
@@ -1350,6 +1371,106 @@ function showRentalDialog(caseNum, name, rentalCar) {
   document.body.appendChild(overlay);
 }
 
+// ===== 外注依頼会社マスター（localStorage） =====
+function getOutsourceMaster() {
+  try { return JSON.parse(localStorage.getItem('fa_outsource_companies') || '[]'); } catch(e) { return []; }
+}
+function setOutsourceMaster(list) {
+  localStorage.setItem('fa_outsource_companies', JSON.stringify(list));
+}
+function upsertOutsourceMaster(name, contact, phone, billing) {
+  if(!name) return;
+  var list = getOutsourceMaster();
+  var idx = list.findIndex(function(c){ return c.name === name; });
+  if(idx >= 0) {
+    if(contact) list[idx].contact = contact;
+    if(phone) list[idx].phone = phone;
+    if(billing) list[idx].billing = billing;
+  } else {
+    list.unshift({name: name, contact: contact||'', phone: phone||'', billing: billing||'月締め請求'});
+  }
+  setOutsourceMaster(list);
+}
+
+async function loadOutsourceCompanies() {
+  var localList = getOutsourceMaster();
+  var merged = localList.slice();
+  // Supabaseからis_outsource=trueの顧客も取得してマージ
+  try {
+    var sbData = await supabaseQuery('customers','GET',null,'?is_outsource=eq.true&select=name,tel,customer_no&order=name&limit=50');
+    if(sbData && sbData.length) {
+      sbData.forEach(function(c){
+        if(!merged.find(function(m){ return m.name===c.name; })){
+          merged.push({name:c.name, contact:'', phone:c.tel||'', billing:'月締め請求'});
+        }
+      });
+    }
+  } catch(e) { /* is_outsourceカラムなし or 通信エラー → localListのみ使用 */ }
+  renderOutsourceCompanyBtns(merged);
+}
+
+function renderOutsourceCompanyBtns(companies) {
+  var container = document.getElementById('outsourceCompanyBtns');
+  if(!container) return;
+  if(!companies || !companies.length) {
+    container.innerHTML = '<div style="font-size:12px;color:#aaa;">まだ登録された依頼会社がありません。<br>下のフォームに入力後「＋ マスターに保存」で登録できます。</div>';
+    return;
+  }
+  var btns = companies.map(function(c){
+    var cJson = JSON.stringify(c).replace(/"/g,'&quot;');
+    var title = (c.contact?'担当：'+c.contact+'　':'') + (c.phone?'TEL：'+c.phone:'');
+    return '<button type="button" class="outsource-co-btn" onclick="selectOutsourceCompany(this)" data-cjson="'+cJson+'" title="'+title+'">'+c.name+'</button>';
+  }).join('');
+  btns += '<button type="button" onclick="clearOutsourceSelection()" style="padding:7px 12px;border:1.5px dashed #ccc;border-radius:8px;background:transparent;cursor:pointer;font-family:\'Noto Sans JP\',sans-serif;font-size:12px;color:#999;">✕ クリア</button>';
+  container.innerHTML = btns;
+}
+
+function selectOutsourceCompany(btn) {
+  var cJson = btn.getAttribute('data-cjson');
+  if(!cJson) return;
+  try {
+    var c = JSON.parse(cJson.replace(/&quot;/g,'"'));
+    var set = function(id,val){ var e=document.getElementById(id); if(e) e.value=val||''; };
+    set('outsourceCompany', c.name);
+    set('outsourceContact', c.contact);
+    set('outsourcePhone', c.phone);
+    if(c.billing){
+      var sel=document.getElementById('outsourceBilling');
+      if(sel) for(var i=0;i<sel.options.length;i++){ if(sel.options[i].value===c.billing){sel.selectedIndex=i;break;} }
+    }
+    // ボタンのハイライト
+    var container = document.getElementById('outsourceCompanyBtns');
+    if(container) container.querySelectorAll('.outsource-co-btn').forEach(function(b){ b.classList.remove('selected'); });
+    btn.classList.add('selected');
+    showToast('📦 '+c.name+' を選択しました','success');
+  } catch(e) { console.warn('selectOutsourceCompany error',e); }
+}
+
+function clearOutsourceSelection() {
+  ['outsourceCompany','outsourceContact','outsourcePhone'].forEach(function(id){
+    var e=document.getElementById(id); if(e) e.value='';
+  });
+  var container = document.getElementById('outsourceCompanyBtns');
+  if(container) container.querySelectorAll('.outsource-co-btn').forEach(function(b){ b.classList.remove('selected'); });
+}
+
+function onOutsourceCompanyInput() {
+  // 手入力時はボタン選択状態を解除
+  var container = document.getElementById('outsourceCompanyBtns');
+  if(container) container.querySelectorAll('.outsource-co-btn').forEach(function(b){ b.classList.remove('selected'); });
+}
+
+function saveOutsourceCompany() {
+  var name = (document.getElementById('outsourceCompany').value||'').trim();
+  if(!name){ showToast('依頼会社名を入力してください','error'); return; }
+  var contact = document.getElementById('outsourceContact').value||'';
+  var phone = document.getElementById('outsourcePhone').value||'';
+  var billing = document.getElementById('outsourceBilling').value||'月締め請求';
+  upsertOutsourceMaster(name, contact, phone, billing);
+  loadOutsourceCompanies();
+  showToast('✅ '+name+' をマスターに保存しました','success');
+}
+
 // ===== フォームクリア =====
 function clearForm() {
   // フォームリセット
@@ -1365,6 +1486,8 @@ function clearForm() {
   selectedRentalCar=null; rentalNeeded=false;
   selectedBusinessType='';
   ocrData={};
+  var ocBtns=document.getElementById('outsourceCompanyBtns');
+  if(ocBtns) ocBtns.querySelectorAll('.outsource-co-btn').forEach(function(b){b.classList.remove('selected');});
   document.querySelectorAll('.type-select-btn').forEach(function(b){b.classList.remove('active');});
   goStep(1);
 }
