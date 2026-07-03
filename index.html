@@ -1096,7 +1096,7 @@ var _woSaveTimer=null;
 function woAutoSave(){
   if(_woSaveTimer)clearTimeout(_woSaveTimer);
   _woSaveTimer=setTimeout(function(){
-    if(woCurrentEst&&woCurrentEst._estId&&DB_MODE==='cloud'){woSaveActualToCloud();}
+    if(woCurrentEst&&woCurrentEst._estId){woSaveActualToCloud();}
     else{autoSaveM();}
   },2000);
 }
