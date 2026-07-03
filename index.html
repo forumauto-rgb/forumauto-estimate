@@ -1151,7 +1151,7 @@ function renderWorkOrder(){
       +'<td style="padding:1.5mm 1.5mm;width:12mm;text-align:center;font-size:8pt;border-left:0.5px solid #999;background:'+dc+';">'+dept+'</td>'
       +'<td style="padding:1.5mm 1.5mm;width:14mm;text-align:center;font-size:8pt;border-left:0.3px solid #ccc;">'+(estH||'-')+'</td>'
       +'<td style="padding:1.5mm 2mm;width:24mm;border-left:1.5px solid #555;">'
-        +'<input type="number" step="0.1" min="0" max="99" placeholder="　" value="'+(t._actualH>0?t._actualH:'')+'" '
+        +'<input type="number" step="0.1" min="0" max="99" placeholder="　" value="'+(parseFloat(t._actualH)>0?t._actualH:'')+'" '
         +'oninput="woUpdateActualH(\''+tid+'\',this.value)" '
         +'style="width:100%;border:none;border-bottom:1px solid #aaa;background:transparent;font-size:12pt;text-align:center;padding:2px;outline:none;font-family:Meiryo,sans-serif;"></td>'
       +'<td style="padding:1mm 1.5mm;width:22mm;border-left:0.5px solid #999;border-right:0.3px solid #ccc;">'
