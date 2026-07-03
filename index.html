@@ -6082,11 +6082,14 @@ async function saveDraft(){
         estId=(await rPost.json())[0].id;
       }
     }
+    // DELETE前に実作業時間を退避（item_name+processをキーに引き継ぎ）
+    var _prevActualMap={};
+    if(estId){var _pR=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId+'&select=item_name,process,actual_hours',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});if(_pR.ok){(await _pR.json()).forEach(function(p){if(p.actual_hours>0)_prevActualMap[(p.item_name||'')+'|'+(p.process||'')]=p.actual_hours;});}}
     // 既存明細を削除してから新規登録（重複防止）
     var delR=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
     if(!delR.ok){console.warn('items DELETE failed:',delR.status); throw new Error('明細削除失敗 status='+delR.status);}
 　　　if(sel.length>0){
-          var items=sel.map(function(s,i){return{estimate_id:estId,part_name:s._part||s.part||'',item_name:s.name||'',process:s.process||'',tag:s.tag||'remove',hours:s.hours||0,actual_hours:(s._actualH>0?s._actualH:null),cost:s.cost||0,sort_order:i};});
+          var items=sel.map(function(s,i){var _ak=(s.name||'')+'|'+(s.process||'');return{estimate_id:estId,part_name:s._part||s.part||'',item_name:s.name||'',process:s.process||'',tag:s.tag||'remove',hours:s.hours||0,actual_hours:(s._actualH>0?s._actualH:(_prevActualMap[_ak]||null)),cost:s.cost||0,sort_order:i};});
           var postR=await fetch(SUPABASE_URL+'/rest/v1/estimate_items',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(items)});
           if(!postR.ok){var errTxt=await postR.text(); throw new Error('明細登録失敗: '+errTxt);}
         }
@@ -6259,20 +6262,23 @@ async function saveEstimate(){
       var estArr=await rPost.json();
       estId=estArr[0].id;
     }
+    // DELETE前に実作業時間を退避（item_name+processをキーに引き継ぎ）
+    var _prevActualMap2={};
+    if(estId){var _pR2=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId+'&select=item_name,process,actual_hours',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});if(_pR2.ok){(await _pR2.json()).forEach(function(p){if(p.actual_hours>0)_prevActualMap2[(p.item_name||'')+'|'+(p.process||'')]=p.actual_hours;});}}
     // 明細は先に全削除してから再挿入
     await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId,{
       method:'DELETE',
       headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
     });
     // 明細保存
-    var items=sel.map(function(s,i){return{
+    var items=sel.map(function(s,i){var _ak2=(s.name||'')+'|'+(s.process||'');return{
       estimate_id:estId,
       part_name:s._part||s.part||'',
       item_name:s.name||'',
       process:s.process||'',
       tag:s.tag||'remove',
       hours:s.hours||0,
-      actual_hours:(s._actualH>0?s._actualH:null),
+      actual_hours:(s._actualH>0?s._actualH:(_prevActualMap2[_ak2]||null)),
       cost:s.cost||0,
       sort_order:i
     };});
