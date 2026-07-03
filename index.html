@@ -598,12 +598,28 @@ async function loadFromCloud(){
   }
 }
 
+async function loadStaffFromCloud(){
+  try{
+    var res=await fetch(SUPABASE_URL+'/rest/v1/staff?status=eq.在籍&select=name&order=join_date.asc',{
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+    });
+    if(res.ok){
+      var data=await res.json();
+      if(data&&data.length){
+        staffMaster=data.map(function(s){return s.name;});
+        saveStaffMaster();
+      }
+    }
+  }catch(e){console.warn('スタッフマスター取得エラー:',e);}
+}
+
 // 起動時にSupabase初期化
 // 起動時にSupabase接続テスト（エラーは通知しない）
 setTimeout(function(){
   testConnection().then(function(ok){
     if(ok){
       updateCloudTag();
+      loadStaffFromCloud();
       console.log('Supabase接続OK');
     } else {
       console.warn('Supabase未接続（オフラインまたはローカル実行）');
@@ -1080,7 +1096,7 @@ var _woSaveTimer=null;
 function woAutoSave(){
   if(_woSaveTimer)clearTimeout(_woSaveTimer);
   _woSaveTimer=setTimeout(function(){
-    if(woCurrentEst&&woCurrentEst._estId&&DB_MODE==='cloud'){woSaveActualToCloud();}
+    if(woCurrentEst&&woCurrentEst._estId){woSaveActualToCloud();}
     else{autoSaveM();}
   },2000);
 }
