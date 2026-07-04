@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>納品請求書 — フォーラムオート</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Meiryo','Hiragino Kaku Gothic Pro',sans-serif;background:#f0f2f6;color:#111;min-height:100vh;}
+
+/* ── 操作バー（印刷非表示） ── */
+.toolbar{display:flex;align-items:center;gap:8px;padding:10px 16px;background:#1a3a6b;position:sticky;top:0;z-index:100;flex-wrap:wrap;}
+.toolbar a,.toolbar button{display:inline-flex;align-items:center;gap:4px;padding:6px 14px;border:none;border-radius:7px;font-size:13px;font-weight:bold;cursor:pointer;text-decoration:none;white-space:nowrap;}
+.btn-home{background:#fff;color:#1a3a6b;}
+.btn-new{background:#43a047;color:#fff;}
+.btn-save{background:#1565c0;color:#fff;}
+.btn-print{background:#e65100;color:#fff;}
+.toolbar-sep{flex:1;}
+.btn-hist{background:#546e7a;color:#fff;}
+
+/* 過去の請求書パネル */
+.hist-panel{display:none;position:fixed;top:52px;right:16px;width:320px;max-height:70vh;overflow-y:auto;background:#fff;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.2);z-index:200;padding:12px;}
+.hist-panel.open{display:block;}
+.hist-item{padding:8px 10px;border-bottom:1px solid #eee;cursor:pointer;border-radius:6px;}
+.hist-item:hover{background:#e8f0fb;}
+.hist-item-title{font-size:13px;font-weight:bold;}
+.hist-item-sub{font-size:11px;color:#666;margin-top:2px;}
+
+/* ── 用紙ラッパー ── */
+.paper-wrap{max-width:800px;margin:24px auto;padding:0 16px 40px;}
+.paper{background:#fff;border-radius:4px;box-shadow:0 2px 12px rgba(0,0,0,0.12);padding:20mm 18mm 18mm;}
+
+/* ── タイトル ── */
+.doc-title{text-align:center;font-size:28pt;font-weight:bold;letter-spacing:0.5em;border-bottom:3px solid #111;padding-bottom:5mm;margin-bottom:8mm;}
+
+/* ── ヘッダー2カラム ── */
+.doc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8mm;gap:16px;}
+.doc-left{flex:1;}
+.doc-right{text-align:right;font-size:11pt;line-height:1.8;}
+.doc-right-company{font-size:14pt;font-weight:bold;margin-bottom:4px;}
+.issue-date-row{font-size:12pt;margin-bottom:5mm;}
+.issue-date-label{font-size:10pt;color:#444;}
+.issue-date-input{font-size:13pt;border:none;border-bottom:1.5px solid #aaa;width:160px;padding:2px 4px;outline:none;background:transparent;text-align:center;}
+
+/* ── 宛名 ── */
+.client-block{margin-bottom:6mm;}
+.client-label{font-size:10pt;color:#555;margin-bottom:2px;}
+.client-row{display:flex;align-items:baseline;gap:8px;}
+.client-select{font-size:16pt;font-weight:bold;border:none;border-bottom:2px solid #111;padding:2px 4px;outline:none;background:transparent;min-width:200px;max-width:340px;}
+.client-input{font-size:16pt;font-weight:bold;border:none;border-bottom:2px solid #111;padding:2px 4px;outline:none;background:transparent;width:300px;}
+.client-suffix{font-size:16pt;font-weight:bold;}
+
+/* ── 車両情報 ── */
+.vehicle-row{display:flex;gap:24px;margin-bottom:6mm;flex-wrap:wrap;}
+.vehicle-field{display:flex;align-items:baseline;gap:6px;}
+.vehicle-label{font-size:10pt;color:#555;white-space:nowrap;}
+.vehicle-input{font-size:13pt;border:none;border-bottom:1px solid #aaa;padding:2px 4px;outline:none;background:transparent;width:140px;}
+
+/* ── リード文 ── */
+.lead-text{font-size:11pt;margin-bottom:5mm;}
+
+/* ── 明細表 ── */
+.items-table{width:100%;border-collapse:collapse;margin-bottom:3mm;}
+.items-table th{background:#1a3a6b;color:#fff;padding:8px 10px;font-size:11pt;text-align:left;border:1px solid #1a3a6b;}
+.items-table th.col-amt{text-align:right;}
+.items-table th.col-del{width:40px;text-align:center;}
+.items-table td{padding:6px 8px;border:1px solid #ccc;font-size:13pt;vertical-align:middle;}
+.items-table td.col-amt{text-align:right;}
+.items-table td.col-del{text-align:center;}
+.item-name-input{width:100%;border:none;font-size:13pt;outline:none;background:transparent;padding:2px 0;}
+.item-amt-input{width:130px;border:none;font-size:13pt;outline:none;background:transparent;text-align:right;padding:2px 0;}
+.del-btn{background:none;border:none;cursor:pointer;font-size:16px;color:#c62828;padding:2px 6px;border-radius:4px;}
+.del-btn:hover{background:#ffebee;}
+.add-row-btn{margin-top:6px;padding:6px 16px;background:#e8f0fb;border:1.5px dashed #1565c0;border-radius:7px;color:#1565c0;font-size:12pt;font-weight:bold;cursor:pointer;display:inline-flex;align-items:center;gap:4px;}
+.add-row-btn:hover{background:#bbdefb;}
+
+/* ── 合計 ── */
+.total-block{display:flex;justify-content:flex-end;margin:5mm 0;}
+.total-box{border:2.5px solid #1a3a6b;border-radius:8px;padding:10px 20px;display:flex;align-items:center;gap:20px;min-width:280px;}
+.total-label{font-size:14pt;font-weight:bold;color:#1a3a6b;}
+.total-amount{font-size:22pt;font-weight:bold;color:#1a3a6b;}
+
+/* ── 備考 ── */
+.notes-block{margin-top:6mm;}
+.notes-label{font-size:10pt;color:#555;margin-bottom:4px;}
+.notes-input{width:100%;min-height:60px;border:1px solid #ccc;border-radius:4px;padding:6px 8px;font-size:12pt;font-family:inherit;resize:vertical;outline:none;}
+
+/* ── 発行者フッター ── */
+.issuer-block{margin-top:10mm;padding-top:6mm;border-top:1px solid #ccc;text-align:right;font-size:11pt;line-height:1.9;}
+.issuer-company{font-size:15pt;font-weight:bold;}
+
+/* 入力ヘルパー（非印刷） */
+.no-print-hint{font-size:10px;color:#999;margin-left:4px;}
+
+/* ── 印刷 ── */
+@media print{
+  body{background:#fff;}
+  .toolbar,.hist-panel,.add-row-btn,.del-btn,.no-print-hint,.no-print{display:none!important;}
+  .paper-wrap{margin:0;padding:0;max-width:100%;}
+  .paper{box-shadow:none;border-radius:0;padding:15mm 18mm 18mm;}
+  .client-select,.client-input,.item-name-input,.item-amt-input,
+  .issue-date-input,.vehicle-input,.notes-input{border-bottom-color:#555;border-color:#555;}
+  .items-table td{border-color:#888;}
+  @page{size:A4 portrait;margin:0;}
+}
+</style>
+</head>
+<body>
+
+<!-- 操作バー -->
+<div class="toolbar no-print">
+  <a href="ダッシュボード.html" class="btn-home">🏠 ホーム</a>
+  <button class="btn-new" onclick="newInvoice()">＋ 新規</button>
+  <button class="btn-save" onclick="saveInvoice()">💾 保存</button>
+  <button class="btn-print" onclick="window.print()">🖨 印刷</button>
+  <div class="toolbar-sep"></div>
+  <button class="btn-hist" onclick="toggleHistPanel()">📂 過去の請求書 ▼</button>
+</div>
+
+<!-- 過去の請求書パネル -->
+<div class="hist-panel" id="histPanel">
+  <div style="font-weight:bold;font-size:13px;margin-bottom:8px;color:#1a3a6b;">保存済み請求書</div>
+  <div id="histList"><div style="color:#aaa;font-size:12px;text-align:center;padding:12px;">読み込み中...</div></div>
+</div>
+
+<!-- 用紙 -->
+<div class="paper-wrap">
+<div class="paper">
+
+  <!-- タイトル -->
+  <div class="doc-title">納　品　請　求　書</div>
+
+  <!-- ヘッダー -->
+  <div class="doc-header">
+    <div class="doc-left">
+      <div class="issue-date-row">
+        <span class="issue-date-label">発行日：</span>
+        <input type="date" class="issue-date-input" id="invoiceDate">
+      </div>
+      <div class="client-block">
+        <div class="client-label">宛名</div>
+        <div class="client-row">
+          <select class="client-select" id="clientSelect" onchange="onClientSelect()">
+            <option value="">— 選択 —</option>
+          </select>
+          <span class="client-suffix">御中</span>
+        </div>
+        <div class="client-row" style="margin-top:4px;">
+          <input type="text" class="client-input" id="clientName" placeholder="または手入力">
+        </div>
+      </div>
+      <div class="vehicle-row">
+        <div class="vehicle-field">
+          <span class="vehicle-label">車名：</span>
+          <input type="text" class="vehicle-input" id="carName" placeholder="例：ノア">
+        </div>
+        <div class="vehicle-field">
+          <span class="vehicle-label">登録番号：</span>
+          <input type="text" class="vehicle-input" id="plate" placeholder="例：静岡 500 あ 1234">
+        </div>
+      </div>
+    </div>
+    <div class="doc-right">
+      <div class="doc-right-company">有限会社フォーラムオート</div>
+      <div>静岡県袋井市下山梨545</div>
+      <div>TEL 0538-49-0632</div>
+    </div>
+  </div>
+
+  <div class="lead-text">下記の通りご請求申し上げます。</div>
+
+  <!-- 明細表 -->
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th>項目</th>
+        <th class="col-amt" style="width:160px;">金額（円）</th>
+        <th class="col-del no-print"></th>
+      </tr>
+    </thead>
+    <tbody id="itemsBody"></tbody>
+  </table>
+  <button class="add-row-btn no-print" onclick="addRow()">＋ 行を追加</button>
+
+  <!-- 合計 -->
+  <div class="total-block">
+    <div class="total-box">
+      <span class="total-label">請　求　額</span>
+      <span class="total-amount" id="totalAmount">¥ 0</span>
+    </div>
+  </div>
+
+  <!-- 備考 -->
+  <div class="notes-block">
+    <div class="notes-label">備考</div>
+    <textarea class="notes-input" id="notes" placeholder="備考・振込先等を入力"></textarea>
+  </div>
+
+  <!-- 発行者 -->
+  <div class="issuer-block">
+    <div class="issuer-company">有限会社フォーラムオート</div>
+    <div>〒437-0226　静岡県袋井市下山梨545</div>
+    <div>TEL 0538-49-0632</div>
+  </div>
+
+</div><!-- /paper -->
+</div><!-- /paper-wrap -->
+
+<script>
+const SUPABASE_URL='https://uhppgdwbyrijnqpvusxw.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVocHBnZHdieXJpam5xcHZ1c3h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NDEyMDksImV4cCI6MjA4OTExNzIwOX0.mJ2GXQUsRZAZ-VL6XTVTz3gfG3MTNtfnWxsIPU_DK60';
+const HEADERS={'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'};
+
+var currentId=null;
+
+// ── 初期化 ──
+window.addEventListener('DOMContentLoaded',function(){
+  setTodayDate();
+  loadOutsourceMaster();
+  addRow();addRow();addRow();
+  loadHistList();
+  document.getElementById('histPanel').addEventListener('mouseleave',function(){
+    document.getElementById('histPanel').classList.remove('open');
+  });
+});
+
+function setTodayDate(){
+  var d=new Date();
+  var y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
+  document.getElementById('invoiceDate').value=y+'-'+m+'-'+day;
+}
+
+// ── 外注先マスター ──
+function loadOutsourceMaster(){
+  var sel=document.getElementById('clientSelect');
+  try{
+    var data=JSON.parse(localStorage.getItem('fa_outsource_companies')||'[]');
+    data.forEach(function(c){
+      var opt=document.createElement('option');
+      opt.value=c.name||'';
+      opt.textContent=c.name||'';
+      sel.appendChild(opt);
+    });
+  }catch(e){}
+}
+function onClientSelect(){
+  var v=document.getElementById('clientSelect').value;
+  if(v)document.getElementById('clientName').value=v;
+}
+
+// ── 明細行 ──
+function addRow(name,amount){
+  var tbody=document.getElementById('itemsBody');
+  var tr=document.createElement('tr');
+  var amtVal=(amount!=null)?amount:'';
+  tr.innerHTML='<td><input type="text" class="item-name-input" placeholder="項目名" value="'+escHtml(name||'')+'" oninput="calcTotal()"></td>'
+    +'<td class="col-amt"><input type="number" class="item-amt-input" placeholder="0" step="1" value="'+escHtml(String(amtVal))+'" oninput="calcTotal()"></td>'
+    +'<td class="col-del no-print"><button class="del-btn" onclick="delRow(this)" title="削除">✕</button></td>';
+  tbody.appendChild(tr);
+  calcTotal();
+}
+function delRow(btn){
+  btn.closest('tr').remove();
+  calcTotal();
+}
+function calcTotal(){
+  var total=0;
+  document.querySelectorAll('.item-amt-input').forEach(function(inp){
+    var v=parseFloat(inp.value);
+    if(!isNaN(v))total+=v;
+  });
+  document.getElementById('totalAmount').textContent='¥ '+total.toLocaleString('ja-JP');
+}
+function getTotal(){
+  var total=0;
+  document.querySelectorAll('.item-amt-input').forEach(function(inp){
+    var v=parseFloat(inp.value);
+    if(!isNaN(v))total+=v;
+  });
+  return total;
+}
+function getItems(){
+  var rows=[];
+  document.querySelectorAll('#itemsBody tr').forEach(function(tr){
+    var name=tr.querySelector('.item-name-input').value.trim();
+    var amt=tr.querySelector('.item-amt-input').value;
+    if(name||amt!=='')rows.push({name:name,amount:amt===''?null:parseFloat(amt)});
+  });
+  return rows;
+}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── 新規 ──
+function newInvoice(){
+  if(!confirm('現在の内容を破棄して新規作成しますか？'))return;
+  currentId=null;
+  setTodayDate();
+  document.getElementById('clientSelect').value='';
+  document.getElementById('clientName').value='';
+  document.getElementById('carName').value='';
+  document.getElementById('plate').value='';
+  document.getElementById('notes').value='';
+  document.getElementById('itemsBody').innerHTML='';
+  addRow();addRow();addRow();
+  calcTotal();
+}
+
+// ── 保存 ──
+async function saveInvoice(){
+  var clientName=document.getElementById('clientName').value.trim()||document.getElementById('clientSelect').value||'';
+  var items=getItems();
+  var payload={
+    invoice_date:document.getElementById('invoiceDate').value||'',
+    client_name:clientName,
+    car_name:document.getElementById('carName').value.trim(),
+    plate:document.getElementById('plate').value.trim(),
+    items:items,
+    total_amount:getTotal(),
+    notes:document.getElementById('notes').value.trim()
+  };
+  try{
+    var url,method;
+    if(currentId){
+      url=SUPABASE_URL+'/rest/v1/delivery_invoices?id=eq.'+currentId;
+      method='PATCH';
+    }else{
+      url=SUPABASE_URL+'/rest/v1/delivery_invoices';
+      method='POST';
+    }
+    var res=await fetch(url,{method:method,headers:Object.assign({},HEADERS,{'Prefer':'return=representation'}),body:JSON.stringify(payload)});
+    if(!res.ok)throw new Error('HTTP '+res.status+': '+await res.text());
+    var data=await res.json();
+    if(!currentId&&data&&data[0])currentId=data[0].id;
+    showMsg('💾 保存しました');
+    loadHistList();
+  }catch(e){alert('保存失敗: '+e.message);}
+}
+
+// ── 履歴パネル ──
+function toggleHistPanel(){
+  var p=document.getElementById('histPanel');
+  p.classList.toggle('open');
+  if(p.classList.contains('open'))loadHistList();
+}
+async function loadHistList(){
+  var el=document.getElementById('histList');
+  try{
+    var res=await fetch(SUPABASE_URL+'/rest/v1/delivery_invoices?select=id,invoice_date,client_name,total_amount&order=created_at.desc&limit=50',{headers:HEADERS});
+    if(!res.ok)throw new Error(res.status);
+    var list=await res.json();
+    if(!list.length){el.innerHTML='<div style="color:#aaa;font-size:12px;text-align:center;padding:12px;">保存済みデータなし</div>';return;}
+    el.innerHTML=list.map(function(r){
+      return '<div class="hist-item" onclick="loadInvoice('+r.id+')">'
+        +'<div class="hist-item-title">'+(r.client_name||'（宛名なし）')+'　御中</div>'
+        +'<div class="hist-item-sub">'+(r.invoice_date||'日付なし')+'　¥'+(r.total_amount||0).toLocaleString('ja-JP')+'</div>'
+        +'</div>';
+    }).join('');
+  }catch(e){el.innerHTML='<div style="color:#c00;font-size:12px;padding:8px;">読込失敗: '+e.message+'</div>';}
+}
+async function loadInvoice(id){
+  document.getElementById('histPanel').classList.remove('open');
+  try{
+    var res=await fetch(SUPABASE_URL+'/rest/v1/delivery_invoices?id=eq.'+id,{headers:HEADERS});
+    if(!res.ok)throw new Error(res.status);
+    var data=await res.json();
+    var r=data[0];if(!r)return;
+    currentId=r.id;
+    document.getElementById('invoiceDate').value=r.invoice_date||'';
+    document.getElementById('clientName').value=r.client_name||'';
+    document.getElementById('clientSelect').value='';
+    document.getElementById('carName').value=r.car_name||'';
+    document.getElementById('plate').value=r.plate||'';
+    document.getElementById('notes').value=r.notes||'';
+    document.getElementById('itemsBody').innerHTML='';
+    var items=r.items||[];
+    if(items.length){items.forEach(function(it){addRow(it.name,it.amount);});}
+    else{addRow();addRow();addRow();}
+    calcTotal();
+    showMsg('📂 読み込みました');
+  }catch(e){alert('読込失敗: '+e.message);}
+}
+
+function showMsg(msg){
+  var el=document.createElement('div');
+  el.textContent=msg;
+  el.style.cssText='position:fixed;bottom:24px;right:24px;background:#1a3a6b;color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:bold;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
+  document.body.appendChild(el);
+  setTimeout(function(){el.remove();},2500);
+}
+</script>
+</body>
+</html>
