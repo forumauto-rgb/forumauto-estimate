@@ -4965,6 +4965,8 @@ function rIP(){const sc=document.querySelector('.content').scrollTop;render();se
 function dS(e){dragSrc=+e.currentTarget.dataset.idx;}
 function dO(e){e.preventDefault();}
 function dP(e,to){e.preventDefault();if(dragSrc===null||dragSrc===to)return;const m=sel.splice(dragSrc,1)[0];sel.splice(to,0,m);dragSrc=null;render();}
+function applyProcessSort(){sel.sort(function(a,b){return getProcessOrder(a)-getProcessOrder(b);});sortMode='process';rIP();}
+function applyWorkSort(){var sorted=sortByWork(sel.slice());sel.length=0;sorted.forEach(function(s){sel.push(s);});sortMode='work';rIP();}
 
 function saveToM(){
   if(!customer.name){alert('顧客名を入力してください');return;}
@@ -5296,24 +5298,17 @@ function renderSelectedTasks(fullMode){
   h+='<th style="padding:6px;width:75px;text-align:right">\u5de5\u8cdb(\u5186)</th>';
   h+='<th style="padding:6px;width:28px"></th>';
   h+='</tr></thead><tbody>';
-  // 工程順ソート（選択順の場合はsel配列そのままの順番を使う）
-  var dispSel = sel.slice(); // 選択順：sel配列そのまま
-  if(sortMode === 'work'){
-    dispSel = sortByWork(sel.slice());
-  } else if(sortByProcess){
-    dispSel = sel.slice().sort(function(a,b){
-      return getProcessOrder(a) - getProcessOrder(b);
-    });
-  }
+  // 整列はsel本体に1回だけ適用済み。render時には再ソートしない
+  var dispSel = sel.slice();
 
   // 並び替えボタン＋見出し設定（2行レイアウト）
   h += '<div style="padding:6px 10px;background:#f0f4ff;border-bottom:1px solid #dde;">';
   h += '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">';
   h += '<span style="font-size:11px;color:#555;font-weight:bold;">並び順：</span>';
   h += '<button onclick="sortMode=\'select\';sortByProcess=false;rIP()" style="padding:3px 10px;font-size:11px;border-radius:4px;border:1px solid #aaa;cursor:pointer;background:'+(sortMode==='select'?'#1a3a6b':'#fff')+';color:'+(sortMode==='select'?'white':'#333')+';">選択順</button>';
-  h += '<button onclick="sortMode=\'process\';sortByProcess=true;rIP()" style="padding:3px 10px;font-size:11px;border-radius:4px;border:1px solid #aaa;cursor:pointer;background:'+(sortMode==='process'?'#1a3a6b':'#fff')+';color:'+(sortMode==='process'?'white':'#333')+';">工程順</button>';
-  h += '<button onclick="sortMode=\'work\';sortByProcess=false;rIP()" style="padding:3px 10px;font-size:11px;border-radius:4px;border:1px solid #aaa;cursor:pointer;background:'+(sortMode==='work'?'#1a3a6b':'#fff')+';color:'+(sortMode==='work'?'white':'#333')+';">作業順</button>';
-  h += (sortMode==='select'&&!sortByProcess ? '<span style="font-size:10px;color:#888;margin-left:4px;">✋ 行をドラッグして並び替え可</span>' : '<span style="font-size:10px;color:#e65100;margin-left:4px;">※ 選択順のみ並び替え可</span>');
+  h += '<button onclick="applyProcessSort()" style="padding:3px 10px;font-size:11px;border-radius:4px;border:1px solid #aaa;cursor:pointer;background:'+(sortMode==='process'?'#1a3a6b':'#fff')+';color:'+(sortMode==='process'?'white':'#333')+';">工程順</button>';
+  h += '<button onclick="applyWorkSort()" style="padding:3px 10px;font-size:11px;border-radius:4px;border:1px solid #aaa;cursor:pointer;background:'+(sortMode==='work'?'#1a3a6b':'#fff')+';color:'+(sortMode==='work'?'white':'#333')+';">作業順</button>';
+  h += '<span style="font-size:10px;color:#888;margin-left:4px;">✋ 行をドラッグして並び替え可</span>';
   h += '<span style="font-size:11px;color:#aaa;margin:0 4px;">｜</span>';
   h += '<span style="font-size:11px;color:#555;font-weight:bold;">見出し：</span>';
   var hm=headerMode;
@@ -5331,7 +5326,7 @@ function renderSelectedTasks(fullMode){
     var rowIdx = realIdx >= 0 ? realIdx : idx;
 
     // 工程順表示時はセクションヘッダーを挿入
-    if(sortByProcess){
+    if(sortMode === 'process'){
       var ord = getProcessOrder(s);
       if(ord !== prevOrder){
         prevOrder = ord;
@@ -5358,7 +5353,7 @@ function renderSelectedTasks(fullMode){
     var dispName = s.name
       .replace(/（右）/g, '<span style="background:#cfe8ff;border-radius:3px;padding:1px 3px;font-weight:bold;">（右）</span>')
       .replace(/（左）/g, '<span style="background:#c8f0c8;border-radius:3px;padding:1px 3px;font-weight:bold;">（左）</span>');
-    var canDrag = (sortMode === 'select' && !sortByProcess);
+    var canDrag = true;
     h+='<tr '+(canDrag?'draggable="true"':'')+' data-idx="'+rowIdx+'" '+(canDrag?'ondragstart="dS(event)" ondragover="dO(event)" ondrop="dP(event,'+rowIdx+')"':'')+' ';
     h+=' style="border-bottom:1px solid #eee;background:#ffffff;">';
     h+='<td style="padding:4px 6px;text-align:center;cursor:'+(canDrag?'move':'default')+';color:#bbb">'+(canDrag?'&#8286;':'')+'</td>';
