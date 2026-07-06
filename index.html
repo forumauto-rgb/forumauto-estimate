@@ -7417,9 +7417,28 @@ function closeQRModal(){
 }
 var aiChatHistory = loadChatHistory();
 var aiChatLoading = false;
+// 描画中フラグ: trueの間はaiProcChangeがt.processを上書きしない
+var _aiProposalRendering = false;
+function aiProcChange(i, val){
+  if(_aiProposalRendering) return;
+  if(!aiChatProposals || !aiChatProposals.tasks[i]) return;
+  aiChatProposals.tasks[i].process = val;
+  try{localStorage.setItem('fa_ai_proposals', JSON.stringify(aiChatProposals));}catch(e){}
+}
 // ★ 提案をlocalStorageから復元（見積タブから戻っても消えない）
 var aiChatProposals = (function(){
-  try{ var s=localStorage.getItem('fa_ai_proposals'); return s?JSON.parse(s):null; }catch(e){ return null; }
+  try{
+    var s = localStorage.getItem('fa_ai_proposals');
+    if(!s) return null;
+    var d = JSON.parse(s);
+    // 全タスクの工程が「取外し」→汚染データとみなし破棄
+    if(d && d.tasks && d.tasks.length >= 2 && d.tasks.every(function(t){ return (t.process||'').trim()==='取外し'; })){
+      console.warn('[AI] fa_ai_proposals: 全タスクが取外しのため汚染データとして破棄');
+      localStorage.removeItem('fa_ai_proposals');
+      return null;
+    }
+    return d;
+  }catch(e){ return null; }
 })();
 var aiChatCheckedItems = {};
 
@@ -7965,12 +7984,15 @@ function renderAiChat(){
     var rows = '';
     var procs = ['取外し','脱着','修正','修理','交換','パネル塗装','バンパー塗装','下地処理（中）','養生（中）','使用','乾燥','磨き肌調整','取付','確認','エーミング','清掃'];
     aiChatProposals.tasks.forEach(function(t,i){
-      var procOpts = procs.map(function(p){ return '<option value="'+p+'"'+(p===t.process?' selected':'')+'>'+p+'</option>'; }).join('');
+      var tp = (t.process||'').trim();
+      var procMatch = procs.some(function(p){ return p===tp; });
+      var procOpts = procs.map(function(p){ return '<option value="'+p+'"'+(p===tp?' selected':'')+'>'+p+'</option>'; }).join('');
+      if(!procMatch && tp){ procOpts = '<option value="'+tp+'" selected>'+tp+'</option>' + procOpts; }
       rows += '<tr draggable="true" id="aic_row_'+i+'" ondragstart="aiRowDragStart(event,'+i+')" ondragover="aiRowDragOver(event,'+i+')" ondrop="aiRowDrop(event,'+i+')" ondragend="aiRowDragEnd()" style="border-bottom:1px solid #f0f0f0;cursor:default;">'
         + '<td style="padding:5px 4px;width:20px;text-align:center;color:#bbb;font-size:14px;cursor:grab;" title="ドラッグして並び替え">☰</td>'
         + '<td style="padding:5px 6px;width:28px;"><input type="checkbox" id="aic_cb_'+i+'" checked style="width:15px;height:15px;accent-color:#534AB7;"></td>'
         + '<td style="padding:5px 4px;"><input id="aic_name_'+i+'" value="'+t.name+'" onchange="aiChatProposals.tasks['+i+'].name=this.value;try{localStorage.setItem(\'fa_ai_proposals\',JSON.stringify(aiChatProposals));}catch(e){}" style="width:100%;border:1px solid #ddd;border-radius:5px;padding:3px 6px;font-size:12px;font-weight:bold;"></td>'
-        + '<td style="padding:5px 4px;"><select id="aic_proc_'+i+'" onchange="aiChatProposals.tasks['+i+'].process=this.value;try{localStorage.setItem(\'fa_ai_proposals\',JSON.stringify(aiChatProposals));}catch(e){}" style="border:1px solid #ddd;border-radius:5px;padding:3px 4px;font-size:11px;color:#534AB7;background:#EEEDFE;">'+procOpts+'</select></td>'
+        + '<td style="padding:5px 4px;"><select id="aic_proc_'+i+'" onchange="aiProcChange('+i+',this.value)" style="border:1px solid #ddd;border-radius:5px;padding:3px 4px;font-size:11px;color:#534AB7;background:#EEEDFE;">'+procOpts+'</select></td>'
         + '<td style="padding:5px 4px;width:60px;"><input id="aic_h_'+i+'" type="number" step="0.1" min="0" value="'+(t.hours||0)+'" onchange="aiChatProposals.tasks['+i+'].hours=parseFloat(this.value)||0;try{localStorage.setItem(\'fa_ai_proposals\',JSON.stringify(aiChatProposals));}catch(e){}" style="width:54px;border:1px solid #ddd;border-radius:5px;padding:3px 4px;font-size:12px;text-align:right;"></td>'
         + '<td style="padding:5px 4px;font-size:11px;color:#888;max-width:90px;">'+(t.reason||'')+'</td>'
         + '<td style="padding:5px 2px;"><button onclick="aiChatProposals.tasks.splice('+i+',1);try{localStorage.setItem(\'fa_ai_proposals\',JSON.stringify(aiChatProposals));}catch(e){}rAI()" style="border:none;background:transparent;color:#e57373;font-size:14px;cursor:pointer;padding:2px 5px;">✕</button></td>'
@@ -8465,8 +8487,10 @@ function rAI(){
   var c = document.getElementById('TC');
   if(!c) return;
   if(curTab !== 'aiassist'){ render(); return; }
+  _aiProposalRendering = true;
   c.innerHTML = renderAiAssist();
   setTimeout(function(){
+    _aiProposalRendering = false;
     var ca = document.getElementById('ai-chat-area');
     if(ca) ca.scrollTop = ca.scrollHeight;
   }, 50);
