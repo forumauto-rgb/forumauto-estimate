@@ -6070,8 +6070,10 @@ async function saveDraft(){
     var estId=customer._estId||null;
     if(estId){
       // 既存IDで上書き（重複しない）
-      await fetch(SUPABASE_URL+'/rest/v1/estimates?id=eq.'+estId,{method:'PATCH',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(estData)});
-    } else {
+      var patchR=await fetch(SUPABASE_URL+'/rest/v1/estimates?id=eq.'+estId,{method:'PATCH',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(estData)});
+      if(!patchR.ok){ estId=null; customer._estId=null; } // PATCH失敗時はelseブランチにfallback
+    }
+    if(!estId){
       // 番号で検索して既存確認
       var rCheck=await fetch(SUPABASE_URL+'/rest/v1/estimates?estimate_no=eq.'+encodeURIComponent(estNo)+'&select=id',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
       var existing=await rCheck.json();
@@ -6088,8 +6090,9 @@ async function saveDraft(){
     var _prevActualMap={};
     if(estId){var _pR=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId+'&select=item_name,process,actual_hours',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});if(_pR.ok){(await _pR.json()).forEach(function(p){if(p.actual_hours>0)_prevActualMap[(p.item_name||'')+'|'+(p.process||'')]=p.actual_hours;});}}
     // 既存明細を削除してから新規登録（重複防止）
+    if(!estId||!/^[0-9a-f-]{36}$/i.test(String(estId))) throw new Error('明細削除失敗: estIdが無効 ('+estId+')');
     var delR=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
-    if(!delR.ok){console.warn('items DELETE failed:',delR.status); throw new Error('明細削除失敗 status='+delR.status);}
+    if(!delR.ok){var delErrTxt=await delR.text().catch(function(){return '';});console.warn('items DELETE failed:',delR.status,delErrTxt); throw new Error('明細削除失敗 status='+delR.status+' '+delErrTxt);}
 　　　if(sel.length>0){
           var items=sel.map(function(s,i){var _ak=(s.name||'')+'|'+(s.process||'');return{estimate_id:estId,part_name:s._part||s.part||'',item_name:s.name||'',process:s.process||'',tag:s.tag||'remove',hours:s.hours||0,actual_hours:(s._actualH>0?s._actualH:(_prevActualMap[_ak]||null)),cost:s.cost||0,sort_order:i};});
           var postR=await fetch(SUPABASE_URL+'/rest/v1/estimate_items',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(items)});
