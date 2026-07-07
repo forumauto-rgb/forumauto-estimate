@@ -6765,10 +6765,12 @@ function applyReceptionParams() {
       var td = JSON.parse(transferRaw);
 
       // 色番号・色名を引き継ぎ
-      if(td.color_code) customer.colorCode = td.color_code;
-      if(td.color_name) customer.colorName = td.color_name;
-      if(td.insurance)  customer.insurance = td.insurance;
-      if(td.reception_id) customer.receptionId = td.reception_id;
+      if(td.color_code)    customer.colorCode    = td.color_code;
+      if(td.color_name)    customer.colorName    = td.color_name;
+      if(td.insurance)     customer.insurance    = td.insurance;
+      if(td.reception_id)  customer.receptionId  = td.reception_id;
+      if(td.coating)       customer.coating      = td.coating;
+      if(td.car_category)  customer.carCategory  = td.car_category;
 
       // 入庫時写真を引き継ぎ
       if(td.photos && td.photos.length > 0){

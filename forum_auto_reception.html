@@ -319,6 +319,25 @@ textarea{resize:vertical;min-height:80px;}
             <input type="text" id="carColor" placeholder="パールホワイト（自動または手入力）">
           </div>
           <div class="form-group"><label>保険会社</label><input type="text" id="insurance" placeholder="東京海上日動"></div>
+          <div class="form-group">
+            <label>車両カテゴリ</label>
+            <select id="carCategory" onchange="updateCoatingRequired(this.value)" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;">
+              <option value="">選択してください</option>
+              <option value="軽自動車">軽自動車</option>
+              <option value="普通車">普通車</option>
+              <option value="外車・高級車">外車・高級車</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>コーティング処理<span id="coatingRequired" style="display:none;color:#e8392a;font-size:11px;margin-left:4px;">★必須</span></label>
+            <select id="coating" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;">
+              <option value="">選択してください</option>
+              <option value="あり(強力)">あり(強力)</option>
+              <option value="あり(通常)">あり(通常)</option>
+              <option value="なし">なし</option>
+              <option value="不明">不明</option>
+            </select>
+          </div>
           <div class="form-group full">
             <label>問診内容・損傷箇所</label>
             <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;">
@@ -678,6 +697,25 @@ textarea{resize:vertical;min-height:80px;}
         </select>
       </div>
       <div><label style="font-size:12px;color:#374151;display:block;margin-bottom:3px;">受付日</label><input id="re_date" type="date" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div><label style="font-size:12px;color:#374151;display:block;margin-bottom:3px;">車両カテゴリ</label>
+        <select id="re_car_category" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;">
+          <option value="">未設定</option>
+          <option value="軽自動車">軽自動車</option>
+          <option value="普通車">普通車</option>
+          <option value="外車・高級車">外車・高級車</option>
+        </select>
+      </div>
+      <div><label style="font-size:12px;color:#374151;display:block;margin-bottom:3px;">コーティング処理</label>
+        <select id="re_coating" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;">
+          <option value="">未設定</option>
+          <option value="あり(強力)">あり(強力)</option>
+          <option value="あり(通常)">あり(通常)</option>
+          <option value="なし">なし</option>
+          <option value="不明">不明</option>
+        </select>
+      </div>
     </div>
     <div><label style="font-size:12px;color:#374151;display:block;margin-bottom:3px;">損傷・メモ</label><textarea id="re_note" rows="2" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;resize:vertical;"></textarea></div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
@@ -1154,6 +1192,12 @@ async function registerPanelMaterial(btn) {
 }
 
 // ===== 受付保存 =====
+function updateCoatingRequired(val) {
+  var el = document.getElementById('coatingRequired');
+  if(el) el.style.display = (val==='外車・高級車') ? 'inline' : 'none';
+  var sel = document.getElementById('coating');
+  if(sel) sel.style.borderColor = (val==='外車・高級車') ? '#e8392a' : '';
+}
 function generateCaseNum() {
   var now = new Date();
   return 'FA-'+now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(Date.now()).slice(-4);
@@ -1166,6 +1210,9 @@ async function saveReception() {
     if(!get('outsourceCompany')){showToast('依頼会社名は必須です','error');return;}
   } else {
     if(!name){showToast('顧客名は必須です','error');return;}
+  }
+  if(get('carCategory')==='外車・高級車'&&!get('coating')){
+    showToast('外車・高級車はコーティング処理の選択が必須です','error');return;
   }
   showLoading('案件を登録中...');
   var caseNum = generateCaseNum();
@@ -1185,7 +1232,9 @@ async function saveReception() {
     location_address: get('locationInput')||'',
     checklist: JSON.stringify(Array.from(document.querySelectorAll('.check-item.checked')).map(function(el){return el.querySelector('label').textContent;})),
     damage_marks: JSON.stringify(damages),
-    reception_datetime: new Date().toISOString()
+    reception_datetime: new Date().toISOString(),
+    car_category: get('carCategory')||null,
+    coating: get('coating')||null
   };
 
   // 外注受付：依頼会社情報をnoteに追加
@@ -1298,6 +1347,8 @@ async function saveReception() {
       note: get('symptoms'),
       type: selectedBusinessType,
       reception_id: recId,
+      coating: get('coating')||'',
+      car_category: get('carCategory')||'',
       photos: incomingPhotos
     };
     localStorage.setItem('fa_reception_transfer', JSON.stringify(transferData));
@@ -1478,9 +1529,10 @@ function saveOutsourceCompany() {
 // ===== フォームクリア =====
 function clearForm() {
   // フォームリセット
-  ['customerName','phone','carName','carNum','carColor','colorCode','insurance','symptoms','locationInput','destAddr','remarks','outsourceCompany','outsourceContact','outsourcePhone'].forEach(function(id){
+  ['customerName','phone','carName','carNum','carColor','colorCode','insurance','symptoms','locationInput','destAddr','remarks','outsourceCompany','outsourceContact','outsourcePhone','carCategory','coating'].forEach(function(id){
     var el=document.getElementById(id); if(el)el.value='';
   });
+  updateCoatingRequired('');
   var hint=document.getElementById('colorNameHint'); if(hint)hint.style.display='none';
   var da=document.getElementById('paintDifficultyAlert'); if(da)da.style.display='none';
   var pma=document.getElementById('panelMaterialAlert'); if(pma)pma.style.display='none';
@@ -2294,6 +2346,8 @@ function openReceptionEditModal(c) {
   set('re_rental_end',c.rental_end_date?c.rental_end_date.slice(0,10):'');
   set('re_rental_fee',(c.rental_fee!==null&&c.rental_fee!==undefined)?c.rental_fee:0);
   set('re_rental_car',c.rental_type||'');
+  set('re_car_category',c.car_category||'');
+  set('re_coating',c.coating||'');
   document.getElementById('re_delConfirm').style.display='none';
   document.getElementById('re_subtitle').textContent=(c.customer_name||'')+' 様 — '+(c.car_model||'');
   document.getElementById('reEditOverlay').style.display='flex';
@@ -2319,7 +2373,9 @@ async function saveReceptionEdit() {
     rental_type:document.getElementById('re_rental_car').value||null,
     rental_fee:parseInt(document.getElementById('re_rental_fee').value)||0,
     rental_start_date:document.getElementById('re_rental_start').value||null,
-    rental_end_date:document.getElementById('re_rental_end').value||null
+    rental_end_date:document.getElementById('re_rental_end').value||null,
+    car_category:document.getElementById('re_car_category').value||null,
+    coating:document.getElementById('re_coating').value||null
   };
   if(dateVal)payload.reception_datetime=dateVal+'T00:00:00+09:00';
   try {
