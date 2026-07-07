@@ -8582,7 +8582,7 @@ async function mergeStandardHours() {
     var merged = 0;
     rows.forEach(function(r) {
       var part = r.part_name;
-      if (!PARTS_DATA[part]) return;
+      if (!PARTS_DATA[part]) PARTS_DATA[part] = [];
       var exists = PARTS_DATA[part].some(function(t) {
         return t.name === r.name && t.process === r.process;
       });
