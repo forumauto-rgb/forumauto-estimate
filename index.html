@@ -1109,7 +1109,7 @@ async function woSaveActualToCloud(){
   if(!woCurrentEst||!woCurrentEst._estId)return;
   try{
     var estId=woCurrentEst._estId;
-    var updates=(woCurrentEst.selSnapshot||[]).map(function(t){
+    var responses=await Promise.all((woCurrentEst.selSnapshot||[]).map(function(t){
       return fetch(
         SUPABASE_URL+'/rest/v1/estimate_items'
           +'?estimate_id=eq.'+estId
@@ -1121,10 +1121,16 @@ async function woSaveActualToCloud(){
           body:JSON.stringify({actual_hours:(t._actualH>0?t._actualH:null),staff_name:t._staff||'',photo_checked:t._photoChecked||false})
         }
       );
-    });
-    await Promise.all(updates);
-    showNotify('💾 実作業時間を保存しました');
-  }catch(e){console.warn('woSaveActualToCloud error:',e);}
+    }));
+    var failed=responses.filter(function(r){return !r.ok;});
+    if(failed.length){
+      var errTxt=await failed[0].text().catch(function(){return '';});
+      showNotify('❌ 指示書保存失敗 ('+failed[0].status+')'+(errTxt?' '+errTxt.slice(0,80):''));
+      console.warn('woSaveActualToCloud PATCH failed:',failed[0].status,errTxt);
+    }else{
+      showNotify('💾 実作業時間を保存しました');
+    }
+  }catch(e){console.warn('woSaveActualToCloud error:',e);showNotify('❌ 指示書保存失敗: '+e.message);}
 }
 
 function renderWorkOrder(){
@@ -6098,13 +6104,13 @@ async function saveDraft(){
     }
     // DELETE前に実作業時間を退避（item_name+processをキーに引き継ぎ）
     var _prevActualMap={};
-    if(estId){var _pR=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId+'&select=item_name,process,actual_hours',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});if(_pR.ok){(await _pR.json()).forEach(function(p){if(p.actual_hours>0)_prevActualMap[(p.item_name||'')+'|'+(p.process||'')]=p.actual_hours;});}}
+    if(estId){var _pR=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId+'&select=item_name,process,actual_hours,staff_name,photo_checked',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});if(_pR.ok){(await _pR.json()).forEach(function(p){_prevActualMap[(p.item_name||'')+'|'+(p.process||'')]={actual_hours:(p.actual_hours>0?p.actual_hours:null),staff_name:p.staff_name||'',photo_checked:p.photo_checked||false};});}}
     // 既存明細を削除してから新規登録（重複防止）
     if(!estId||!/^[0-9a-f-]{36}$/i.test(String(estId))) throw new Error('明細削除失敗: estIdが無効 ('+estId+')');
     var delR=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
     if(!delR.ok){var delErrTxt=await delR.text().catch(function(){return '';});console.warn('items DELETE failed:',delR.status,delErrTxt); throw new Error('明細削除失敗 status='+delR.status+' '+delErrTxt);}
 　　　if(sel.length>0){
-          var items=sel.map(function(s,i){var _ak=(s.name||'')+'|'+(s.process||'');return{estimate_id:estId,part_name:s._part||s.part||'',item_name:s.name||'',process:s.process||'',tag:s.tag||'remove',hours:s.hours||0,actual_hours:(s._actualH>0?s._actualH:(_prevActualMap[_ak]||null)),cost:s.cost||0,sort_order:i};});
+          var items=sel.map(function(s,i){var _ak=(s.name||'')+'|'+(s.process||'');var _pm=_prevActualMap[_ak]||{};return{estimate_id:estId,part_name:s._part||s.part||'',item_name:s.name||'',process:s.process||'',tag:s.tag||'remove',hours:s.hours||0,actual_hours:(s._actualH>0?s._actualH:(_pm.actual_hours||null)),staff_name:s._staff||_pm.staff_name||'',photo_checked:_pm.photo_checked||false,cost:s.cost||0,sort_order:i};});
           var postR=await fetch(SUPABASE_URL+'/rest/v1/estimate_items',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(items)});
           if(!postR.ok){var errTxt=await postR.text(); throw new Error('明細登録失敗: '+errTxt);}
         }
@@ -6279,21 +6285,23 @@ async function saveEstimate(){
     }
     // DELETE前に実作業時間を退避（item_name+processをキーに引き継ぎ）
     var _prevActualMap2={};
-    if(estId){var _pR2=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId+'&select=item_name,process,actual_hours',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});if(_pR2.ok){(await _pR2.json()).forEach(function(p){if(p.actual_hours>0)_prevActualMap2[(p.item_name||'')+'|'+(p.process||'')]=p.actual_hours;});}}
+    if(estId){var _pR2=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId+'&select=item_name,process,actual_hours,staff_name,photo_checked',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});if(_pR2.ok){(await _pR2.json()).forEach(function(p){_prevActualMap2[(p.item_name||'')+'|'+(p.process||'')]={actual_hours:(p.actual_hours>0?p.actual_hours:null),staff_name:p.staff_name||'',photo_checked:p.photo_checked||false};});}}
     // 明細は先に全削除してから再挿入
     await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId,{
       method:'DELETE',
       headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
     });
     // 明細保存
-    var items=sel.map(function(s,i){var _ak2=(s.name||'')+'|'+(s.process||'');return{
+    var items=sel.map(function(s,i){var _ak2=(s.name||'')+'|'+(s.process||'');var _pm2=_prevActualMap2[_ak2]||{};return{
       estimate_id:estId,
       part_name:s._part||s.part||'',
       item_name:s.name||'',
       process:s.process||'',
       tag:s.tag||'remove',
       hours:s.hours||0,
-      actual_hours:(s._actualH>0?s._actualH:(_prevActualMap2[_ak2]||null)),
+      actual_hours:(s._actualH>0?s._actualH:(_pm2.actual_hours||null)),
+      staff_name:s._staff||_pm2.staff_name||'',
+      photo_checked:_pm2.photo_checked||false,
       cost:s.cost||0,
       sort_order:i
     };});
