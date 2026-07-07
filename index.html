@@ -1063,7 +1063,7 @@ async function woLoadFromCloud(estId,estNo){
    var selData=items.filter(function(t){return t.tag!='parts';}).map(function(t){return{name:t.item_name||'',process:t.process||'',tag:t.tag||'remove',
           hours:t.hours||0,h:t.actual_hours||0,cost:t.cost||0,price:t.cost||0,
           part:t.part_name||'',_part:t.part_name||'',_actualH:t.actual_hours||0,
-          _staff:t.staff_name||'',_viewTab:t.view_tab||'exterior',id:t.id||(Date.now()+Math.random())};});
+          _staff:t.staff_name||'',_photoChecked:t.photo_checked||false,_viewTab:t.view_tab||'exterior',id:t.id||(Date.now()+Math.random())};});
         partsItems=items.filter(function(t){return t.tag=='parts';}).map(function(t){return{name:t.item_name||'',partNo:t.part_name?t.part_name.replace('[部品]','').replace(/^\[|\]$/g,''):'',cost:t.cost||0,profit:0,qty:1};});
         woCurrentEst={id:estId,no:estNo,customerName:h.customer_name||'',car:h.car_name||'',
           plate:h.plate||'',color:h.color_name||'',colorCode:h.color_code||'',
@@ -1092,6 +1092,11 @@ function woUpdateStaff(id,val){
   var item=woCurrentEst.selSnapshot.find(function(s){return String(s.id)==String(id);});
   if(item){item._staff=val;if(!woCurrentEst.id){var orig=sel.find(function(s){return String(s.id)==String(id);});if(orig)orig._staff=val;}woAutoSave();}
 }
+function woUpdatePhotoChecked(id,val){
+  if(!woCurrentEst||!woCurrentEst.selSnapshot)return;
+  var item=woCurrentEst.selSnapshot.find(function(s){return String(s.id)==String(id);});
+  if(item){item._photoChecked=val;woAutoSave();}
+}
 var _woSaveTimer=null;
 function woAutoSave(){
   if(_woSaveTimer)clearTimeout(_woSaveTimer);
@@ -1113,7 +1118,7 @@ async function woSaveActualToCloud(){
         {
           method:'PATCH',
           headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
-          body:JSON.stringify({actual_hours:(t._actualH>0?t._actualH:null),staff_name:t._staff||''})
+          body:JSON.stringify({actual_hours:(t._actualH>0?t._actualH:null),staff_name:t._staff||'',photo_checked:t._photoChecked||false})
         }
       );
     });
@@ -1140,11 +1145,11 @@ function renderWorkOrder(){
   sorted.forEach(function(t){
     var procOrd=getProcessOrder(t);
     if(procOrd!==prevProc){prevProc=procOrd;prevGroup='';
-      rows+='<tr><td colspan="7" style="background:#ddd;color:#000;font-weight:bold;font-size:8pt;border-top:1.5px solid #000;border-bottom:1px solid #000;padding:2px 6px;">'+(PROCESS_LABEL[procOrd]||'')+'</td></tr>';}
+      rows+='<tr><td colspan="8" style="background:#ddd;color:#000;font-weight:bold;font-size:8pt;border-top:1.5px solid #000;border-bottom:1px solid #000;padding:2px 6px;">'+(PROCESS_LABEL[procOrd]||'')+'</td></tr>';}
     var dg=getViewGroupLabel(t._viewTab||'exterior');
     if(procOrd===0)dg='';if(procOrd===90)dg='完成検査';
     if(dg&&dg!==prevGroup){prevGroup=dg;
-      rows+='<tr><td colspan="7" style="background:#f5f5f5;color:#444;font-size:8px;padding:1px 14px;border-bottom:0.3px solid #bbb;">【'+dg+'】</td></tr>';}
+      rows+='<tr><td colspan="8" style="background:#f5f5f5;color:#444;font-size:8px;padding:1px 14px;border-bottom:0.3px solid #bbb;">【'+dg+'】</td></tr>';}
     var stdH=(t.hours!=null&&t.hours!==0)?t.hours:'';
     var estH=(t.h!=null&&t.h!==0)?t.h:stdH;
     var dept=t._dept||getDeptName(t);
@@ -1161,11 +1166,15 @@ function renderWorkOrder(){
         +'<input type="number" step="0.1" min="0" max="99" placeholder="　" value="'+(t._actualH>0?t._actualH:'')+'" '
         +'oninput="woUpdateActualH(\''+tid+'\',this.value)" '
         +'style="width:100%;border:none;border-bottom:1px solid #aaa;background:transparent;font-size:12pt;text-align:center;padding:2px;outline:none;font-family:Meiryo,sans-serif;"></td>'
-      +'<td style="padding:1mm 1.5mm;width:22mm;border-left:0.5px solid #999;border-right:0.3px solid #ccc;">'
+      +'<td style="padding:1mm 1.5mm;width:22mm;border-left:0.5px solid #999;">'
         +'<select onchange="woUpdateStaff(\''+tid+'\',this.value)" '
         +'style="width:100%;border:none;border-bottom:1px solid #aaa;background:transparent;font-size:10pt;padding:2px;outline:none;cursor:pointer;">'
         +getStaffOptions(t._staff||'')
         +'</select></td>'
+      +'<td style="padding:1mm 1.5mm;width:12mm;text-align:center;border-left:0.5px solid #999;border-right:0.3px solid #ccc;">'
+        +'<input type="checkbox" class="no-print"'+(t._photoChecked?' checked':'')+' onchange="woUpdatePhotoChecked(\''+tid+'\',this.checked)" style="width:14px;height:14px;cursor:pointer;accent-color:#1a3a6b;">'
+        +'<span class="print-only" style="font-size:12pt;font-weight:bold;">'+(t._photoChecked?'✓':'□')+'</span>'
+        +'</td>'
       +'</tr>';
     rowNo++;
   });
@@ -1213,6 +1222,7 @@ function renderWorkOrder(){
     +'<th style="padding:2mm;width:14mm;border-left:0.3px solid #ccc;">標準(h)</th>'
     +'<th style="padding:2mm;width:24mm;border-left:1.5px solid #555;">実作業時間(h)</th>'
     +'<th style="padding:2mm;width:22mm;border-left:0.5px solid #999;">担当者</th>'
+    +'<th style="padding:2mm;width:12mm;border-left:0.5px solid #999;">写真✓</th>'
     +'</tr></thead>'
     +'<tbody>'+rows+'</tbody></table>'
     +'<div style="margin-top:3mm;display:flex;gap:6mm;font-size:8pt;">'
