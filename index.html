@@ -852,6 +852,29 @@ var premClearMatCost=0;
 // 状態管理
 let sel=[];
 let curPart=null;
+
+// ===== 二重計上チェック共通関数 =====
+function isDuplicateItem(item){
+  // 調色・調色追加は見積全体で1つのみ
+  if(item.process==='調色'||item.process==='調色追加'){
+    return sel.some(function(s){return s.process===item.process;});
+  }
+  return sel.some(function(s){return s.name===item.name&&s.process===item.process;});
+}
+function addItemsWithDupCheck(items){
+  var skipped=[];
+  items.forEach(function(item){
+    if(isDuplicateItem(item)){skipped.push(item);}
+    else{sel.push(item);}
+  });
+  if(skipped.length>0){
+    var MAX=3;
+    var names=skipped.slice(0,MAX).map(function(s){return s.name+(s.process?' '+s.process:'');}).join('、');
+    if(skipped.length>MAX)names+=' 他'+(skipped.length-MAX)+'件';
+    showNotify('⚠ 既に計上済みのためスキップ：\n'+names);
+  }
+}
+// ============================================
 let dragSrc=null;
 let curTab='estimate';
 let kw='';
@@ -2925,98 +2948,72 @@ function carSVGWithOther(){
 
 // ===== ④ よく使う作業セット =====
 function addWorkSet(key){
-  // ライナー取外し取付を1行でpushするヘルパー（往復 1.0h）
-  function pushLiner(side){
+  // アイテムを生成するヘルパー（push しない）
+  function makeLiner(side){
     var nm='Rフェンダーライナー 取外し取付（'+side+'）';
-    var dup=sel.some(function(s){return s.name===nm;});
-    if(dup)return;
     var lr=effectiveLR({tag:'remove'});
-    sel.push({id:Date.now()+'_'+Math.random(),name:nm,process:'取外し取付',tag:'remove',hours:1.0,h:1.0,cost:Math.round(1.0*lr),price:Math.round(1.0*lr),stdH:1.0});
+    return {id:Date.now()+'_'+Math.random(),name:nm,process:'取外し取付',tag:'remove',hours:1.0,h:1.0,cost:Math.round(1.0*lr),price:Math.round(1.0*lr),stdH:1.0};
   }
-  function pushFLiner(side){
+  function makeFLiner(side){
     var nm='Fフェンダーライナー 取外し取付（'+side+'）';
-    var dup=sel.some(function(s){return s.name===nm;});
-    if(dup)return;
     var lr=effectiveLR({tag:'remove'});
-    sel.push({id:Date.now()+'_'+Math.random(),name:nm,process:'取外し取付',tag:'remove',hours:1.0,h:1.0,cost:Math.round(1.0*lr),price:Math.round(1.0*lr),stdH:1.0});
+    return {id:Date.now()+'_'+Math.random(),name:nm,process:'取外し取付',tag:'remove',hours:1.0,h:1.0,cost:Math.round(1.0*lr),price:Math.round(1.0*lr),stdH:1.0};
   }
-  // タイヤ取外し取付を追加するヘルパー
-  function pushTire(partKey){
-    var pd=PARTS_DATA[partKey];
-    if(!pd)return;
-    var task=pd.find(function(t){return t.process==='取外し取付';});
-    if(!task)return;
-    var dup=sel.some(function(s){return s.name===task.name&&s.process===task.process;});
-    if(dup)return;
-    var h=task.hours||0;
-    var lr=effectiveLR(task);
-    sel.push({id:Date.now()+'_'+Math.random(),name:task.name,process:task.process,tag:task.tag||'remove',hours:h,h:h,cost:Math.round(h*lr),price:Math.round(h*lr),stdH:h});
+  function makeTire(partKey){
+    var pd=PARTS_DATA[partKey];if(!pd)return null;
+    var task=pd.find(function(t){return t.process==='取外し取付';});if(!task)return null;
+    var h=task.hours||0,lr=effectiveLR(task);
+    return {id:Date.now()+'_'+Math.random(),name:task.name,process:task.process,tag:task.tag||'remove',hours:h,h:h,cost:Math.round(h*lr),price:Math.round(h*lr),stdH:h};
   }
-  // リフトアップを追加するヘルパー
-  function pushLift(){
-    var pd=PARTS_DATA['リフトアップ・タイヤ取外し'];
-    if(!pd)return;
-    var task=pd[0];
-    if(!task)return;
-    var dup=sel.some(function(s){return s.name===task.name&&s.process===task.process;});
-    if(dup)return;
-    var h=task.hours||0;
-    var lr=effectiveLR(task);
-    sel.push({id:Date.now()+'_'+Math.random(),name:task.name,process:task.process,tag:task.tag||'remove',hours:h,h:h,cost:Math.round(h*lr),price:Math.round(h*lr),stdH:h});
+  function makeLift(){
+    var pd=PARTS_DATA['リフトアップ・タイヤ取外し'];if(!pd)return null;
+    var task=pd[0];if(!task)return null;
+    var h=task.hours||0,lr=effectiveLR(task);
+    return {id:Date.now()+'_'+Math.random(),name:task.name,process:task.process,tag:task.tag||'remove',hours:h,h:h,cost:Math.round(h*lr),price:Math.round(h*lr),stdH:h};
   }
 
-  var prevLen=sel.length;
-  pushLift();
+  var candidates=[];
+  function add(item){if(item)candidates.push(item);}
+
+  add(makeLift());
   if(key==='set_fbump'){
-    pushTire('タイヤ・ホイール右F'); pushTire('タイヤ・ホイール左F');
-    pushFLiner('右'); pushFLiner('左');
+    add(makeTire('タイヤ・ホイール右F')); add(makeTire('タイヤ・ホイール左F'));
+    add(makeFLiner('右')); add(makeFLiner('左'));
   } else if(key==='set_rbump'){
-    pushTire('タイヤ・ホイール右R'); pushTire('タイヤ・ホイール左R');
-    pushLiner('右'); pushLiner('左');
+    add(makeTire('タイヤ・ホイール右R')); add(makeTire('タイヤ・ホイール左R'));
+    add(makeLiner('右')); add(makeLiner('左'));
   } else if(key==='set_side_r'){
-    pushTire('タイヤ・ホイール右F'); pushTire('タイヤ・ホイール右R');
-    pushFLiner('右'); pushLiner('右');
+    add(makeTire('タイヤ・ホイール右F')); add(makeTire('タイヤ・ホイール右R'));
+    add(makeFLiner('右')); add(makeLiner('右'));
   } else if(key==='set_side_l'){
-    pushTire('タイヤ・ホイール左F'); pushTire('タイヤ・ホイール左R');
-    pushFLiner('左'); pushLiner('左');
+    add(makeTire('タイヤ・ホイール左F')); add(makeTire('タイヤ・ホイール左R'));
+    add(makeFLiner('左')); add(makeLiner('左'));
   } else if(key==='set_ffend_r'){
-    pushTire('タイヤ・ホイール右F');
-    pushFLiner('右');
+    add(makeTire('タイヤ・ホイール右F')); add(makeFLiner('右'));
   } else if(key==='set_ffend_l'){
-    pushTire('タイヤ・ホイール左F');
-    pushFLiner('左');
+    add(makeTire('タイヤ・ホイール左F')); add(makeFLiner('左'));
   } else if(key==='set_rfend_r'){
-    pushTire('タイヤ・ホイール右R');
-    pushLiner('右');
+    add(makeTire('タイヤ・ホイール右R')); add(makeLiner('右'));
   } else if(key==='set_rfend_l'){
-    pushTire('タイヤ・ホイール左R');
-    pushLiner('左');
+    add(makeTire('タイヤ・ホイール左R')); add(makeLiner('左'));
   } else if(key==='set_tire_swap'){
-    // タイヤ交換（4輪分のリフトアップ＋タイヤ脱着）
-    var lrT = effectiveLR({tag:'remove'});
+    var lrT=effectiveLR({tag:'remove'});
     ['タイヤ・ホイール左F','タイヤ・ホイール右F','タイヤ・ホイール左R','タイヤ・ホイール右R'].forEach(function(partKey){
-      var pd = PARTS_DATA[partKey];
-      if(!pd) return;
-      var task = pd.find(function(t){ return t.process==='取外し取付'; });
-      if(!task) return;
-      var dup = sel.some(function(s){ return s.name===task.name&&s.process===task.process; });
-      if(dup) return;
-      var h = task.hours||0;
-      sel.push({id:Date.now()+'_'+Math.random(),name:task.name,process:task.process,tag:task.tag||'remove',hours:h,h:h,cost:Math.round(h*lrT),price:Math.round(h*lrT),stdH:h,_fromQuick:true});
+      var pd=PARTS_DATA[partKey];if(!pd)return;
+      var task=pd.find(function(t){return t.process==='取外し取付';});if(!task)return;
+      var h=task.hours||0;
+      candidates.push({id:Date.now()+'_'+Math.random(),name:task.name,process:task.process,tag:task.tag||'remove',hours:h,h:h,cost:Math.round(h*lrT),price:Math.round(h*lrT),stdH:h,_fromQuick:true});
     });
-    // タイヤ交換工賃（4本）
-    var tireTask = PARTS_DATA['タイヤ']&&PARTS_DATA['タイヤ'].find(function(t){ return t.name==='タイヤ 取替（タイヤのみ交換）'; });
+    var tireTask=PARTS_DATA['タイヤ']&&PARTS_DATA['タイヤ'].find(function(t){return t.name==='タイヤ 取替（タイヤのみ交換）';});
     if(tireTask){
-      var dup2 = sel.some(function(s){ return s.name===tireTask.name; });
-      if(!dup2){
-        var h2 = tireTask.hours||0;
-        sel.push({id:Date.now()+'_'+Math.random(),name:tireTask.name,process:tireTask.process,tag:tireTask.tag||'replace',hours:h2,h:h2,cost:Math.round(h2*lrT),price:Math.round(h2*lrT),stdH:h2,_fromQuick:true});
-      }
+      var h2=tireTask.hours||0;
+      candidates.push({id:Date.now()+'_'+Math.random(),name:tireTask.name,process:tireTask.process,tag:tireTask.tag||'replace',hours:h2,h:h2,cost:Math.round(h2*lrT),price:Math.round(h2*lrT),stdH:h2,_fromQuick:true});
     }
   }
 
+  var prevLen=sel.length;
+  addItemsWithDupCheck(candidates);
   if(sel.length > prevLen){render();checkArabikiSuggestion();}
-  else{alert('このセットは既に全て追加済みです');}
 }
 
 // ===== ① 塗装工数自動計算パネル =====
@@ -3158,6 +3155,9 @@ function renderPaintCalcPanel(){
     h+='<input type="text" id="paint-note-input" value="'+(cs.note||'').replace(/"/g,'&quot;')+'" placeholder="例：赤（B-123） / 黒（ソリッド）" oninput="paintCalcState.note=this.value" style="width:100%;font-size:11px;padding:5px 7px;border:1px solid #a5d6a7;border-radius:4px;box-sizing:border-box;">';
     h+='</div>';
     h+='<button onclick="applyPaintCalc()" style="width:100%;margin-top:6px;padding:6px;background:#2e7d32;color:white;border:none;border-radius:5px;font-size:11px;font-weight:bold;cursor:pointer;">✅ この工数を見積に追加</button>';
+    if(sel.some(function(s){return s._paintcalc;})){
+      h+='<button onclick="clearAndApplyPaintCalc()" style="width:100%;margin-top:4px;padding:5px;background:#e65100;color:white;border:none;border-radius:5px;font-size:11px;cursor:pointer;">🔄 塗装項目をクリアして再計算</button>';
+    }
   }
   h+='</div>';
   return h;
@@ -3190,15 +3190,6 @@ function applyPaintCalc(){
     paintSum+=(cs.coat==='3coat'?p.coat3:p.coat2);
   });
   if(cnt===0){alert('部位を選択してください');return;}
-  // ★ 既存の塗装計算行を削除してから追加（重複防止）
-  var hadPaint=sel.some(function(s){return s._paintcalc;});
-  if(hadPaint){
-    if(!confirm('既に塗装工数が入力されています。\n上書き（置き換え）しますか？\n\n「キャンセル」で追記します。')){
-      // 追記モードはそのまま処理続行
-    } else {
-      sel=sel.filter(function(s){return !s._paintcalc;});
-    }
-  }
   var adjustedSum=paintSum*(1+cnt*0.1);
   var tbl=PAINT_TIME_TABLE[cs.coat+'_'+cs.season];
   var dryH=tbl.dry, boothH=tbl.booth, bakeH=tbl.bake;
@@ -3210,9 +3201,8 @@ function applyPaintCalc(){
 
   var noteStr=cs.note?'（'+cs.note+'）':'';
 
-  // 追記方式：削除しない（複数回の塗装工程を積み上げ）
-
-  // 部位ごとに個別行で塗装工数を追加
+  // 追加候補を配列に収集して addItemsWithDupCheck で一括重複チェック
+  var paintItems=[];
   var selParts2=PAINT_PARTS.filter(function(p){return cs.parts[p.key];});
   var isBumper=function(label){return label.indexOf('バンパー')!==-1||label.indexOf('スポイラー')!==-1;};
   selParts2.forEach(function(p){
@@ -3221,7 +3211,7 @@ function applyPaintCalc(){
     var partDryH=tbl.dry/cnt;
     var partH=Math.round((adjH+partDryH)*100)/100;
     var procName=isBumper(p.label)?'バンパー塗装':'パネル塗装';
-    sel.push({
+    paintItems.push({
       id:'pc_paint_'+p.key+'_'+Date.now(),
       name:p.label+' 塗装'+noteStr,
       process:procName,tag:'paint',
@@ -3230,11 +3220,10 @@ function applyPaintCalc(){
       price:Math.round(partH*paintLR),
       stdH:partH,_paintcalc:true
     });
-    // 高機能クリヤー自動追加
     if(isPremiumClear()){
       var _cn=getPremiumClearName();
       var _ch=Math.round(partH*0.5*10)/10;
-      sel.push({
+      paintItems.push({
         id:'pc_clear_'+p.key+'_'+Date.now(),
         name:p.label+' '+_cn+noteStr,
         process:_cn,tag:'paint',
@@ -3245,9 +3234,8 @@ function applyPaintCalc(){
       });
     }
   });
-  // ブース
   if(boothH>0){
-    sel.push({
+    paintItems.push({
       id:'pc_booth_'+Date.now(),name:'ブース使用'+noteStr,
       process:'使用',tag:'booth',
       hours:boothH,h:boothH,
@@ -3255,9 +3243,8 @@ function applyPaintCalc(){
       stdH:boothH,_paintcalc:true
     });
   }
-  // 焼付
   if(bakeH>0){
-    sel.push({
+    paintItems.push({
       id:'pc_bake_'+Date.now(),name:'焼付乾燥'+noteStr,
       process:'乾燥',tag:'booth',
       hours:bakeH,h:bakeH,
@@ -3265,9 +3252,8 @@ function applyPaintCalc(){
       stdH:bakeH,_paintcalc:true
     });
   }
-  // 磨き
   if(polishSum>0){
-    sel.push({
+    paintItems.push({
       id:'pc_polish_'+Date.now(),name:'磨き肌調整'+noteStr,
       process:'磨き肌調整',tag:'remove',
       hours:Math.round(polishSum*100)/100,
@@ -3278,7 +3264,8 @@ function applyPaintCalc(){
     });
   }
 
-  // 見積書備考欄に色名を追記
+  addItemsWithDupCheck(paintItems);
+
   if(cs.note){
     var existNote=customer.estNote||'';
     var lineToAdd='【塗装】'+cs.note+' ('+cs.coat+'/'+totalPaintH.toFixed(2)+'h)';
@@ -3286,12 +3273,16 @@ function applyPaintCalc(){
       customer.estNote=(existNote?existNote+'\n':'')+lineToAdd;
     }
   }
-  // 備考をリセット（次の塗装のため）
   paintCalcState.note='';
 
   render();
   checkArabikiSuggestion();
-  alert('塗装工数を見積に追加しました！\n塗装+乾燥: '+totalPaintH.toFixed(2)+'h / ブース: '+boothH+'h / 焼付: '+bakeH+'h'+(polishSum>0?' / 磨き: '+polishSum.toFixed(1)+'h':'')+(noteStr?' / 色: '+cs.note:''));
+  showNotify('✅ 塗装工数を追加しました（塗装+乾燥: '+totalPaintH.toFixed(2)+'h / ブース: '+boothH+'h / 焼付: '+bakeH+'h'+(polishSum>0?' / 磨き: '+polishSum.toFixed(1)+'h':'')+(noteStr?' / 色: '+cs.note:'')+')');
+}
+
+function clearAndApplyPaintCalc(){
+  sel=sel.filter(function(s){return !s._paintcalc;});
+  applyPaintCalc();
 }
 
 // ===== ② あらびき作業 自動提案（50万超え） =====
@@ -4917,13 +4908,13 @@ function tT(part,idx,cb){
   if(cb.checked && !checkGate('work')){cb.checked=false;return;}
   const t=PARTS_DATA[part]&&PARTS_DATA[part][idx];if(!t)return;
   if(cb.checked){
-    if(!sel.find(s=>s.name===t.name&&s.process===t.process)){
+    {
       const h=t.hours!=null?t.hours:0;
       const tmp={...t,part:t._partKey||part,h:h,_part:t._partKey||part,_viewTab:BODY_VIEW_TAB,_dept:getDeptName({...t,_viewTab:BODY_VIEW_TAB}),id:Date.now()+Math.random()};
       const lr=effectiveLR(tmp);
       tmp.cost=Math.round(h*lr);
       tmp.price=tmp.cost;
-      sel.push(tmp);
+      addItemsWithDupCheck([tmp]);
       // ナンバープレートまたは封印 → 行政書士依頼を強制追加
       var isNumber = part.indexOf('ナンバープレート') >= 0 || t.name.indexOf('ナンバープレート') >= 0;
       var isFuuin = part.indexOf('封印') >= 0 || t.name.indexOf('封印') >= 0;
@@ -7953,18 +7944,16 @@ function aiChatAddRow(){
 
 function aiChatApplyChecked(){
   if(!aiChatProposals || !aiChatProposals.tasks) return;
-  var added = 0;
   var laborLR = Math.round(RATE * getTotalLaborCoef());
   var paintLR = Math.round(RATE * getTotalPaintCoef());
+  var candidates = [];
   aiChatProposals.tasks.forEach(function(t, i){
     var cb = document.getElementById('aic_cb_' + i);
     if(!cb || !cb.checked) return;
-    var dup = sel.find(function(s){ return s.name===t.name && s.process===t.process; });
-    if(dup) return;
     var isPaint = (t.tag==='paint'||t.tag==='booth');
     var lr = isPaint ? paintLR : laborLR;
     var h = parseFloat(t.hours)||0;
-    sel.push({
+    candidates.push({
       id: 'aic_'+Date.now()+'_'+i+'_'+Math.random(),
       name: t.name||'', process: t.process||'その他', tag: t.tag||'remove',
       hours: h, h: h,
@@ -7972,9 +7961,12 @@ function aiChatApplyChecked(){
       price: h ? Math.round(lr*h) : 0,
       stdH: h, _viewTab: 'exterior', _aiAssist: true
     });
-    added++;
   });
-  if(added===0){ showNotify('⚠ 追加できる作業がありません'); return; }
+  if(candidates.length===0){ showNotify('⚠ 追加できる作業がありません'); return; }
+  var prevLen = sel.length;
+  addItemsWithDupCheck(candidates);
+  var added = sel.length - prevLen;
+  if(added===0){ return; }
   // ★ 提案・履歴はクリアしない → 見積タブから戻っても残る
   try{ localStorage.setItem('fa_ai_proposals', JSON.stringify(aiChatProposals)); }catch(e){}
   autoSaveM();
@@ -8272,19 +8264,16 @@ function aiTogglePart(key){
 
 function aiApplyChecked(){
   if(!aiState.proposals || !aiState.proposals.tasks) return;
-  var added = 0;
   var laborLR = Math.round(RATE * getTotalLaborCoef());
   var paintLR = Math.round(RATE * getTotalPaintCoef());
+  var candidates = [];
   aiState.proposals.tasks.forEach(function(t, i){
     var cb = document.getElementById('ai_cb_' + i);
     if(!cb || !cb.checked) return;
-    // 重複チェック
-    var dup = sel.find(function(s){ return s.name === t.name && s.process === t.process; });
-    if(dup) return;
     var isPaint = (t.tag === 'paint' || t.tag === 'booth');
     var lr = isPaint ? paintLR : laborLR;
     var h = parseFloat(t.hours) || 0;
-    sel.push({
+    candidates.push({
       id: 'ai_' + Date.now() + '_' + i + '_' + Math.random(),
       name: t.name || '',
       process: t.process || 'その他',
@@ -8297,9 +8286,12 @@ function aiApplyChecked(){
       _viewTab: 'exterior',
       _aiAssist: true
     });
-    added++;
   });
-  if(added === 0){ showNotify('⚠ 追加できる作業がありません（重複または未選択）'); return; }
+  if(candidates.length === 0){ showNotify('⚠ 追加できる作業がありません（未選択）'); return; }
+  var prevLen = sel.length;
+  addItemsWithDupCheck(candidates);
+  var added = sel.length - prevLen;
+  if(added === 0){ return; }
   aiState.proposals = null;
   aiState.checkedItems = {};
   autoSaveM();
