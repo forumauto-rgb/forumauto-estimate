@@ -396,18 +396,32 @@ async function testConnection(){
 }
 
 // ===== DB操作ユーティリティ =====
-async function dbGetAll(table){
-  try{
-    var res = await fetch(SUPABASE_URL+'/rest/v1/'+table+'?order=created_at.asc&limit=5000',{
-      method:'GET',
-      headers:{
-        'apikey':SUPABASE_KEY,
-        'Authorization':'Bearer '+SUPABASE_KEY,
-        'Content-Type':'application/json'
+// Supabase max_rows=1000上限を回避: Rangeヘッダーで1000件ずつ全件ページネーション取得
+async function supabaseFetchAll(url) {
+  var allRows = [];
+  var pageSize = 1000;
+  var offset = 0;
+  while (true) {
+    var res = await fetch(url, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Range-Unit': 'items',
+        'Range': offset + '-' + (offset + pageSize - 1)
       }
     });
-    if(!res.ok){ console.error(table+'取得失敗:',res.status); return null; }
-    return await res.json();
+    if (!res.ok) throw new Error(res.status);
+    var batch = await res.json();
+    if (!Array.isArray(batch) || !batch.length) break;
+    allRows = allRows.concat(batch);
+    if (batch.length < pageSize) break;
+    offset += pageSize;
+  }
+  return allRows;
+}
+async function dbGetAll(table){
+  try{
+    return await supabaseFetchAll(SUPABASE_URL+'/rest/v1/'+table+'?order=created_at.asc');
   }catch(e){ console.error(table+'取得エラー:',e.message); return null; }
 }
 
@@ -600,15 +614,10 @@ async function loadFromCloud(){
 
 async function loadStaffFromCloud(){
   try{
-    var res=await fetch(SUPABASE_URL+'/rest/v1/staff?status=eq.在籍&select=name&order=join_date.asc&limit=500',{
-      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
-    });
-    if(res.ok){
-      var data=await res.json();
-      if(data&&data.length){
-        staffMaster=data.map(function(s){return s.name;});
-        saveStaffMaster();
-      }
+    var data=await supabaseFetchAll(SUPABASE_URL+'/rest/v1/staff?status=eq.在籍&select=name&order=join_date.asc');
+    if(data&&data.length){
+      staffMaster=data.map(function(s){return s.name;});
+      saveStaffMaster();
     }
   }catch(e){console.warn('スタッフマスター取得エラー:',e);}
 }
@@ -8689,11 +8698,7 @@ setTimeout(applyReceptionParams, 1200);
 // ===== Supabase standard_hours マージ（B案）=====
 async function mergeStandardHours() {
   try {
-    var res = await fetch(SUPABASE_URL + '/rest/v1/standard_hours?order=part_name.asc,id.asc&limit=5000', {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
-    });
-    if (!res.ok) return;
-    var rows = await res.json();
+    var rows = await supabaseFetchAll(SUPABASE_URL + '/rest/v1/standard_hours?order=part_name.asc,id.asc');
     var merged = 0;
     rows.forEach(function(r) {
       var part = r.part_name;
