@@ -853,25 +853,144 @@ var premClearMatCost=0;
 let sel=[];
 let curPart=null;
 
+// ===== 部位名エイリアス辞書（35グループ） =====
+var PANEL_ALIASES=[
+  // ── フロント系 ──
+  ['フロントバンパー','Fバンパー','前バンパー','フロントバンパー本体'],
+  ['フロントフェンダー（右）','フロントフェンダー右','Fフェンダー（右）','Fフェンダー右','右Fフェンダー','前フェンダー右','前フェンダー（右）'],
+  ['フロントフェンダー（左）','フロントフェンダー左','Fフェンダー（左）','Fフェンダー左','左Fフェンダー','前フェンダー左','前フェンダー（左）'],
+  ['フロントドア（右）','フロントドア右','Fドア（右）','Fドア右','前ドア右','前ドア（右）'],
+  ['フロントドア（左）','フロントドア左','Fドア（左）','Fドア左','前ドア左','前ドア（左）'],
+  ['フロントピラー（右）','フロントピラー右','Aピラー（右）','Aピラー右','右Aピラー'],
+  ['フロントピラー（左）','フロントピラー左','Aピラー（左）','Aピラー左','左Aピラー'],
+  ['フロントパネル','フロントエンドパネル'],
+  // ── サイド系 ──
+  ['センターピラー（右）','センターピラー右','Bピラー（右）','Bピラー右','右Bピラー','センターBピラー右'],
+  ['センターピラー（左）','センターピラー左','Bピラー（左）','Bピラー左','左Bピラー','センターBピラー左'],
+  ['サイドステップ（右）','サイドステップ右','ステップ右','ステップ（右）','ロッカーパネルカバー右','サイドステップカバー右'],
+  ['サイドステップ（左）','サイドステップ左','ステップ左','ステップ（左）','ロッカーパネルカバー左','サイドステップカバー左'],
+  ['ロッカーパネル右','ロッカーパネル（右）','ロッカー右','サイドシル右'],
+  ['ロッカーパネル左','ロッカーパネル（左）','ロッカー左','サイドシル左'],
+  ['スライドドア（右）','スライドドア右','右スライドドア'],
+  ['スライドドア（左）','スライドドア左','左スライドドア'],
+  // ── リヤー系 ──
+  ['リヤードア（右）','リヤードア右','Rドア（右）','Rドア右','後ドア右','リアドア右','リアドア（右）'],
+  ['リヤードア（左）','リヤードア左','Rドア（左）','Rドア左','後ドア左','リアドア左','リアドア（左）'],
+  ['リヤーフェンダー（右）','リヤーフェンダー右','リアフェンダー右','Rフェンダー（右）','Rフェンダー右','右Rフェンダー','クォーターパネル右','クォーターパネル（右）','クォーター右'],
+  ['リヤーフェンダー（左）','リヤーフェンダー左','リアフェンダー左','Rフェンダー（左）','Rフェンダー左','左Rフェンダー','クォーターパネル左','クォーターパネル（左）','クォーター左'],
+  ['リヤーピラー（右）','リヤーピラー右','Cピラー（右）','Cピラー右','右Cピラー'],
+  ['リヤーピラー（左）','リヤーピラー左','Cピラー（左）','Cピラー左','左Cピラー'],
+  ['リヤーバンパー','リアバンパー','Rバンパー','後バンパー'],
+  ['エンドパネル（バックパネル）','エンドパネル','バックパネル','リヤーパネル','リアパネル'],
+  // ── ゲート・ルーフ系 ──
+  ['ゲート（バックドア）','バックドア','リアゲート','リヤーゲート','テールゲート','バックハッチ','トランクリッド','トランク'],
+  ['ルーフ','ルーフパネル','屋根'],
+  ['ルーフサイドパネル（右）','ルーフサイドパネル右','ルーフサイドレール右'],
+  ['ルーフサイドパネル（左）','ルーフサイドパネル左','ルーフサイドレール左'],
+  ['フロントコーナーパネル（右）','フロントコーナーパネル右','コーナーパネル右'],
+  ['フロントコーナーパネル（左）','フロントコーナーパネル左','コーナーパネル左'],
+  // ── スポイラー・その他 ──
+  ['ボンネット','フード','エンジンフード','ボンネットフード'],
+  ['フロントバンパースポイラー','フロントスポイラー','フロントリップ','フロントエアロ'],
+  ['サイドパネル（右）','サイドパネル右'],
+  // ゲートスポイラー系（曖昧な呼称リヤースポイラー/ウィング含む）
+  ['リヤーゲートスポイラー','リヤースポイラー','リアスポイラー','ウィング','リヤーウィング','リアウィング'],
+  // ルーフスポイラー系
+  ['リヤーゲートルーフスポイラー','ルーフスポイラー','リアルーフスポイラー'],
+];
+
+// 部位名がどのエイリアスグループに属するかを返す（なければ -1）
+function getPartAliasGroup(name){
+  for(var i=0;i<PANEL_ALIASES.length;i++){
+    var g=PANEL_ALIASES[i];
+    for(var j=0;j<g.length;j++){
+      var a=g[j];
+      // name の先頭が alias と一致（"部位名 作業名" 形式に対応）
+      if(name===a||name.indexOf(a+' ')===0||name.indexOf(a+'　')===0)return i;
+    }
+  }
+  return -1;
+}
+
+// エイリアス経由で重複する既存アイテムを返す（完全一致は除外）
+function findAliasConflict(item){
+  var g=getPartAliasGroup(item.name);
+  if(g===-1)return null;
+  return sel.find(function(s){
+    if(s.name===item.name&&s.process===item.process)return false;
+    if(s.process!==item.process)return false;
+    return getPartAliasGroup(s.name)===g;
+  })||null;
+}
+
 // ===== 二重計上チェック共通関数 =====
 function isDuplicateItem(item){
-  // 調色・調色追加は見積全体で1つのみ
   if(item.process==='調色'||item.process==='調色追加'){
     return sel.some(function(s){return s.process===item.process;});
   }
   return sel.some(function(s){return s.name===item.name&&s.process===item.process;});
 }
+
+var _aliasConflictQueue=[];
+
+function processAliasConflictQueue(){
+  if(_aliasConflictQueue.length===0)return;
+  var c=_aliasConflictQueue.shift();
+  showAliasConflictDialog(c,processAliasConflictQueue);
+}
+
+function showAliasConflictDialog(conflict,onDone){
+  var ex=conflict.existing, nw=conflict.newItem;
+  var exDesc=ex.name+'（'+ex.process+' / '+(ex.hours||0)+'h）';
+  var nwDesc=nw.name+'（'+nw.process+' / '+(nw.hours||0)+'h）';
+  var ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;';
+  var box=document.createElement('div');
+  box.style.cssText='background:#fff;border-radius:12px;padding:20px;max-width:360px;width:100%;font-size:13px;line-height:1.6;';
+  box.innerHTML=
+    '<div style="font-weight:bold;color:#c62828;font-size:14px;margin-bottom:12px;">⚠ 同一部位の可能性</div>'+
+    '<div style="background:#fff3e0;border-radius:6px;padding:8px 10px;margin-bottom:6px;"><span style="font-size:10px;color:#e65100;">計上済み</span><br>'+exDesc+'</div>'+
+    '<div style="background:#e8f5e9;border-radius:6px;padding:8px 10px;margin-bottom:14px;"><span style="font-size:10px;color:#2e7d32;">追加予定</span><br>'+nwDesc+'</div>'+
+    '<div style="display:flex;flex-direction:column;gap:6px;">'+
+    '<button id="adlg-skip" style="padding:9px;background:#e0e0e0;border:none;border-radius:6px;cursor:pointer;font-size:12px;">既存を残す（追加しない）</button>'+
+    '<button id="adlg-both" style="padding:9px;background:#1a3a6b;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold;">両方残す</button>'+
+    '<button id="adlg-replace" style="padding:9px;background:#e65100;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;">新しい方に置き換える</button>'+
+    '</div>';
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+  function choose(action){
+    if(action==='both'){sel.push(nw);}
+    else if(action==='replace'){sel=sel.filter(function(s){return s!==ex;});sel.push(nw);}
+    document.body.removeChild(ov);
+    render();
+    onDone();
+  }
+  box.querySelector('#adlg-skip').onclick=function(){choose('skip');};
+  box.querySelector('#adlg-both').onclick=function(){choose('both');};
+  box.querySelector('#adlg-replace').onclick=function(){choose('replace');};
+}
+
 function addItemsWithDupCheck(items){
-  var skipped=[];
+  var skipped=[], aliasConflicts=[];
   items.forEach(function(item){
-    if(isDuplicateItem(item)){skipped.push(item);}
-    else{sel.push(item);}
+    if(isDuplicateItem(item)){
+      skipped.push(item);
+    } else {
+      var conflict=findAliasConflict(item);
+      if(conflict){aliasConflicts.push({newItem:item,existing:conflict});}
+      else{sel.push(item);}
+    }
   });
   if(skipped.length>0){
     var MAX=3;
     var names=skipped.slice(0,MAX).map(function(s){return s.name+(s.process?' '+s.process:'');}).join('、');
     if(skipped.length>MAX)names+=' 他'+(skipped.length-MAX)+'件';
     showNotify('⚠ 既に計上済みのためスキップ：\n'+names);
+  }
+  if(aliasConflicts.length>0){
+    var wasEmpty=_aliasConflictQueue.length===0;
+    aliasConflicts.forEach(function(c){_aliasConflictQueue.push(c);});
+    if(wasEmpty)setTimeout(processAliasConflictQueue,100);
   }
 }
 // ============================================
