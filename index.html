@@ -7704,7 +7704,7 @@ async function aiAnalyzePhotos(){
         'Authorization':'Bearer '+SUPABASE_KEY
       },
       body: JSON.stringify({
-        model:'claude-sonnet-4-20250514',
+        model:'claude-sonnet-4-6',
         max_tokens:2000,
         system: analyzePrompt,
         messages:[{role:'user', content:contentArr}]
@@ -7988,7 +7988,7 @@ async function aiChatCallAPI(){
         'Authorization': 'Bearer ' + SUPABASE_KEY
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 8000,
         system: systemPrompt,
         messages: messages
@@ -8550,7 +8550,7 @@ async function aiAnalyze(){
         'Authorization': 'Bearer '+SUPABASE_KEY
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 8000,
         system: systemPrompt,
         messages: [{ role: 'user', content: userMsg }]
