@@ -7685,7 +7685,26 @@ async function aiAnalyzePhotos(){
   aiChatLoading = true;
 
   // 写真解析専用プロンプト
-  var analyzePrompt = 'あなたは自動車板金塗装の熟練見積担当AIです。'    + '添付された入庫時写真を詳しく見て、損傷箇所・損傷状態を特定し、必要な修理作業をJSONで提案してください。'    + '必ず以下のJSONブロックを返してください：'    + '```json\n{"ready":true,"summary":"損傷の一言まとめ","comment":"補足説明","tasks":[{"name":"作業名","process":"工程名","tag":"タグ","hours":時間数,"reason":"理由15字以内"}]}\n```'    + 'タグ：remove/body/paint/booth/replace/attach/confirm/other'    + '工程：取外し、脱着、修正、修理、交換、パネル塗装、バンパー塗装、下地処理（中）、養生（中）、使用、乾燥、磨き肌調整、取付、確認のいずれか。'    + '車名：' + (customer.car||'不明') + '　車格：' + (customer.grade||'中型') + '　色：' + (customer.color||'不明')    + '　実効LR：¥' + ((typeof RATE!=='undefined'&&typeof getGradeCoef==='function'&&typeof getTotalPaintCoef==='function')?Math.round(RATE*getGradeCoef()*getTotalPaintCoef()).toLocaleString():'不明') + '/h';
+  var analyzePrompt = 'あなたは有限会社フォーラムオート（静岡県袋井市）の熟練板金塗装見積担当AIです。'
+    + '添付された入庫時写真を詳細に分析し、必ず以下の順番で【損傷診断レポート】を出力してください。\n\n'
+    + '【損傷診断レポート】\n'
+    + '1.【損傷部位の特定】パネル名で特定（右フロントドア等）。複数ある場合は全て列挙する。\n'
+    + '2.【損傷の程度】擦り傷／凹み／変形の分類と大きさの目安（手のひら大等）を記載する。\n'
+    + '3.【パネル素材の推定】鋼板／アルミ／樹脂の推定。写真だけでは断定できないため「推定」と明記し、車種から判断できる場合はその根拠を添える。\n'
+    + '4.【修理方法の判断】修正（鈑金）で対応可能か、交換が必要か。判断が割れる場合は両論と判断基準を示す。\n'
+    + '5.【隣接部品への影響】塗装・作業のために脱着が必要な隣接部品（ライト・バンパー・モール等）を列挙する。\n'
+    + '6.【コーティング・塗装状態】コーティング施工の痕跡、塗装の劣化・過去の補修跡の有無。写真から判断できない場合は「受付情報の確認が必要」と明記する。\n\n'
+    + '【出力ルール】\n'
+    + '・6項目を番号付きで必ず全て出力すること。判断できない項目は「写真からは判断不可・要実車確認」と正直に記載する。\n'
+    + '・断定できない事項を断定しない。損傷事実→修理必要性→費用の整合性につながらない推測は書かない。\n'
+    + '・レポート末尾に、判断根拠と回答後アクションを明示した上でユーザーへの確認事項をまとめる。\n\n'
+    + '【作業提案JSON（必須）】\n'
+    + '診断レポートの後、以下のJSONブロックを必ず出力してください：\n'
+    + '```json\n{"ready":true,"summary":"損傷の一言まとめ","comment":"補足説明","tasks":[{"name":"作業名","process":"工程名","tag":"タグ","hours":時間数,"reason":"理由15字以内"}]}\n```\n'
+    + 'タグ：remove/body/paint/booth/replace/attach/confirm/other\n'
+    + '工程：取外し、脱着、修正、修理、交換、パネル塗装、バンパー塗装、下地処理（中）、養生（中）、使用、乾燥、磨き肌調整、取付、確認のいずれか。\n'
+    + '車名：' + (customer.car||'不明') + '　車格：' + (customer.grade||'中型') + '　色：' + (customer.color||'不明')
+    + '　実効LR：¥' + ((typeof RATE!=='undefined'&&typeof getGradeCoef==='function'&&typeof getTotalPaintCoef==='function')?Math.round(RATE*getGradeCoef()*getTotalPaintCoef()).toLocaleString():'不明') + '/h';
 
   // 写真をメッセージに組み込む
   var contentArr = [];
@@ -7705,7 +7724,7 @@ async function aiAnalyzePhotos(){
       },
       body: JSON.stringify({
         model:'claude-sonnet-4-6',
-        max_tokens:2000,
+        max_tokens:3000,
         system: analyzePrompt,
         messages:[{role:'user', content:contentArr}]
       })
