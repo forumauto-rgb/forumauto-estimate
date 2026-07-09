@@ -449,6 +449,12 @@ async function speak(text) {
     .replace(/😊|😢|💦|👍|🙏|📷|💬|📞/g, '')
     .replace(/\n/g, '。')
     // ===== 漢字読み仮名変換 =====
+    // 住所（長い語句を先に）
+    .replace(/袋井市下山梨/g, 'ふくろいし しもやまなし')
+    .replace(/下山梨/g, 'しもやまなし')
+    .replace(/袋井市/g, 'ふくろいし')
+    .replace(/袋井/g, 'ふくろい')
+    .replace(/545/g, 'ごーよんごー')
     .replace(/お首/g, 'おくび')
     .replace(/お体/g, 'おからだ')
     .replace(/診て/g, 'みて')

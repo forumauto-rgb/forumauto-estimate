@@ -382,6 +382,12 @@ async function speakOne(text,key){
 async function speakEl(text,key){
   // 漢字読み仮名変換（全漢字対応）
   text=text
+    // 住所（長い語句を先に）
+    .replace(/袋井市下山梨/g,'ふくろいし しもやまなし')
+    .replace(/下山梨/g,'しもやまなし')
+    .replace(/袋井市/g,'ふくろいし')
+    .replace(/袋井/g,'ふくろい')
+    .replace(/545/g,'ごーよんごー')
     // 車関連
     .replace(/お車/g,'おくるま').replace(/車両/g,'しゃりょう').replace(/車体/g,'しゃたい')
     .replace(/自動車/g,'じどうしゃ').replace(/外車/g,'がいしゃ').replace(/国産車/g,'こくさんしゃ')
