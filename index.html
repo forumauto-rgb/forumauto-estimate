@@ -6227,13 +6227,13 @@ async function saveDraft(){
     }
     // DELETE前に実作業時間を退避（item_name+processをキーに引き継ぎ）
     var _prevActualMap={};
-    if(estId){var _pR=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId+'&select=item_name,process,actual_hours,staff_name,photo_checked',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});if(_pR.ok){(await _pR.json()).forEach(function(p){_prevActualMap[(p.item_name||'')+'|'+(p.process||'')]={actual_hours:(p.actual_hours>0?p.actual_hours:null),staff_name:p.staff_name||'',photo_checked:p.photo_checked||false};});}}
+    if(estId){var _pR=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId+'&select=item_name,process,actual_hours,staff_name,photo_checked,ai_reason',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});if(_pR.ok){(await _pR.json()).forEach(function(p){_prevActualMap[(p.item_name||'')+'|'+(p.process||'')]={actual_hours:(p.actual_hours>0?p.actual_hours:null),staff_name:p.staff_name||'',photo_checked:p.photo_checked||false,ai_reason:p.ai_reason||''};});}}
     // 既存明細を削除してから新規登録（重複防止）
     if(!estId||!/^[0-9a-f-]{36}$/i.test(String(estId))) throw new Error('明細削除失敗: estIdが無効 ('+estId+')');
     var delR=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
     if(!delR.ok){var delErrTxt=await delR.text().catch(function(){return '';});console.warn('items DELETE failed:',delR.status,delErrTxt); throw new Error('明細削除失敗 status='+delR.status+' '+delErrTxt);}
 　　　if(sel.length>0){
-          var items=sel.map(function(s,i){var _ak=(s.name||'')+'|'+(s.process||'');var _pm=_prevActualMap[_ak]||{};return{estimate_id:estId,part_name:s._part||s.part||'',item_name:s.name||'',process:s.process||'',tag:s.tag||'remove',hours:s.hours||0,actual_hours:(s._actualH>0?s._actualH:(_pm.actual_hours||null)),staff_name:s._staff||_pm.staff_name||'',photo_checked:_pm.photo_checked||false,cost:s.cost||0,sort_order:i};});
+          var items=sel.map(function(s,i){var _ak=(s.name||'')+'|'+(s.process||'');var _pm=_prevActualMap[_ak]||{};return{estimate_id:estId,part_name:s._part||s.part||'',item_name:s.name||'',process:s.process||'',tag:s.tag||'remove',hours:s.hours||0,actual_hours:(s._actualH>0?s._actualH:(_pm.actual_hours||null)),staff_name:s._staff||_pm.staff_name||'',photo_checked:_pm.photo_checked||false,cost:s.cost||0,sort_order:i,ai_reason:s.ai_reason||_pm.ai_reason||''};});
           var postR=await fetch(SUPABASE_URL+'/rest/v1/estimate_items',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(items)});
           if(!postR.ok){var errTxt=await postR.text(); throw new Error('明細登録失敗: '+errTxt);}
         }
@@ -6408,7 +6408,7 @@ async function saveEstimate(){
     }
     // DELETE前に実作業時間を退避（item_name+processをキーに引き継ぎ）
     var _prevActualMap2={};
-    if(estId){var _pR2=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId+'&select=item_name,process,actual_hours,staff_name,photo_checked',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});if(_pR2.ok){(await _pR2.json()).forEach(function(p){_prevActualMap2[(p.item_name||'')+'|'+(p.process||'')]={actual_hours:(p.actual_hours>0?p.actual_hours:null),staff_name:p.staff_name||'',photo_checked:p.photo_checked||false};});}}
+    if(estId){var _pR2=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId+'&select=item_name,process,actual_hours,staff_name,photo_checked,ai_reason',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});if(_pR2.ok){(await _pR2.json()).forEach(function(p){_prevActualMap2[(p.item_name||'')+'|'+(p.process||'')]={actual_hours:(p.actual_hours>0?p.actual_hours:null),staff_name:p.staff_name||'',photo_checked:p.photo_checked||false,ai_reason:p.ai_reason||''};});}}
     // 明細は先に全削除してから再挿入
     await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId,{
       method:'DELETE',
@@ -6426,7 +6426,8 @@ async function saveEstimate(){
       staff_name:s._staff||_pm2.staff_name||'',
       photo_checked:_pm2.photo_checked||false,
       cost:s.cost||0,
-      sort_order:i
+      sort_order:i,
+      ai_reason:s.ai_reason||_pm2.ai_reason||''
     };});
     await fetch(SUPABASE_URL+'/rest/v1/estimate_items',{
       method:'POST',
@@ -6775,7 +6776,7 @@ async function loadEstimate(estId,estNo){
     }
     var r1=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId+'&order=sort_order.asc',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
     var items=await r1.json();
-    sel=items.map(function(t){return{name:t.item_name||'',process:t.process||'',tag:t.tag||'remove',hours:t.hours||0,h:t.actual_hours||0,cost:t.cost||0,price:t.cost||0,part:t.part_name||'',_part:t.part_name||'',id:Date.now()+Math.random()};});
+    sel=items.map(function(t){return{name:t.item_name||'',process:t.process||'',tag:t.tag||'remove',hours:t.hours||0,h:t.actual_hours||0,cost:t.cost||0,price:t.cost||0,part:t.part_name||'',_part:t.part_name||'',id:Date.now()+Math.random(),ai_reason:t.ai_reason||''};});
     var r2=await fetch(SUPABASE_URL+'/rest/v1/estimate_parts?estimate_id=eq.'+estId+'&order=sort_order.asc',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
     var parts2=await r2.json();
     partsItems=parts2.filter(function(p){return p.item_type==='parts';}).map(function(p){return{name:p.name||'',partNo:p.part_no||'',cost:p.cost||'',profit:p.profit||0,qty:p.qty||1};});
@@ -8210,7 +8211,8 @@ function aiChatApplyChecked(){
       hours: h, h: h,
       cost: h ? Math.round(lr*h) : 0,
       price: h ? Math.round(lr*h) : 0,
-      stdH: h, _viewTab: 'exterior', _aiAssist: true
+      stdH: h, _viewTab: 'exterior', _aiAssist: true,
+      ai_reason: t.reason||''
     });
   });
   if(candidates.length===0){ showNotify('⚠ 追加できる作業がありません'); return; }
@@ -8535,7 +8537,8 @@ function aiApplyChecked(){
       stdH: h,
       _part: (aiState.selectedParts[0] ? (getBP()[aiState.selectedParts[0]] ? getBP()[aiState.selectedParts[0]].p[0] : '') : ''),
       _viewTab: 'exterior',
-      _aiAssist: true
+      _aiAssist: true,
+      ai_reason: t.reason||''
     });
   });
   if(candidates.length === 0){ showNotify('⚠ 追加できる作業がありません（未選択）'); return; }
