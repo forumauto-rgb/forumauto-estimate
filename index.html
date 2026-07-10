@@ -3979,7 +3979,7 @@ function renderMaster(){
       h+='<td><input value="'+(c.insurance||'').replace(/"/g,'&quot;')+'" list="ins-list-'+i+'" oninput="cMaster['+i+'].insurance=this.value" placeholder="東京海上日動" style="width:110px"><datalist id="ins-list-'+i+'">'+INS_LIST.map(function(s){return'<option value="'+s+'">';}).join('')+'</datalist></td>';
       h+='<td><input value="'+(c.aj||'').replace(/"/g,'&quot;')+'" oninput="cMaster['+i+'].aj=this.value" placeholder="金指"></td>';
       h+='<td><input value="'+(c.memo||'').replace(/"/g,'&quot;')+'" oninput="cMaster['+i+'].memo=this.value"></td>';
-      h+='<td><button class="del-btn" onclick="if(confirm(\'削除?\')){{cMaster.splice('+i+',1);autoSaveM();render()}}">✕</button></td>';
+      h+='<td><button class="del-btn" onclick="deleteCustomer('+i+')">✕</button></td>';
       h+='</tr>';
     });
     h+='</tbody></table></div>';
@@ -7090,6 +7090,37 @@ async function deleteVehicle(i){
   autoSaveM();
   render();
   showNotify('✅ 車両をクラウドから削除しました');
+}
+
+async function deleteCustomer(i){
+  var c = cMaster[i];
+  var linkedVehicles = vMaster.filter(function(v){ return v.cid === c.id; });
+  if(linkedVehicles.length > 0){
+    alert('この顧客には '+linkedVehicles.length+' 台の車両が紐づいています。\n先に車両マスターから車両を削除してから、顧客を削除してください。');
+    return;
+  }
+  if(!confirm('クラウドからも完全に削除します。元に戻せません。\nよろしいですか？')) return;
+  var key = c.supabase_id ? ('id=eq.'+c.supabase_id) : ('customer_no=eq.'+encodeURIComponent(c.id||''));
+  try{
+    var r = await fetch(SUPABASE_URL+'/rest/v1/customers?'+key, {
+      method:'DELETE',
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+    });
+    if(!r.ok){
+      var errText = await r.text();
+      showNotify('❌ クラウド削除失敗('+r.status+')');
+      console.error('deleteCustomer失敗 status='+r.status, errText);
+      return;
+    }
+  }catch(e){
+    showNotify('❌ クラウド削除失敗(ネットワークエラー)');
+    console.error('deleteCustomer error:',e);
+    return;
+  }
+  cMaster.splice(i,1);
+  autoSaveM();
+  render();
+  showNotify('✅ 顧客をクラウドから削除しました');
 }
 
 function autoSaveM(){
