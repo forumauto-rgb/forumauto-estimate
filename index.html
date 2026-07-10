@@ -7069,11 +7069,14 @@ function showNewCustomerGuide(name, car, plate, phone) {
 async function deleteVehicle(i){
   var v = vMaster[i];
   if(!confirm('クラウドからも完全に削除します。元に戻せません。\nよろしいですか？')) return;
-  var key = v.supabase_id ? ('id=eq.'+v.supabase_id) : ('vehicle_no=eq.'+encodeURIComponent(v.id||''));
+  var keyField = v.supabase_id ? 'id' : 'vehicle_no';
+  var keyVal = v.supabase_id ? v.supabase_id : (v.id||'');
+  var key = keyField+'=eq.'+encodeURIComponent(keyVal);
+  var deleted;
   try{
     var r = await fetch(SUPABASE_URL+'/rest/v1/vehicles?'+key, {
       method:'DELETE',
-      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=representation'}
     });
     if(!r.ok){
       var errText = await r.text();
@@ -7081,15 +7084,21 @@ async function deleteVehicle(i){
       console.error('deleteVehicle失敗 status='+r.status, errText);
       return;
     }
+    deleted = await r.json();
   }catch(e){
     showNotify('❌ クラウド削除失敗(ネットワークエラー)');
     console.error('deleteVehicle error:',e);
     return;
   }
+  if(deleted.length === 0){
+    showNotify('❌ 削除0件: キー不一致 (使用キー: '+keyField+'='+keyVal+')\nSupabase RLS に DELETE ポリシーが未設定の可能性があります');
+    console.error('deleteVehicle: 0件削除 key='+key+' → Supabase RLS DELETE ポリシー未設定の可能性');
+    return;
+  }
   vMaster.splice(i,1);
   autoSaveM();
   render();
-  showNotify('✅ 車両をクラウドから削除しました');
+  showNotify('✅ '+deleted.length+'件削除しました');
 }
 
 async function deleteCustomer(i){
@@ -7100,11 +7109,14 @@ async function deleteCustomer(i){
     return;
   }
   if(!confirm('クラウドからも完全に削除します。元に戻せません。\nよろしいですか？')) return;
-  var key = c.supabase_id ? ('id=eq.'+c.supabase_id) : ('customer_no=eq.'+encodeURIComponent(c.id||''));
+  var keyField = c.supabase_id ? 'id' : 'customer_no';
+  var keyVal = c.supabase_id ? c.supabase_id : (c.id||'');
+  var key = keyField+'=eq.'+encodeURIComponent(keyVal);
+  var deleted;
   try{
     var r = await fetch(SUPABASE_URL+'/rest/v1/customers?'+key, {
       method:'DELETE',
-      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=representation'}
     });
     if(!r.ok){
       var errText = await r.text();
@@ -7112,15 +7124,21 @@ async function deleteCustomer(i){
       console.error('deleteCustomer失敗 status='+r.status, errText);
       return;
     }
+    deleted = await r.json();
   }catch(e){
     showNotify('❌ クラウド削除失敗(ネットワークエラー)');
     console.error('deleteCustomer error:',e);
     return;
   }
+  if(deleted.length === 0){
+    showNotify('❌ 削除0件: キー不一致 (使用キー: '+keyField+'='+keyVal+')\nSupabase RLS に DELETE ポリシーが未設定の可能性があります');
+    console.error('deleteCustomer: 0件削除 key='+key+' → Supabase RLS DELETE ポリシー未設定の可能性');
+    return;
+  }
   cMaster.splice(i,1);
   autoSaveM();
   render();
-  showNotify('✅ 顧客をクラウドから削除しました');
+  showNotify('✅ '+deleted.length+'件削除しました');
 }
 
 function autoSaveM(){
