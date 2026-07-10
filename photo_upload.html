@@ -193,8 +193,12 @@ var selectedCase = null; // 選択中の案件
 // 起動時の振り分け
 // =========================================================
 function init() {
-  if (sessionId) {
-    // QRコードから開いた → 直接撮影画面へ
+  if (sessionId && !estimateId && !estimateDbId && !receptionId) {
+    // QRコードから開いたが案件ID不明 → 案件選択画面へ誘導
+    document.getElementById('headerSub').textContent = '案件を選んで撮影';
+    showCaseSelectScreen();
+  } else if (sessionId) {
+    // QRコードから開いた（案件IDあり） → 直接撮影画面へ
     document.getElementById('headerSub').textContent = 'QRコード撮影';
     showShootScreen(
       decodeURIComponent(customerNameParam),
