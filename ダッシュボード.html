@@ -476,7 +476,7 @@ tr:hover td { background:var(--bg3); }
       <div class="cases-head-title">🔧 現在の修理案件</div>
       <button class="refresh-btn" onclick="loadCases()">🔄 更新</button>
     </div>
-    <p style="font-size:11px;color:var(--txt3);margin:4px 0 8px;line-height:1.5;">操作ボタン: 編集=受付情報を編集 / 送信=お客様へ送付 / 進捗=進捗確認ページを開く / 写真=車両写真 / 取消=案件中止</p>
+    <p style="font-size:11px;color:var(--txt3);margin:4px 0 8px;line-height:1.5;">操作ボタン: 受付=受付情報を編集 / 送信=お客様へ送付 / 進捗=進捗確認ページを開く / 写真=車両写真 / 取消=案件中止</p>
     <table>
       <thead>
         <tr>
@@ -835,9 +835,9 @@ async function loadCases() {
         h += '<button class="act-btn qc-btn" data-id="'+qcId+'" data-no="'+qcNo+'" data-cus="'+qcCus+'" data-car="'+qcCar+'" style="color:#fff;border-color:#e65100;background:#e65100;font-weight:700;">✅ 品質チェック</button>';
       }
       if (rid) {
-        h += '<button class="act-btn" style="color:#1a5fa8;border-color:rgba(26,95,168,0.3);background:rgba(26,95,168,0.06);" onclick="openEditModal(\'' + rid + '\',\'' + no + '\',\'' + cus + '\')">✏️ 編集</button>';
+        h += '<button class="act-btn" style="color:#1a5fa8;border-color:rgba(26,95,168,0.3);background:rgba(26,95,168,0.06);" onclick="openEditModal(\'' + rid + '\',\'' + no + '\',\'' + cus + '\')">✏️ 受付</button>';
       } else {
-        h += '<button class="act-btn" style="color:#9ca3af;border-color:#e5e7eb;background:#f9fafb;cursor:default;" title="受付IDが未紐付けのため編集不可">✏️ 編集</button>';
+        h += '<button class="act-btn" style="color:#9ca3af;border-color:#e5e7eb;background:#f9fafb;cursor:default;" title="受付IDが未紐付けのため編集不可">✏️ 受付</button>';
       }
       h += '<button class="act-btn line-btn" onclick="quickSend(\'' + no + '\',\'' + cus + '\',\'' + car + '\',\'' + p4 + '\')">📤 送信</button>';
       h += '<a class="act-btn" href="' + su + '" target="_blank">🔍 進捗</a>';
