@@ -181,6 +181,7 @@ var sessionId = params.get('session');
 var estimateId = params.get('eid') || '';
 var estimateDbId = params.get('eidnum') || ''; // 数値ID（DB直書き込み用、わかれば優先利用）
 var receptionId = params.get('recid') || ''; // 受付ID（見積保存前のQR撮影用）
+var receptionUuid = receptionId.replace(/^REC-/i, ''); // "REC-uuid" → 純粋なUUIDに正規化
 var customerNameParam = params.get('name') || '';
 var carInfoParam = params.get('car') || '';
 var initCat = params.get('cat') || 'photoIncoming';
@@ -193,7 +194,7 @@ var selectedCase = null; // 選択中の案件
 // 起動時の振り分け
 // =========================================================
 function init() {
-  if (sessionId && !estimateId && !estimateDbId && !receptionId) {
+  if (sessionId && !estimateId && !estimateDbId && !receptionUuid) {
     // QRコードから開いたが案件ID不明 → 案件選択画面へ誘導
     document.getElementById('headerSub').textContent = '案件を選んで撮影';
     showCaseSelectScreen();
@@ -471,7 +472,7 @@ function hideStatus() { document.getElementById('status').className = 'status'; 
 async function resolveEstimateDbId() {
   if (estimateDbId) return estimateDbId;
   // reception_idだけある場合はdbId不要でOK（nullを返して保存続行）
-  if (receptionId && !estimateId) return null;
+  if (receptionUuid && !estimateId) return null;
   if (!estimateId) return '';
   try {
     var r = await fetch(
@@ -496,12 +497,12 @@ async function submitPhotos() {
   try {
     var dbId = await resolveEstimateDbId();
     // reception_idがある場合はdbIdなしでも保存可能
-    if (!dbId && !receptionId) throw new Error('案件IDが見つかりません。案件選択からやり直してください。');
+    if (!dbId && !receptionUuid) throw new Error('案件IDが見つかりません。案件選択からやり直してください。');
 
     ss.textContent = '📤 既存写真を確認中...';
     var existUrl = dbId
       ? SUPABASE_URL + '/rest/v1/estimate_photos?estimate_id=eq.' + dbId + '&select=category,sort_order,data_url'
-      : SUPABASE_URL + '/rest/v1/estimate_photos?reception_id=eq.' + receptionId + '&select=category,sort_order,data_url';
+      : SUPABASE_URL + '/rest/v1/estimate_photos?reception_id=eq.' + receptionUuid + '&select=category,sort_order,data_url';
     var existResp = await fetch(existUrl,
       { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
     );
@@ -525,7 +526,7 @@ async function submitPhotos() {
             sort_order: maxSort[cat]
           };
           if(dbId) row.estimate_id = dbId;
-          if(receptionId) row.reception_id = receptionId;
+          if(receptionUuid) row.reception_id = receptionUuid;
           rows.push(row);
         }
       });

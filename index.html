@@ -7340,11 +7340,12 @@ async function showQRUpload(targetCat){
   var name = encodeURIComponent(customer.name||'');
   var car  = encodeURIComponent((customer.car||'') + ' ' + (customer.plate||''));
   var eid  = encodeURIComponent(customer.no||'');
-  // REC-プレフィックスを除いた純粋なUUIDのみ渡す
+  // REC-プレフィックスを除いた純粋なUUIDのみ渡す（受付専用IDはestimate UUIDではないため渡さない）
+  var isReceptionOnly = (customer._estId||'').startsWith('REC-');
   var rawEstId = (customer._estId||'').replace(/^REC-/,'');
-  var eidnum = encodeURIComponent(rawEstId.match(/^[0-9a-f-]{36}$/i) ? rawEstId : '');
-  // reception_idを別パラメータで渡す
-  var recid = encodeURIComponent(customer.receptionId||'');
+  var eidnum = (!isReceptionOnly && rawEstId.match(/^[0-9a-f-]{36}$/i)) ? encodeURIComponent(rawEstId) : '';
+  // reception_idを別パラメータで渡す（"REC-"プレフィックスは除去してUUIDのみ）
+  var recid = encodeURIComponent((customer.receptionId||'').replace(/^REC-/i,''));
   var uploadUrl = 'https://forumauto-rgb.github.io/forumauto-estimate/photo_upload.html'
     + '?session=' + qrSessionId
     + '&name=' + name
@@ -7397,7 +7398,7 @@ async function pollQRPhotos(){
     // ★ photo_upload.htmlはestimate_photosテーブルに保存するのでそちらを監視
     var estId = customer._estId || '';
     var estNo = customer.no || '';
-    var recId = customer.receptionId || '';
+    var recId = (customer.receptionId || '').replace(/^REC-/i, ''); // "REC-uuid" → UUIDのみ
     var rows = [];
 
     if(estId && !estId.startsWith('REC-')){
