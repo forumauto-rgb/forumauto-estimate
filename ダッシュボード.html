@@ -1407,7 +1407,7 @@ async function checkUnprocessedReceptions(){
     var recs = await recRes.json();
     if(!recs||!recs.length) return;
 
-    // 見積テーブルのreception_idと照合
+    // 見積テーブルのreception_idと照合（正式リンク）
     var estRes = await fetch(
       SB_URL+'/rest/v1/estimates?select=reception_id&reception_id=not.is.null&limit=500',
       {headers:SB_H}
@@ -1415,9 +1415,19 @@ async function checkUnprocessedReceptions(){
     var ests = estRes.ok ? await estRes.json() : [];
     var processedIds = new Set((ests||[]).map(function(e){return String(e.reception_id);}));
 
+    // reception_idなしDRAFT見積を顧客名で補完チェック（旧saveDraftのreception_id未保存対策）
+    var draftRes = await fetch(
+      SB_URL+'/rest/v1/estimates?select=customer_name&reception_id=is.null&status=eq.draft&limit=500',
+      {headers:SB_H}
+    );
+    var draftEsts = draftRes.ok ? await draftRes.json() : [];
+    var draftNames = new Set((draftEsts||[]).map(function(e){return (e.customer_name||'').trim();}));
+
     // 未処理（見積なし）の受付を抽出
     var unprocessed = recs.filter(function(r){
-      return !processedIds.has(String(r.id));
+      if(processedIds.has(String(r.id))) return false;
+      if((r.customer_name||'').trim() && draftNames.has((r.customer_name||'').trim())) return false;
+      return true;
     });
 
     if(!unprocessed.length) return;
@@ -1427,18 +1437,24 @@ async function checkUnprocessedReceptions(){
     var listEl = document.getElementById('unprocessedList');
     if(!alertEl||!listEl) return;
 
+    // クリック用にreception dataをキャッシュ
+    window._unprocessedMap = {};
+    unprocessed.forEach(function(r){ window._unprocessedMap[r.id] = r; });
+
     var typeIcon={'板金塗装':'🎨','レッカー':'🚛','車検点検':'🔧','単品':'🔩','外注受付':'📦'};
     listEl.innerHTML = unprocessed.slice(0,5).map(function(r){
       var dt = new Date(r.reception_datetime);
       var elapsed = Math.round((Date.now()-dt)/60000);
       var elapsedStr = elapsed<60?(elapsed+'分前'):(Math.round(elapsed/60)+'時間前');
       var icon = typeIcon[r.type]||'📋';
-      return '<div style="display:flex;align-items:center;gap:8px;background:white;border-radius:8px;padding:8px 12px;border:1px solid #ffe0b2;">'
+      var rid = esc(r.id||'');
+      return '<div onclick="startEstimateFromReception(\''+rid+'\')" style="cursor:pointer;display:flex;align-items:center;gap:8px;background:white;border-radius:8px;padding:8px 12px;border:1px solid #ffe0b2;transition:background 0.15s;" onmouseover="this.style.background=\'#fff8f0\'" onmouseout="this.style.background=\'white\'">'
         +'<span style="font-size:16px;">'+icon+'</span>'
         +'<div style="flex:1;">'
         +'<div style="font-size:13px;font-weight:700;">'+(r.customer_name||'氏名なし')+'　'+(r.car_model||'')+'</div>'
         +'<div style="font-size:11px;color:#888;">'+(r.type||'')+'　'+elapsedStr+'</div>'
         +'</div>'
+        +'<span style="font-size:11px;color:#e65100;font-weight:700;">見積作成 →</span>'
         +'</div>';
     }).join('');
 
@@ -1447,6 +1463,33 @@ async function checkUnprocessedReceptions(){
     }
     alertEl.style.display='block';
   }catch(e){console.warn('未処理受付チェックエラー:',e);}
+}
+
+// 未処理カードから見積作成へ遷移（受付データをlocalStorageで引き継ぐ）
+function startEstimateFromReception(id){
+  var r = window._unprocessedMap && window._unprocessedMap[id];
+  if(!r) return;
+  var td = {
+    customer_name: r.customer_name||'',
+    phone: r.phone||'',
+    address: '',
+    car_model: r.car_model||'',
+    plate: r.plate||'',
+    vin: '',
+    year: '',
+    car_type: '',
+    color_code: '',
+    color_name: '',
+    insurance: '',
+    note: r.note||'',
+    type: r.type||'',
+    reception_id: r.id,
+    coating: r.coating||'',
+    car_category: r.car_category||'',
+    photos: []
+  };
+  localStorage.setItem('fa_reception_transfer', JSON.stringify(td));
+  window.location.href = 'index.html?from=reception';
 }
 
 // ページ読み込み時に未処理受付チェック
