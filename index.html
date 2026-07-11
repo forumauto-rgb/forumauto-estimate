@@ -3717,8 +3717,9 @@ function renderEstimate(){
             const chk=sel.find(s=>s.name===t.name&&s.process===t.process);
             const isP=t.tag==='paint';
             const lr=effectiveLR(isP);
-            return`<div class="task-item${chk?' checked':''}">
-              <input type="checkbox" ${chk?'checked':''} onchange="tT('${curPart.replace(/'/g,"\\'")}',${i},this)">
+            const dis=isConflictDisabled(t,t._partKey||curPart);
+            return`<div class="task-item${chk?' checked':''}"${dis?' style="opacity:0.4;pointer-events:none;"':''}>
+              <input type="checkbox" ${chk?'checked':''} ${dis?'disabled':''} onchange="tT('${curPart.replace(/'/g,"\\'")}',${i},this)">
               <span style="flex:1;font-size:12px">${t.name}</span>
               <span class="tag ${TC4[t.tag]||'tag-remove'}">${t.process}</span>
               <span style="font-size:10px;color:${isP?'#2e7d32':'#888'};width:72px;text-align:right">${lr.toLocaleString()}円/h</span>
@@ -3726,7 +3727,7 @@ function renderEstimate(){
         </div>
       </div>`:''}
 
-      ${renderSelectedTasks(false)}
+      <div id="selectedTasksContainer">${renderSelectedTasks(false)}</div>
       <div class="sum-box" id="sB">
         ${sumHTML(...Object.values(calcTotals()))}
       </div>
@@ -5032,40 +5033,124 @@ function pUpdSell(i){
   uS();
 }
 
+// ====== 一括/個別 付属品 競合ヘルパー ======
+function isConflictItem(t){
+  if(t.process!=='取外し'&&t.process!=='取付') return 'none';
+  if(t.name.indexOf('一括付属品')>=0) return 'bulk';
+  if(t.name.indexOf('本体')>=0) return 'none';
+  if(t.name.indexOf('塗装')>=0||t.name.indexOf('保管')>=0||t.name.indexOf('ホースメント')>=0||t.name.indexOf('エネルギー')>=0||t.name.indexOf('修理')>=0) return 'none';
+  return 'individual';
+}
+function isConflictDisabled(t,part){
+  var myType=isConflictItem(t);
+  if(myType==='none') return false;
+  var pts=PARTS_DATA[part]||[];
+  if(myType==='bulk'){
+    return pts.some(function(p){return isConflictItem(p)==='individual'&&!!sel.find(function(s){return s.name===p.name&&s.process===p.process;});});
+  }
+  return pts.some(function(p){return isConflictItem(p)==='bulk'&&!!sel.find(function(s){return s.name===p.name&&s.process===p.process;});});
+}
+// タスクパネル・選択作業一覧を即時反映（Problem 2）
+function _refreshTaskPanel(){
+  var body=document.getElementById('taskPanelBody');
+  if(body){
+    var allP=(curParts&&curParts.length?curParts:[curPart]).filter(function(p){return p&&PARTS_DATA[p];});
+    var tasks=allP.reduce(function(acc,p){return acc.concat((PARTS_DATA[p]||[]).map(function(t){return Object.assign({},t,{_partKey:p});}));}, []);
+    var items=body.querySelectorAll('.task-item');
+    tasks.forEach(function(t,i){
+      if(!items[i]) return;
+      var cb=items[i].querySelector('input[type=checkbox]');
+      var chk=!!sel.find(function(s){return s.name===t.name&&s.process===t.process;});
+      var dis=isConflictDisabled(t,t._partKey);
+      if(cb){cb.checked=chk;cb.disabled=dis;}
+      items[i].classList.toggle('checked',chk);
+      items[i].style.opacity=dis?'0.4':'';
+      items[i].style.pointerEvents=dis?'none':'';
+    });
+  }
+  var stc=document.getElementById('selectedTasksContainer');
+  if(stc) stc.innerHTML=renderSelectedTasks(false);
+}
+
 // ====== イベント ======
 function tT(part,idx,cb){
   if(cb.checked && !checkGate('work')){cb.checked=false;return;}
   const t=PARTS_DATA[part]&&PARTS_DATA[part][idx];if(!t)return;
+
+  // Problem 3: 競合チェック（グレーアウト中のチェックは無視）
+  if(cb.checked && isConflictDisabled(t, part)){cb.checked=false;return;}
+
   if(cb.checked){
-    {
-      const h=t.hours!=null?t.hours:0;
-      const tmp={...t,part:t._partKey||part,h:h,_part:t._partKey||part,_viewTab:BODY_VIEW_TAB,_dept:getDeptName({...t,_viewTab:BODY_VIEW_TAB}),id:Date.now()+Math.random()};
-      const lr=effectiveLR(tmp);
-      tmp.cost=Math.round(h*lr);
-      tmp.price=tmp.cost;
-      addItemsWithDupCheck([tmp]);
-      // ナンバープレートまたは封印 → 行政書士依頼を強制追加
-      var isNumber = part.indexOf('ナンバープレート') >= 0 || t.name.indexOf('ナンバープレート') >= 0;
-      var isFuuin = part.indexOf('封印') >= 0 || t.name.indexOf('封印') >= 0;
-      if(isNumber || isFuuin){
-        checkAdminFeeRequired();
+    // Problem 3: 競合する反対側を sel から除去
+    var myType=isConflictItem(t);
+    if(myType!=='none'){
+      var pts=PARTS_DATA[part]||[];
+      pts.forEach(function(p){
+        if((myType==='bulk'?isConflictItem(p)==='individual':isConflictItem(p)==='bulk')){
+          sel=sel.filter(function(s){return !(s.name===p.name&&s.process===p.process);});
+        }
+      });
+    }
+
+    // 元の追加ロジック
+    const h=t.hours!=null?t.hours:0;
+    const tmp={...t,part:t._partKey||part,h:h,_part:t._partKey||part,_viewTab:BODY_VIEW_TAB,_dept:getDeptName({...t,_viewTab:BODY_VIEW_TAB}),id:Date.now()+Math.random()};
+    const lr=effectiveLR(tmp);
+    tmp.cost=Math.round(h*lr);
+    tmp.price=tmp.cost;
+    addItemsWithDupCheck([tmp]);
+
+    // Problem 1: 取外し → 取付 を自動連動
+    if(t.process==='取外し'){
+      var ptsSrc=PARTS_DATA[part]||[];
+      var tIdx=ptsSrc.findIndex(function(p){return p.name===t.name&&p.process==='取付';});
+      if(tIdx<0) tIdx=ptsSrc.findIndex(function(p){return p.process==='取付'&&p.name.replace(/取付/,'')===t.name.replace(/取外し/,'');});
+      if(tIdx>=0){
+        var tt2=ptsSrc[tIdx];
+        if(tt2&&!sel.find(function(s){return s.name===tt2.name&&s.process===tt2.process;})){
+          const h2=tt2.hours!=null?tt2.hours:0;
+          const tmp2={...tt2,part:tt2._partKey||part,h:h2,_part:tt2._partKey||part,_viewTab:BODY_VIEW_TAB,_dept:getDeptName({...tt2,_viewTab:BODY_VIEW_TAB}),id:Date.now()+Math.random(),_autoLinked:true};
+          const lr2=effectiveLR(tmp2);
+          tmp2.cost=Math.round(h2*lr2);
+          tmp2.price=tmp2.cost;
+          addItemsWithDupCheck([tmp2]);
+        }
       }
     }
+
+    // ナンバープレートまたは封印 → 行政書士依頼を強制追加
+    var isNumber = part.indexOf('ナンバープレート') >= 0 || t.name.indexOf('ナンバープレート') >= 0;
+    var isFuuin = part.indexOf('封印') >= 0 || t.name.indexOf('封印') >= 0;
+    if(isNumber || isFuuin){ checkAdminFeeRequired(); }
   } else {
-    sel=sel.filter(s=>!(s.name===t.name&&s.process===t.process));
+    sel=sel.filter(function(s){return !(s.name===t.name&&s.process===t.process);});
+
+    // Problem 1: 取外し解除 → 自動連動した取付も除去
+    if(t.process==='取外し'){
+      var ptsSrc2=PARTS_DATA[part]||[];
+      var tIdx2=ptsSrc2.findIndex(function(p){return p.name===t.name&&p.process==='取付';});
+      if(tIdx2<0) tIdx2=ptsSrc2.findIndex(function(p){return p.process==='取付'&&p.name.replace(/取付/,'')===t.name.replace(/取外し/,'');});
+      if(tIdx2>=0){
+        var tt3=ptsSrc2[tIdx2];
+        var linked=sel.find(function(s){return s.name===tt3.name&&s.process===tt3.process&&s._autoLinked;});
+        if(linked) sel=sel.filter(function(s){return !(s.name===tt3.name&&s.process===tt3.process&&s._autoLinked);});
+      }
+    }
   }
-  cb.closest('.task-item').classList.toggle('checked',cb.checked);
-  // ★ チェック時にcurPartをこの部位に更新（別の場所に移動不要）
+
+  // ★ チェック時にcurPartをこの部位に更新
   if(part && PARTS_DATA[part]){
     curPart=part;
     if(!curParts||curParts.indexOf(part)<0) curParts=[part];
   }
   uS();
-  // ★ 合計バッジだけ更新（全再描画より軽い）
   var sb=document.getElementById('sB');
   if(sb){var tt=calcTotals();sb.innerHTML=sumHTML(tt.labor,tt.pt,tt.mt,tt.sub,tt.tax);}
   const lb=document.querySelectorAll('.tpb-btn');
   if(lb[1])lb[1].textContent='✅ 選択作業一覧・工数入力 '+sel.length+'件';
+
+  // Problem 2: 選択作業一覧をその場で即時反映
+  _refreshTaskPanel();
 }
 
 // ナンバープレート・封印選択時に再封印依頼を追加
