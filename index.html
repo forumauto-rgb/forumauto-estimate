@@ -7815,6 +7815,8 @@ var aiChatProposals = (function(){
   }catch(e){ return null; }
 })();
 var aiChatCheckedItems = {};
+// ★タップ回答機能：質問インデックス→選択した選択肢テキスト
+var aiChatChoiceAnswers = {};
 
 
 // AIモード切替（確実版）
@@ -7826,6 +7828,7 @@ function switchAI(mode){
   aiChatLoading = false;
   aiChatProposals = null;
   aiChatCheckedItems = {};
+  aiChatChoiceAnswers = {};
   aiState.proposals = null;
   aiState.loading = false;
   var tc = document.getElementById('TC');
@@ -7849,6 +7852,7 @@ function aiSwitchMode(mode){
     aiChatLoading = false;
     aiChatProposals = null;
     aiChatCheckedItems = {};
+    aiChatChoiceAnswers = {};
     aiState.proposals = null;
     aiState.loading = false;
     // 直接DOMを書き換え（render()に依存しない）
@@ -7952,6 +7956,10 @@ async function aiAnalyzePhotos(){
     + '```json\n{"ready":true,"summary":"損傷の一言まとめ","comment":"補足説明","tasks":[{"name":"作業名","process":"工程名","tag":"タグ","hours":時間数,"reason":"理由15字以内"}]}\n```\n'
     + 'タグ：remove/body/paint/booth/replace/attach/confirm/other\n'
     + '工程：取外し、脱着、修正、修理、交換、パネル塗装、バンパー塗装、下地処理（中）、養生（中）、使用、乾燥、磨き肌調整、取付、確認のいずれか。\n'
+    + '【タップ回答用choicesブロック — 確認事項がある場合は必ず追加】\n'
+    + 'レポート末尾のユーザーへの確認事項が2択以上で答えられる内容の場合、JSONブロックの後に、質問ごとの選択肢を示すchoicesコードブロックも必ず追加すること：\n'
+    + '```choices\n[{"q":"質問（20字以内）","opts":["選択肢1","選択肢2","選択肢3"]}]\n```\n'
+    + '選択肢は質問ごとに2〜4個、実務的な語（例：新品交換／中古交換／修理）で簡潔に。確認事項がない場合はchoicesブロックを出力しないこと。\n'
     + '車名：' + (customer.car||'不明') + '　車格：' + (customer.grade||'中型') + '　色：' + (customer.color||'不明')
     + '　実効LR：¥' + ((typeof RATE!=='undefined'&&typeof getGradeCoef==='function'&&typeof getTotalPaintCoef==='function')?Math.round(RATE*getGradeCoef()*getTotalPaintCoef()).toLocaleString():'不明') + '/h';
 
@@ -8014,10 +8022,14 @@ async function aiAnalyzePhotos(){
           parsed.tasks.forEach(function(t,i){ aiChatCheckedItems[i]=true; });
         }
         var displayText = text.replace(/```json[\s\S]*?```/g,'').trim();
-        aiChatHistory.push({role:'assistant', text: displayText || '写真から損傷を解析しました。下のリストを確認してください。'});
+        var choicesResult1 = aiChatExtractChoices(displayText);
+        if(choicesResult1.choices) aiChatChoiceAnswers = {};
+        aiChatHistory.push({role:'assistant', text: choicesResult1.text || '写真から損傷を解析しました。下のリストを確認してください。', choices: choicesResult1.choices || undefined});
       }catch(e){ aiChatHistory.push({role:'assistant', text:text}); }
     } else {
-      aiChatHistory.push({role:'assistant', text:text});
+      var choicesResult2 = aiChatExtractChoices(text);
+      if(choicesResult2.choices) aiChatChoiceAnswers = {};
+      aiChatHistory.push({role:'assistant', text: choicesResult2.text, choices: choicesResult2.choices || undefined});
     }
     saveChatHistory(aiChatHistory);
   }catch(e){
@@ -8029,6 +8041,48 @@ async function aiAnalyzePhotos(){
     var ca = document.getElementById('ai-chat-area');
     if(ca) ca.scrollTop = ca.scrollHeight;
   },100);
+}
+
+// ★タップ回答機能：AI応答テキストから```choices```ブロックを抽出し、本文から除去する
+function aiChatExtractChoices(text){
+  var m = (text||'').match(/```choices\s*([\s\S]*?)\s*```/);
+  if(!m) return {choices:null, text:text};
+  var cleaned = text.replace(/```choices[\s\S]*?```/,'').trim();
+  try{
+    var arr = JSON.parse(m[1]);
+    if(Array.isArray(arr)){
+      arr = arr.filter(function(c){ return c && typeof c.q==='string' && Array.isArray(c.opts) && c.opts.length; });
+      if(arr.length) return {choices:arr, text:cleaned};
+    }
+  }catch(e){}
+  return {choices:null, text:cleaned};
+}
+
+// ★タップ回答機能：選択肢タップ
+function aiChatSelectChoice(qIdx, val){
+  aiChatChoiceAnswers[qIdx] = val;
+  rAI();
+}
+
+function aiChatChoicesComplete(choices){
+  for(var i=0;i<choices.length;i++){ if(!aiChatChoiceAnswers[i]) return false; }
+  return true;
+}
+
+// ★タップ回答機能：全質問回答後の送信（テキスト欄の補足があれば合わせて送信）
+function aiChatSubmitChoices(hIdx){
+  var h = aiChatHistory[hIdx];
+  if(!h || !h.choices) return;
+  var choices = h.choices;
+  var parts = [];
+  for(var i=0;i<choices.length;i++){ parts.push((i+1)+'.'+aiChatChoiceAnswers[i]); }
+  var answerText = parts.join(' ');
+  var input = document.getElementById('ai-chat-input');
+  var supplement = input ? input.value.trim() : '';
+  var combined = supplement ? (answerText + '　' + supplement) : answerText;
+  if(input) input.value = combined;
+  aiChatChoiceAnswers = {};
+  aiChatSend();
 }
 
 function aiChatSend(){
@@ -8190,6 +8244,10 @@ async function aiChatCallAPI(){
     + '```json\n{"ready":true,"summary":"一言まとめ（20字以内）","comment":"補足・難易度警告・追加質問があればここに","tasks":[{"name":"作業名","process":"工程名","tag":"タグ","hours":時間数,"reason":"理由15字以内（省略禁止）"}]}\n```'
     + 'タグ：remove/body/paint/booth/replace/attach/confirm/other'
     + '工程（この中から選択）：取外し、脱着、修正、修理、交換、パネル塗装、バンパー塗装、下地処理（中）、養生（中）、使用、乾燥、磨き肌調整、取付、確認、エーミング、清掃'
+    + '【タップ回答用choicesブロック — 確認質問を出す時は必ず追加】'
+    + 'commentフィールドや文章で確認質問を出す場合、必ずJSONブロックの後に、質問ごとの選択肢を示すchoicesコードブロックも追加すること。フォーマット：'
+    + '```choices\n[{"q":"質問（20字以内）","opts":["選択肢1","選択肢2","選択肢3"]}]\n```'
+    + '選択肢は質問ごとに2〜4個、実務的な語（例：新品交換／中古交換／修理、ぼかし塗装のみ／修理+塗装／交換）で簡潔に。確認質問がない場合はchoicesブロックを出力しないこと。'
     + '【2色塗装】各色のバンパー塗装を別行・養生（中）必須・ブース使用2回。'
     + '【色なし部品（黒バンパー等）】塗装工程不要・取外し交換取付のみ。'
     + '【reason必須】全作業に15字以内の理由を必ず記載。省略した場合は再提案すること。'
@@ -8303,14 +8361,21 @@ async function aiChatCallAPI(){
         }
         // JSONブロックを完全に除去してテキスト部分のみ表示
         var displayText = text.replace(/```json[\s\S]*?```/g,'').trim();
+        var choicesResult3 = aiChatExtractChoices(displayText);
+        displayText = choicesResult3.text;
+        if(choicesResult3.choices) aiChatChoiceAnswers = {};
         if(displayText){
-          aiChatHistory.push({role:'assistant', text: displayText});
+          aiChatHistory.push({role:'assistant', text: displayText, choices: choicesResult3.choices || undefined});
         } else if(parsed.ready){
-          aiChatHistory.push({role:'assistant', text:'作業リストを作成しました！下のリストを確認してください。'});
+          aiChatHistory.push({role:'assistant', text:'作業リストを作成しました！下のリストを確認してください。', choices: choicesResult3.choices || undefined});
+        } else if(choicesResult3.choices){
+          aiChatHistory.push({role:'assistant', text:'確認事項があります。下のボタンからお答えください。', choices: choicesResult3.choices});
         }
       }catch(e){ aiChatHistory.push({role:'assistant', text:text}); }
     } else {
-      aiChatHistory.push({role:'assistant', text:text});
+      var choicesResult4 = aiChatExtractChoices(text);
+      if(choicesResult4.choices) aiChatChoiceAnswers = {};
+      aiChatHistory.push({role:'assistant', text: choicesResult4.text, choices: choicesResult4.choices || undefined});
     }
   }catch(e){
     aiChatHistory.push({role:'assistant', text:'エラーが発生しました: ' + e.message});
@@ -8412,11 +8477,29 @@ function aiChatApplyChecked(){
 
 function renderAiChat(){
   var chatHtml = '';
-  aiChatHistory.forEach(function(h){
+  aiChatHistory.forEach(function(h, hIdx){
     if(h.role==='assistant'){
+      var choicesHtml = '';
+      // ★タップ回答機能：最新のAI発言にchoicesがあればタップボタン群を表示
+      if(h.choices && h.choices.length && hIdx === aiChatHistory.length - 1){
+        var qBlocks = h.choices.map(function(c, qIdx){
+          var optsHtml = c.opts.map(function(opt){
+            var selected = aiChatChoiceAnswers[qIdx] === opt;
+            return '<button onclick="aiChatSelectChoice(' + qIdx + ',this.textContent)" style="'
+              + (selected ? 'background:#534AB7;color:white;border:2px solid #534AB7;' : 'background:white;color:#534AB7;border:2px solid #AFA9EC;')
+              + 'border-radius:8px;padding:11px 14px;font-size:13px;font-weight:bold;cursor:pointer;margin:4px 6px 0 0;min-height:44px;">' + escHtml(opt) + '</button>';
+          }).join('');
+          return '<div style="margin-top:8px;"><div style="font-size:12px;font-weight:bold;color:#3C3489;">Q' + (qIdx+1) + '. ' + escHtml(c.q) + '</div>'
+            + '<div style="display:flex;flex-wrap:wrap;">' + optsHtml + '</div></div>';
+        }).join('');
+        var submitHtml = aiChatChoicesComplete(h.choices)
+          ? '<button onclick="aiChatSubmitChoices(' + hIdx + ')" style="width:100%;background:linear-gradient(135deg,#2e7d32,#66bb6a);color:white;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:bold;cursor:pointer;margin-top:10px;">✅ 回答を送信</button>'
+          : '';
+        choicesHtml = '<div style="margin-top:6px;">' + qBlocks + submitHtml + '</div>';
+      }
       chatHtml += '<div style="display:flex;gap:8px;margin-bottom:10px;">'
         + '<div style="width:26px;height:26px;border-radius:50%;background:#534AB7;color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;flex-shrink:0;">AI</div>'
-        + '<div style="background:#EEEDFE;border-radius:0 10px 10px 10px;padding:9px 13px;font-size:13px;color:#3C3489;max-width:85%;white-space:pre-line;line-height:1.6;">' + h.text + '</div>'
+        + '<div style="background:#EEEDFE;border-radius:0 10px 10px 10px;padding:9px 13px;font-size:13px;color:#3C3489;max-width:85%;white-space:pre-line;line-height:1.6;">' + h.text + choicesHtml + '</div>'
         + '</div>';
     } else {
       chatHtml += '<div style="display:flex;gap:8px;margin-bottom:10px;justify-content:flex-end;">'
