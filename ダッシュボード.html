@@ -289,8 +289,10 @@ tr:hover td { background:var(--bg3); }
   box-shadow:0 4px 16px rgba(0,0,0,0.2);
 }
 .toast.show { opacity:1; }
-/* ★ iPad対応: 案件テーブル→カード表示（操作ボタンが画面外に隠れる問題の対策） */
-@media(max-width:1024px) {
+/* ★ iPad対応: 案件テーブル→カード表示（操作ボタンが画面外に隠れる問題の対策）
+   iPad Pro 11(横1194px)・iPad Pro 12.9(横1366pxは対象外・縦1024pxは対象)を
+   カバーしつつ、一般的なノートPC(横1366px以上)は表のまま表示するため1280pxに設定 */
+@media(max-width:1280px) {
   .cases-wrap table thead { display:none; }
   .cases-wrap table, .cases-wrap tbody, .cases-wrap tr { display:block; width:100%; }
   #cases-tbody tr {
