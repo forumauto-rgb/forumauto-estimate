@@ -833,27 +833,33 @@ async function loadCases() {
       tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--txt3);padding:20px;">案件なし</td></tr>';
       return;
     }
-    // ★ receptions テーブルからレンタカー情報を一括取得
-    var recMap = {};
-    try {
-      var recUrl = SB_URL + '/rest/v1/receptions?select=id,rental_needed,rental_type,rental_fee,rental_start_date,rental_end_date&rental_needed=eq.true&limit=200';
-      var recRes = await fetch(recUrl, { headers: SB_H });
-      var recData = await recRes.json();
-      if (Array.isArray(recData)) {
-        recData.forEach(function(r){ recMap[r.id] = r; });
-      }
-    } catch(e) {}
-
-    // ★ delivery_confirmations テーブルから納車確認済み案件を一括取得
-    var dcMap = {};
-    try {
-      var dcUrl = SB_URL + '/rest/v1/delivery_confirmations?select=estimate_id,delivered_at&order=delivered_at.desc&limit=500';
-      var dcRes = await fetch(dcUrl, { headers: SB_H });
-      var dcData = await dcRes.json();
-      if (Array.isArray(dcData)) {
-        dcData.forEach(function(d){ if (!dcMap[String(d.estimate_id)]) dcMap[String(d.estimate_id)] = d; });
-      }
-    } catch(e) {}
+    // ★ receptions（レンタカー情報）と delivery_confirmations（納車確認済み案件）を並行取得
+    var recMapPromise = (async function(){
+      var recMap = {};
+      try {
+        var recUrl = SB_URL + '/rest/v1/receptions?select=id,rental_needed,rental_type,rental_fee,rental_start_date,rental_end_date&rental_needed=eq.true&limit=200';
+        var recRes = await fetch(recUrl, { headers: SB_H });
+        var recData = await recRes.json();
+        if (Array.isArray(recData)) {
+          recData.forEach(function(r){ recMap[r.id] = r; });
+        }
+      } catch(e) {}
+      return recMap;
+    })();
+    var dcMapPromise = (async function(){
+      var dcMap = {};
+      try {
+        var dcUrl = SB_URL + '/rest/v1/delivery_confirmations?select=estimate_id,delivered_at&order=delivered_at.desc&limit=500';
+        var dcRes = await fetch(dcUrl, { headers: SB_H });
+        var dcData = await dcRes.json();
+        if (Array.isArray(dcData)) {
+          dcData.forEach(function(d){ if (!dcMap[String(d.estimate_id)]) dcMap[String(d.estimate_id)] = d; });
+        }
+      } catch(e) {}
+      return dcMap;
+    })();
+    var maps = await Promise.all([recMapPromise, dcMapPromise]);
+    var recMap = maps[0], dcMap = maps[1];
 
     _casesData = data; _casesRecMap = recMap; _casesDcMap = dcMap;
     renderCasesRows();
@@ -1387,6 +1393,7 @@ function openDeliveryConfirm(estimateId, estimateNo, customerName, carName) {
   _dcChecked = DC_CHECK_ITEMS.map(function(){ return false; });
   renderDcChecks();
   _dcHasDrawn = false;
+  _dcIsDrawing = false;
 
   document.getElementById('dc_formView').style.display = 'flex';
   document.getElementById('dc_viewContent').style.display = 'none';
@@ -1470,6 +1477,9 @@ function initDeliverySign() {
     _dcSignCtx.stroke();
   };
   canvas.ontouchend = function() { _dcIsDrawing = false; updateDcSaveState(); };
+  // ★ キャンバス外でマウスボタンを離した場合の保険（canvas上のmouseupだけでは拾えないため）
+  document.onmouseup = function() { _dcIsDrawing = false; };
+  document.ontouchend = function() { _dcIsDrawing = false; };
 }
 
 function clearDeliverySign() {
@@ -1525,11 +1535,17 @@ async function saveDeliveryConfirm() {
     showToast('✅ 納車確認を保存しました');
     closeDeliveryConfirm();
 
-    // ★ サーバー再取得なしでその場のボタン表示を更新（一覧から即消えないように）
-    _casesDcMap[String(savedEstimateId)] = { estimate_id: savedEstimateId, delivered_at: new Date().toISOString() };
-    _casesData.forEach(function(r){ if (String(r.id) === String(savedEstimateId)) r.repair_status = '納車済'; });
-    renderCasesRows();
-    loadStats();
+    // ★ サーバー再取得なしでその場のボタン表示だけを更新（一覧から即消えないように）。
+    //   repair_status はローカルで書き換えない — dcMap の有無だけでボタン表示を切り替えるため、
+    //   isComplete/取消ボタンの判定を汚染しない。renderCasesRows は saveDeliveryConfirm の成否と
+    //   無関係な描画処理なので、失敗しても「通信エラー」として誤表示しないよう別途catchする。
+    try {
+      _casesDcMap[String(savedEstimateId)] = { estimate_id: savedEstimateId, delivered_at: new Date().toISOString() };
+      renderCasesRows();
+      loadStats();
+    } catch (re) {
+      console.error('renderCasesRows failed after delivery confirm save', re);
+    }
   } catch(e) {
     showToast('通信エラー: ' + e.message);
   }
