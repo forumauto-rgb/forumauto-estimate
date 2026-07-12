@@ -585,6 +585,57 @@ tr:hover td { background:var(--bg3); }
 </div>
 </div>
 
+<!-- ★ 納車確認モーダル（iPad向け：お客様サイン付き） -->
+<div id="deliveryOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.75);z-index:9100;align-items:center;justify-content:center;padding:10px;" onclick="if(event.target===this)closeDeliveryConfirm()">
+<div style="background:#fff;border-radius:20px;width:min(680px,100%);max-height:96vh;overflow-y:auto;display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(0,0,0,0.4);">
+  <!-- ヘッダー -->
+  <div style="padding:18px 22px;background:linear-gradient(135deg,#0d47a1,#1976d2);border-radius:20px 20px 0 0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:1;">
+    <div>
+      <div style="font-size:20px;font-weight:900;color:#fff;">🚗 納車確認</div>
+      <div id="dc_subtitle" style="font-size:14px;color:rgba(255,255,255,0.9);margin-top:3px;font-weight:600;"></div>
+    </div>
+    <button onclick="closeDeliveryConfirm()" style="border:none;background:rgba(255,255,255,0.25);color:#fff;border-radius:10px;padding:8px 16px;font-size:22px;line-height:1;cursor:pointer;">✕</button>
+  </div>
+  <!-- ボディ -->
+  <div style="padding:22px;">
+    <div id="dc_formView" style="display:flex;flex-direction:column;gap:18px;">
+      <div style="background:#eef4ff;border-radius:12px;padding:16px 18px;font-size:16px;line-height:2;font-weight:700;color:#0d3b66;">
+        <div>お客様名：<span id="dc_customer" style="font-weight:900;"></span> 様</div>
+        <div>車両：<span id="dc_car" style="font-weight:900;"></span></div>
+        <div>見積No：<span id="dc_no" style="font-weight:900;"></span></div>
+      </div>
+
+      <div style="font-size:14px;font-weight:800;color:#374151;letter-spacing:1px;">✅ 確認項目（すべてタップしてください）</div>
+      <div id="dc_checks" style="display:flex;flex-direction:column;gap:10px;"></div>
+
+      <div style="background:#fff3e0;border-left:5px solid #e65100;padding:16px 18px;border-radius:10px;font-size:15px;line-height:1.9;color:#5c3300;font-weight:700;">
+        修理箇所に不具合があった場合は、納車日から1ヶ月以内にお申し出ください。無償で再検査いたします。塗装剥がれ等の施工に起因する不具合は、期間経過後も誠実に対応いたします。
+      </div>
+
+      <div style="font-size:15px;font-weight:800;color:#111827;">確認日：<span id="dc_date_display" style="font-weight:900;"></span></div>
+
+      <div>
+        <div style="font-size:16px;font-weight:900;color:#111827;margin-bottom:10px;">✍️ お客様サイン</div>
+        <div style="border:2.5px solid #cbd5e1;border-radius:14px;overflow:hidden;background:#fff;">
+          <canvas id="dcSignCanvas" style="display:block;width:100%;height:220px;touch-action:none;cursor:crosshair;background:#fff;"></canvas>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#f8fafc;border-top:1.5px solid #e2e8f0;">
+            <span style="font-size:14px;color:#64748b;font-weight:700;">指またはペンでサインしてください</span>
+            <button onclick="clearDeliverySign()" style="padding:10px 20px;background:#64748b;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;">クリア</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="dc_viewContent" style="display:none;flex-direction:column;gap:16px;"></div>
+  </div>
+  <!-- フッター -->
+  <div style="padding:16px 22px;border-top:2px solid #e5e7eb;display:flex;justify-content:flex-end;gap:12px;background:#f8fafc;border-radius:0 0 20px 20px;position:sticky;bottom:0;">
+    <button onclick="closeDeliveryConfirm()" style="padding:14px 24px;border:1.5px solid #d1d5db;border-radius:10px;background:#fff;font-size:15px;cursor:pointer;font-weight:700;">閉じる</button>
+    <button id="dc_saveBtn" onclick="saveDeliveryConfirm()" disabled style="padding:14px 30px;border:none;border-radius:10px;background:#9ca3af;color:#fff;font-size:16px;font-weight:900;cursor:not-allowed;">✅ 納車確認を保存</button>
+  </div>
+</div>
+</div>
+
 <!-- ★ 案件編集モーダル -->
 <div id="editOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.55);z-index:8000;align-items:center;justify-content:center;">
 <div style="background:#fff;border-radius:16px;width:min(560px,95vw);max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.25);">
@@ -765,6 +816,8 @@ async function loadStats() {
   } catch(e) { console.error('loadStatsエラー', e); }
 }
 
+var _casesData = [], _casesRecMap = {}, _casesDcMap = {};
+
 async function loadCases() {
   var tb = document.getElementById('cases-tbody');
   tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--txt3);padding:20px;">読み込み中...</td></tr>';
@@ -776,6 +829,7 @@ async function loadCases() {
     var res  = await fetch(url, { headers: SB_H });
     var data = await res.json();
     if (!Array.isArray(data) || !data.length) {
+      _casesData = [];
       tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--txt3);padding:20px;">案件なし</td></tr>';
       return;
     }
@@ -790,8 +844,33 @@ async function loadCases() {
       }
     } catch(e) {}
 
-    var h = '';
-    data.forEach(function(r) {
+    // ★ delivery_confirmations テーブルから納車確認済み案件を一括取得
+    var dcMap = {};
+    try {
+      var dcUrl = SB_URL + '/rest/v1/delivery_confirmations?select=estimate_id,delivered_at&order=delivered_at.desc&limit=500';
+      var dcRes = await fetch(dcUrl, { headers: SB_H });
+      var dcData = await dcRes.json();
+      if (Array.isArray(dcData)) {
+        dcData.forEach(function(d){ if (!dcMap[String(d.estimate_id)]) dcMap[String(d.estimate_id)] = d; });
+      }
+    } catch(e) {}
+
+    _casesData = data; _casesRecMap = recMap; _casesDcMap = dcMap;
+    renderCasesRows();
+  } catch(e) {
+    tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--txt3);padding:20px;">読み込みエラー</td></tr>';
+  }
+}
+
+function renderCasesRows() {
+  var tb = document.getElementById('cases-tbody');
+  var data = _casesData, recMap = _casesRecMap, dcMap = _casesDcMap;
+  if (!Array.isArray(data) || !data.length) {
+    tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--txt3);padding:20px;">案件なし</td></tr>';
+    return;
+  }
+  var h = '';
+  data.forEach(function(r) {
       var bc = getBadgeClass(r.repair_status || '');
       var p4 = (r.plate||'').replace(/[-\s]/g,'').slice(-4);
       var su = STATUS_URL + '?id=' + encodeURIComponent(r.estimate_no||'');
@@ -845,18 +924,29 @@ async function loadCases() {
       if (!isComplete) {
         h += '<button class="act-btn" style="color:#c8251b;border-color:rgba(200,37,27,0.3);background:rgba(200,37,27,0.06);" onclick="cancelCase(\'' + no + '\',\'' + cus + '\')">✖ 取消</button>';
       }
-      h += '</td></tr>';
-    });
-    tb.innerHTML = h;
-    document.getElementById('last-update').textContent = new Date().toLocaleTimeString('ja-JP');
-    var badge = document.getElementById('caseBadge');
-    if (badge) {
-      var count = data.length;
-      badge.textContent = count + '件';
-      badge.style.display = count > 0 ? 'block' : 'none';
-    }
-  } catch(e) {
-    tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--txt3);padding:20px;">読み込みエラー</td></tr>';
+      // ★ 納車確認ボタン（完成・納車準備完了案件、または確認済み案件で表示）
+      var dcRec = dcMap[String(r.id || '')];
+      var isReadyForDelivery = (r.repair_status === '完成' || r.repair_status === '納車準備完了');
+      if (dcRec || isReadyForDelivery) {
+        var dcId  = (r.id||no).replace(/'/g,'&apos;');
+        var dcNo  = no.replace(/'/g,'&apos;');
+        var dcCus = (r.customer_name||'').replace(/'/g,'&apos;').replace(/"/g,'&quot;');
+        var dcCar = (r.car_name||'').replace(/'/g,'&apos;').replace(/"/g,'&quot;');
+        if (dcRec) {
+          h += '<button class="act-btn dc-view-btn" data-id="'+dcId+'" data-no="'+dcNo+'" data-cus="'+dcCus+'" data-car="'+dcCar+'" style="color:#0d47a1;border-color:rgba(13,71,161,0.3);background:rgba(13,71,161,0.06);font-weight:700;">📄 納車確認済み</button>';
+        } else {
+          h += '<button class="act-btn dc-open-btn" data-id="'+dcId+'" data-no="'+dcNo+'" data-cus="'+dcCus+'" data-car="'+dcCar+'" style="color:#fff;border-color:#0d47a1;background:#1976d2;font-weight:700;">🚗 納車確認</button>';
+        }
+      }
+    h += '</td></tr>';
+  });
+  tb.innerHTML = h;
+  document.getElementById('last-update').textContent = new Date().toLocaleTimeString('ja-JP');
+  var badge = document.getElementById('caseBadge');
+  if (badge) {
+    var count = data.length;
+    badge.textContent = count + '件';
+    badge.style.display = count > 0 ? 'block' : 'none';
   }
 }
 
@@ -1255,6 +1345,230 @@ document.addEventListener('click', function(e){
     btn.dataset.car
   );
 });
+
+// ★ 納車確認ボタン：イベント委譲（data属性方式）
+document.addEventListener('click', function(e){
+  var openBtn = e.target.closest('.dc-open-btn');
+  if (openBtn) {
+    e.preventDefault();
+    e.stopPropagation();
+    openDeliveryConfirm(openBtn.dataset.id, openBtn.dataset.no, openBtn.dataset.cus, openBtn.dataset.car);
+    return;
+  }
+  var viewBtn = e.target.closest('.dc-view-btn');
+  if (viewBtn) {
+    e.preventDefault();
+    e.stopPropagation();
+    viewDeliveryConfirm(viewBtn.dataset.id, viewBtn.dataset.no, viewBtn.dataset.cus, viewBtn.dataset.car);
+  }
+});
+
+// ★ 納車確認モーダル（お客様サイン付き）
+var DC_CHECK_ITEMS = [
+  '修理箇所の仕上がりを確認しました',
+  'ドア・ライト等の動作を確認しました',
+  '車内・洗車の状態を確認しました',
+  'お預かり品・貴重品の返却を受けました',
+  '保証と今後の注意について説明を受けました'
+];
+var _dcEstimateId = null, _dcEstimateNo = null, _dcCustomer = null, _dcCar = null;
+var _dcChecked = [];
+var _dcSignCtx = null, _dcIsDrawing = false, _dcHasDrawn = false;
+
+function openDeliveryConfirm(estimateId, estimateNo, customerName, carName) {
+  _dcEstimateId = estimateId; _dcEstimateNo = estimateNo; _dcCustomer = customerName; _dcCar = carName;
+  document.getElementById('dc_subtitle').textContent = estimateNo + ' — ' + customerName + ' 様（' + carName + '）';
+  document.getElementById('dc_customer').textContent = customerName;
+  document.getElementById('dc_car').textContent = carName;
+  document.getElementById('dc_no').textContent = estimateNo;
+  var today = new Date();
+  document.getElementById('dc_date_display').textContent = today.getFullYear() + '年' + (today.getMonth()+1) + '月' + today.getDate() + '日';
+
+  _dcChecked = DC_CHECK_ITEMS.map(function(){ return false; });
+  renderDcChecks();
+  _dcHasDrawn = false;
+
+  document.getElementById('dc_formView').style.display = 'flex';
+  document.getElementById('dc_viewContent').style.display = 'none';
+  document.getElementById('dc_saveBtn').style.display = 'inline-block';
+  updateDcSaveState();
+
+  document.getElementById('deliveryOverlay').style.display = 'flex';
+  setTimeout(initDeliverySign, 100);
+}
+
+function closeDeliveryConfirm() {
+  document.getElementById('deliveryOverlay').style.display = 'none';
+  _dcEstimateId = null; _dcEstimateNo = null; _dcCustomer = null; _dcCar = null;
+  _dcHasDrawn = false;
+}
+
+function renderDcChecks() {
+  var el = document.getElementById('dc_checks');
+  el.innerHTML = DC_CHECK_ITEMS.map(function(label, i) {
+    var checked = _dcChecked[i];
+    return '<div onclick="toggleDcCheck(' + i + ')" style="display:flex;align-items:center;gap:14px;padding:16px 18px;border:2.5px solid ' + (checked?'#16a34a':'#cbd5e1') + ';border-radius:14px;cursor:pointer;background:' + (checked?'#e8f8ee':'#fff') + ';">'
+      + '<div style="width:32px;height:32px;border-radius:8px;border:2.5px solid ' + (checked?'#16a34a':'#94a3b8') + ';background:' + (checked?'#16a34a':'#fff') + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
+      + (checked ? '<span style="color:#fff;font-size:20px;font-weight:900;">✓</span>' : '')
+      + '</div>'
+      + '<span style="font-size:17px;font-weight:700;color:#111827;">' + esc(label) + '</span>'
+      + '</div>';
+  }).join('');
+}
+
+function toggleDcCheck(i) {
+  _dcChecked[i] = !_dcChecked[i];
+  renderDcChecks();
+  updateDcSaveState();
+}
+
+function updateDcSaveState() {
+  var allChecked = _dcChecked.length === DC_CHECK_ITEMS.length && _dcChecked.every(Boolean);
+  var btn = document.getElementById('dc_saveBtn');
+  if (allChecked && _dcHasDrawn) {
+    btn.disabled = false; btn.style.background = '#16a34a'; btn.style.cursor = 'pointer';
+  } else {
+    btn.disabled = true; btn.style.background = '#9ca3af'; btn.style.cursor = 'not-allowed';
+  }
+}
+
+function initDeliverySign() {
+  var canvas = document.getElementById('dcSignCanvas');
+  if (!canvas) return;
+  canvas.width = canvas.offsetWidth * 2 || 800;
+  canvas.height = 440;
+  _dcSignCtx = canvas.getContext('2d');
+  _dcSignCtx.scale(2, 2);
+  _dcSignCtx.strokeStyle = '#111827';
+  _dcSignCtx.lineWidth = 2.5;
+  _dcSignCtx.lineCap = 'round';
+  canvas.onmousedown = function(e) {
+    _dcIsDrawing = true; _dcHasDrawn = true;
+    _dcSignCtx.beginPath();
+    var r = canvas.getBoundingClientRect();
+    _dcSignCtx.moveTo((e.clientX-r.left)/(r.width/(canvas.width/2)), (e.clientY-r.top)/(r.height/(canvas.height/2)));
+  };
+  canvas.onmousemove = function(e) {
+    if (!_dcIsDrawing) return;
+    var r = canvas.getBoundingClientRect();
+    _dcSignCtx.lineTo((e.clientX-r.left)/(r.width/(canvas.width/2)), (e.clientY-r.top)/(r.height/(canvas.height/2)));
+    _dcSignCtx.stroke();
+  };
+  canvas.onmouseup = function() { _dcIsDrawing = false; updateDcSaveState(); };
+  canvas.ontouchstart = function(e) {
+    e.preventDefault();
+    _dcIsDrawing = true; _dcHasDrawn = true;
+    var t = e.touches[0], r = canvas.getBoundingClientRect();
+    _dcSignCtx.beginPath();
+    _dcSignCtx.moveTo((t.clientX-r.left)/(r.width/(canvas.width/2)), (t.clientY-r.top)/(r.height/(canvas.height/2)));
+  };
+  canvas.ontouchmove = function(e) {
+    e.preventDefault();
+    if (!_dcIsDrawing) return;
+    var t = e.touches[0], r = canvas.getBoundingClientRect();
+    _dcSignCtx.lineTo((t.clientX-r.left)/(r.width/(canvas.width/2)), (t.clientY-r.top)/(r.height/(canvas.height/2)));
+    _dcSignCtx.stroke();
+  };
+  canvas.ontouchend = function() { _dcIsDrawing = false; updateDcSaveState(); };
+}
+
+function clearDeliverySign() {
+  var c = document.getElementById('dcSignCanvas');
+  if (_dcSignCtx && c) _dcSignCtx.clearRect(0, 0, c.width/2, c.height/2);
+  _dcHasDrawn = false;
+  updateDcSaveState();
+}
+
+function getDeliverySignDataURL() {
+  var c = document.getElementById('dcSignCanvas');
+  return c ? c.toDataURL() : '';
+}
+
+async function saveDeliveryConfirm() {
+  if (!_dcEstimateId) return;
+  var allChecked = _dcChecked.length === DC_CHECK_ITEMS.length && _dcChecked.every(Boolean);
+  var signData = getDeliverySignDataURL();
+  if (!allChecked || !_dcHasDrawn || !signData) {
+    showToast('確認項目とサインをすべて入力してください');
+    return;
+  }
+  var checksObj = {};
+  DC_CHECK_ITEMS.forEach(function(label, i) { checksObj[label] = _dcChecked[i]; });
+  var payload = {
+    estimate_id: String(_dcEstimateId),
+    customer_name: _dcCustomer || '',
+    vehicle_name: _dcCar || '',
+    checks: checksObj,
+    signature_data: signData,
+    note: _dcEstimateNo || ''
+  };
+  var savedEstimateId = _dcEstimateId, savedEstimateNo = _dcEstimateNo;
+  try {
+    var res = await fetch(SB_URL + '/rest/v1/delivery_confirmations', {
+      method: 'POST',
+      headers: Object.assign({}, SB_H, {'Content-Type':'application/json','Prefer':'return=minimal'}),
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      var err = await res.text();
+      showToast('保存エラー: ' + err);
+      return;
+    }
+    try {
+      await fetch(SB_URL + '/rest/v1/estimates?estimate_no=eq.' + encodeURIComponent(savedEstimateNo), {
+        method: 'PATCH',
+        headers: Object.assign({}, SB_H, {'Content-Type':'application/json','Prefer':'return=minimal'}),
+        body: JSON.stringify({ repair_status: '納車済' })
+      });
+    } catch(ue) {}
+
+    showToast('✅ 納車確認を保存しました');
+    closeDeliveryConfirm();
+
+    // ★ サーバー再取得なしでその場のボタン表示を更新（一覧から即消えないように）
+    _casesDcMap[String(savedEstimateId)] = { estimate_id: savedEstimateId, delivered_at: new Date().toISOString() };
+    _casesData.forEach(function(r){ if (String(r.id) === String(savedEstimateId)) r.repair_status = '納車済'; });
+    renderCasesRows();
+    loadStats();
+  } catch(e) {
+    showToast('通信エラー: ' + e.message);
+  }
+}
+
+function viewDeliveryConfirm(estimateId, estimateNo, customerName, carName) {
+  document.getElementById('dc_subtitle').textContent = estimateNo + ' — ' + customerName + ' 様（' + carName + '）';
+  document.getElementById('dc_formView').style.display = 'none';
+  document.getElementById('dc_saveBtn').style.display = 'none';
+  var vc = document.getElementById('dc_viewContent');
+  vc.style.display = 'flex';
+  vc.innerHTML = '<div style="text-align:center;padding:30px;color:#94a3b8;">読み込み中...</div>';
+  document.getElementById('deliveryOverlay').style.display = 'flex';
+
+  fetch(SB_URL + '/rest/v1/delivery_confirmations?estimate_id=eq.' + encodeURIComponent(String(estimateId)) + '&select=*&order=delivered_at.desc&limit=1', { headers: SB_H })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var rec = (Array.isArray(data) && data[0]) ? data[0] : null;
+      if (!rec) { vc.innerHTML = '<div style="text-align:center;padding:30px;color:#94a3b8;">記録が見つかりません</div>'; return; }
+      var checks = rec.checks || {};
+      var checksHtml = Object.keys(checks).map(function(k){
+        return '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:2.5px solid #16a34a;border-radius:14px;background:#e8f8ee;">'
+          + '<span style="font-size:22px;">✅</span><span style="font-size:16px;font-weight:700;color:#111827;">' + esc(k) + '</span></div>';
+      }).join('');
+      var dt = rec.delivered_at ? new Date(rec.delivered_at) : null;
+      var dateStr = dt ? (dt.getFullYear()+'年'+(dt.getMonth()+1)+'月'+dt.getDate()+'日 '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0')) : '—';
+      vc.innerHTML = '<div style="background:#eef4ff;border-radius:12px;padding:16px 18px;font-size:16px;line-height:2;font-weight:700;color:#0d3b66;">'
+        + '<div>お客様名：<span style="font-weight:900;">' + esc(rec.customer_name||'') + '</span> 様</div>'
+        + '<div>車両：<span style="font-weight:900;">' + esc(rec.vehicle_name||'') + '</span></div>'
+        + '<div>確認日時：<span style="font-weight:900;">' + dateStr + '</span></div>'
+        + '</div>'
+        + '<div style="display:flex;flex-direction:column;gap:10px;">' + checksHtml + '</div>'
+        + '<div><div style="font-size:16px;font-weight:900;color:#111827;margin-bottom:10px;">✍️ お客様サイン</div>'
+        + '<div style="border:2.5px solid #cbd5e1;border-radius:14px;overflow:hidden;background:#fff;padding:8px;">'
+        + (rec.signature_data ? '<img src="' + rec.signature_data + '" style="width:100%;display:block;">' : '<div style="text-align:center;padding:20px;color:#94a3b8;">サインなし</div>')
+        + '</div></div>';
+    })
+    .catch(function(){ vc.innerHTML = '<div style="text-align:center;padding:30px;color:#e11d48;">読み込みエラー</div>'; });
+}
 
 function loadAll() { loadStats(); loadCases(); }
 
