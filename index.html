@@ -7045,10 +7045,10 @@ async function applyReceptionParams() {
       localStorage.removeItem('fa_reception_transfer');
 
       // 色番号・色名を引き継ぎ
-      if(td.color_code)    customer.colorCode    = td.color_code;
-      if(td.color_name)    customer.colorName    = td.color_name;
-      if(td.insurance)     customer.insurance    = td.insurance;
-      if(td.reception_id)  customer.receptionId  = td.reception_id;
+      if(td.color_code)    customer.colorCode  = td.color_code;
+      if(td.color_name)    customer.color      = td.color_name;
+      if(td.insurance)     customer.insCompany = td.insurance;
+      if(td.reception_id)  customer.receptionId = td.reception_id;
       if(td.coating)       customer.coating      = td.coating;
       if(td.car_category)  customer.carCategory  = td.car_category;
 
@@ -7144,7 +7144,7 @@ async function applyReceptionParams() {
           vMaster.unshift({
             id: 'V' + Date.now().toString(36).toUpperCase().slice(-5),
             cid: custId, name: td.car_model || '', plate: td.plate || '',
-            colorCode: td.color_code || '', colorName: td.color_name || '',
+            colorCode: td.color_code || '', color: td.color_name || '',
             maker: '', grade: td.car_type || '', year: td.year || '',
             vin: td.vin || '', fuel: '', drive: ''
           });
