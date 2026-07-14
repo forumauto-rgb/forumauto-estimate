@@ -1243,8 +1243,17 @@ async function saveReception() {
     showToast('外車・高級車はコーティング処理の選択が必須です','error');return;
   }
 
+  // 連打で二重に処理が走らないよう、非同期の重複チェックに入る前にロックする
+  isSavingReception = true;
+  var saveBtn = document.getElementById('saveReceptionBtn');
+  var saveBtnOrigText = saveBtn?saveBtn.textContent:'';
+  if(saveBtn){ saveBtn.disabled=true; saveBtn.textContent='送信中…'; }
+
+  // 受付保存・車両マスター登録の両方で使う値はここで1回だけ取得して使い回す
+  // （非同期処理の途中でフォームの値が変わっても登録内容がずれないようにする）
   var custNameForCheck = (selectedBusinessType==='外注受付') ? get('outsourceCompany') : (name||get('outsourceCompany'));
   var plateForCheck = get('carNum');
+  var carNameForSave = get('carName');
   if(custNameForCheck&&plateForCheck){
     try {
       var todayStart = new Date(); todayStart.setHours(0,0,0,0);
@@ -1257,15 +1266,14 @@ async function saveReception() {
       var normCheck = normalizeCustomerName(custNameForCheck);
       var isDup = (dupCandidates||[]).some(function(r){ return normalizeCustomerName(r.customer_name)===normCheck; });
       if(isDup){
-        if(!confirm('⚠️本日同じお客様の受付が既に登録されています。\nこのまま追加登録しますか？')) return;
+        if(!confirm('⚠️本日同じお客様の受付が既に登録されています。\nこのまま追加登録しますか？')) {
+          isSavingReception = false;
+          if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent=saveBtnOrigText; }
+          return;
+        }
       }
     } catch(dupErr){ /* チェックに失敗しても登録はブロックしない */ }
   }
-
-  isSavingReception = true;
-  var saveBtn = document.getElementById('saveReceptionBtn');
-  var saveBtnOrigText = saveBtn?saveBtn.textContent:'';
-  if(saveBtn){ saveBtn.disabled=true; saveBtn.textContent='送信中…'; }
 
   showLoading('案件を登録中...');
   var caseNum = generateCaseNum();
@@ -1276,8 +1284,8 @@ async function saveReception() {
     type: selectedBusinessType,
     customer_name: (selectedBusinessType==='外注受付') ? get('outsourceCompany') : (name||get('outsourceCompany')),
     phone: (selectedBusinessType==='外注受付') ? get('outsourcePhone') : get('phone'),
-    plate: get('carNum'),
-    car_model: get('carName'),
+    plate: plateForCheck,
+    car_model: carNameForSave,
     staff: get('staff')||'',
     note: get('symptoms'),
     rental_needed: rentalNeeded,
@@ -1295,146 +1303,177 @@ async function saveReception() {
     payload.note = '【依頼会社】'+get('outsourceCompany')+' '+get('outsourceContact')+' TEL:'+get('outsourcePhone')+'\n'+payload.note;
   }
 
+  var recId = null;
   try {
     var recResult = await supabaseQuery('receptions','POST',payload);
-    var recId = (recResult&&recResult[0])?recResult[0].id:null;
-
-    // paint_colors自動登録
-    if(colorCode&&carColor){
-      try{
-        var existPC = await fetch(SUPABASE_URL+'/rest/v1/paint_colors?color_code=eq.'+encodeURIComponent(colorCode.toUpperCase())+'&limit=1',
-          {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
-        var exPCData = await existPC.json();
-        if(!exPCData||exPCData.length===0){
-          await fetch(SUPABASE_URL+'/rest/v1/paint_colors',{
-            method:'POST',
-            headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
-            body:JSON.stringify({color_code:colorCode.toUpperCase(),color_name:carColor,maker:'',difficulty:'標準'})
-          });
-        }
-      }catch(pe){console.warn('色登録エラー:',pe);}
-    }
-
-    // 顧客・車両マスター自動登録
-    try {
-      // 外注受付は外注先（依頼会社）を顧客として登録。所有者名（customerName）は登録しない
-      var custName = (selectedBusinessType==='外注受付') ? get('outsourceCompany') : (name||get('outsourceCompany'));
-      var custTel  = (selectedBusinessType==='外注受付') ? get('outsourcePhone') : get('phone');
-      var existingCust = await findCustomerByNormalizedName(custName);
-      var existing = existingCust ? [existingCust] : [];
-      var custNo = '';
-      if(!existing||existing.length===0){
-        custNo = 'C'+String(Date.now()).slice(-6);
-        await supabaseQuery('customers','POST',{name:custName,tel:custTel||'',customer_no:custNo,address:get('ownerAddress')||''});
-      } else {
-        custNo = existing[0].customer_no||existing[0].id||'';
-      }
-      var carName2 = get('carName');
-      var carNum2 = get('carNum');
-      if(carName2||carNum2){
-        var existV = await supabaseQuery('vehicles','GET',null,'?plate=eq.'+encodeURIComponent(carNum2)+'&limit=1');
-        if(!existV||existV.length===0){
-          // 車検証OCRの「車名」欄は実質メーカー名（例：トヨタ）が入るためmakerに格納し、
-          // 車種名(name)は判別できないため自動では空欄のままにする（担当者が必要なら手入力）
-          await supabaseQuery('vehicles','POST',{
-            maker:carName2,plate:carNum2,
-            color_name:carColor,color_code:colorCode,
-            customer_id:custNo,
-            vehicle_no:'V'+String(Date.now()).slice(-6),
-            model:get('carModel')||'',
-            vin:get('carVin')||'',
-            year:get('carYear')||''
-          });
-        } else {
-          var patchData = {};
-          if(colorCode){patchData.color_code=colorCode;patchData.color_name=carColor;}
-          if(carName2) patchData.maker=carName2;
-          if(get('carModel')) patchData.model=get('carModel');
-          if(get('carVin'))   patchData.vin=get('carVin');
-          if(get('carYear'))  patchData.year=get('carYear');
-          if(Object.keys(patchData).length>0){
-            await fetch(SUPABASE_URL+'/rest/v1/vehicles?plate=eq.'+encodeURIComponent(carNum2),{
-              method:'PATCH',
-              headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
-              body:JSON.stringify(patchData)
-            });
-          }
-        }
-      }
-      // receptionにvehicle_no/customer_noを紐づけ
-      if(recId){
-        var latestV2 = carNum2?await supabaseQuery('vehicles','GET',null,'?plate=eq.'+encodeURIComponent(carNum2)+'&limit=1'):null;
-        var vNo2 = (latestV2&&latestV2[0])?latestV2[0].vehicle_no||'':'';
-        var vId2 = (latestV2&&latestV2[0])?latestV2[0].id||'':'';
-        await fetch(SUPABASE_URL+'/rest/v1/receptions?id=eq.'+recId,{
-          method:'PATCH',
-          headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
-          body:JSON.stringify({customer_no:custNo||'',vehicle_no:vNo2,vehicle_id:vId2})
-        });
-      }
-    } catch(ce){console.warn('顧客自動登録エラー:',ce);}
-
-    // 損傷写真をestimate_photosに保存してlocalStorageに引き継ぎ
-    if(incomingPhotos.length>0&&recId){
-      var photoFailCount = 0;
-      for(var pi=0;pi<incomingPhotos.length;pi++){
-        try{
-          await supabaseQuery('estimate_photos','POST',{
-            reception_id: recId,
-            category: 'photoIncoming',
-            data_url: incomingPhotos[pi],
-            sort_order: pi
-          });
-        }catch(pe){
-          photoFailCount++;
-          console.warn('写真保存エラー:',pe);
-        }
-      }
-      if(photoFailCount>0){
-        // 直後に表示される登録完了トーストと入れ替わって消えないよう少し遅らせて表示
-        (function(total,fail){
-          setTimeout(function(){ showToast('⚠️写真'+total+'枚中'+fail+'枚の保存に失敗しました','error'); },3600);
-        })(incomingPhotos.length,photoFailCount);
-      }
-    }
-
-    // localStorageに引き継ぎデータをセット
-    var transferData = {
-      customer_name: (selectedBusinessType==='外注受付') ? get('outsourceCompany') : (name||get('outsourceCompany')),
-      phone: (selectedBusinessType==='外注受付') ? get('outsourcePhone') : get('phone'),
-      address: get('ownerAddress'),
-      car_model: get('carName'),
-      plate: get('carNum'),
-      vin: get('carVin'),
-      year: get('carYear'),
-      car_type: get('carModel'),
-      color_code: colorCode,
-      color_name: carColor,
-      insurance: get('insurance'),
-      note: get('symptoms'),
-      type: selectedBusinessType,
-      reception_id: recId,
-      coating: get('coating')||'',
-      car_category: get('carCategory')||'',
-      photos: incomingPhotos
-    };
-    localStorage.setItem('fa_reception_transfer', JSON.stringify(transferData));
-
-    // 外注受付：依頼会社をマスターに自動追加
-    if(selectedBusinessType==='外注受付'){
-      upsertOutsourceMaster(get('outsourceCompany'), get('outsourceContact'), get('outsourcePhone'), get('outsourceBilling'));
-    }
-
-    hideLoading();
-    isSavingReception = false;
-    if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent=saveBtnOrigText; }
-    afterReceptionSaved(caseNum, custName, rentalNeeded, selectedRentalCar);
+    recId = (recResult&&recResult[0])?recResult[0].id:null;
   } catch(e) {
     hideLoading();
     isSavingReception = false;
     if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent=saveBtnOrigText; }
+    console.error('受付登録エラー（受付本体の保存に失敗）:',e);
     showToast('登録に失敗しました: '+e.message,'error');
+    return;
   }
+
+  // ここから先は受付本体の保存に成功済み。以降の処理が失敗しても
+  // 「登録に失敗しました」とは表示せず、受付は登録された旨＋具体的な失敗内容を表示する
+  var postSaveWarnings = [];
+  var custName = custNameForCheck;
+
+  // paint_colors自動登録
+  if(colorCode&&carColor){
+    try{
+      var existPC = await fetch(SUPABASE_URL+'/rest/v1/paint_colors?color_code=eq.'+encodeURIComponent(colorCode.toUpperCase())+'&limit=1',
+        {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+      var exPCData = await existPC.json();
+      if(!exPCData||exPCData.length===0){
+        await fetch(SUPABASE_URL+'/rest/v1/paint_colors',{
+          method:'POST',
+          headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+          body:JSON.stringify({color_code:colorCode.toUpperCase(),color_name:carColor,maker:'',difficulty:'標準'})
+        });
+      }
+    }catch(pe){console.error('色登録エラー:',pe);}
+  }
+
+  // 顧客・車両マスター自動登録
+  try {
+    // 外注受付は外注先（依頼会社）を顧客として登録。所有者名（customerName）は登録しない
+    var custTel  = (selectedBusinessType==='外注受付') ? get('outsourcePhone') : get('phone');
+    var existingCust = await findCustomerByNormalizedName(custName);
+    var existing = existingCust ? [existingCust] : [];
+    var custNo = '';
+    if(!existing||existing.length===0){
+      custNo = 'C'+String(Date.now()).slice(-6);
+      await supabaseQuery('customers','POST',{name:custName,tel:custTel||'',customer_no:custNo,address:get('ownerAddress')||''});
+    } else {
+      custNo = existing[0].customer_no||existing[0].id||'';
+    }
+    var carName2 = carNameForSave;
+    var carNum2 = plateForCheck;
+    if(carName2||carNum2){
+      var existV = await supabaseQuery('vehicles','GET',null,'?plate=eq.'+encodeURIComponent(carNum2)+'&limit=1');
+      if(!existV||existV.length===0){
+        // 車検証OCRの「車名」欄は実質メーカー名（例：トヨタ）が入るためmakerに格納し、
+        // 車種名(name)は判別できないため自動では空欄のままにする（担当者が必要なら手入力）
+        await supabaseQuery('vehicles','POST',{
+          maker:carName2,plate:carNum2,
+          color_name:carColor,color_code:colorCode,
+          customer_id:custNo,
+          vehicle_no:'V'+String(Date.now()).slice(-6),
+          model:get('carModel')||'',
+          vin:get('carVin')||'',
+          year:get('carYear')||''
+        });
+      } else {
+        var patchData = {};
+        if(colorCode){patchData.color_code=colorCode;patchData.color_name=carColor;}
+        if(carName2) patchData.maker=carName2;
+        if(get('carModel')) patchData.model=get('carModel');
+        if(get('carVin'))   patchData.vin=get('carVin');
+        if(get('carYear'))  patchData.year=get('carYear');
+        if(Object.keys(patchData).length>0){
+          await fetch(SUPABASE_URL+'/rest/v1/vehicles?plate=eq.'+encodeURIComponent(carNum2),{
+            method:'PATCH',
+            headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+            body:JSON.stringify(patchData)
+          });
+        }
+      }
+    }
+    // receptionにvehicle_no/customer_noを紐づけ
+    if(recId){
+      var latestV2 = carNum2?await supabaseQuery('vehicles','GET',null,'?plate=eq.'+encodeURIComponent(carNum2)+'&limit=1'):null;
+      var vNo2 = (latestV2&&latestV2[0])?latestV2[0].vehicle_no||'':'';
+      var vId2 = (latestV2&&latestV2[0])?latestV2[0].id||'':'';
+      await fetch(SUPABASE_URL+'/rest/v1/receptions?id=eq.'+recId,{
+        method:'PATCH',
+        headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+        body:JSON.stringify({customer_no:custNo||'',vehicle_no:vNo2,vehicle_id:vId2})
+      });
+    }
+  } catch(ce){
+    console.error('顧客・車両マスター自動登録エラー:',ce);
+    postSaveWarnings.push('顧客・車両マスターの登録');
+  }
+
+  // 損傷写真をestimate_photosに保存してlocalStorageに引き継ぎ
+  if(incomingPhotos.length>0&&recId){
+    var photoFailCount = 0;
+    for(var pi=0;pi<incomingPhotos.length;pi++){
+      try{
+        await supabaseQuery('estimate_photos','POST',{
+          reception_id: recId,
+          category: 'photoIncoming',
+          data_url: incomingPhotos[pi],
+          sort_order: pi
+        });
+      }catch(pe){
+        photoFailCount++;
+        console.error('写真保存エラー:',pe);
+      }
+    }
+    if(photoFailCount>0){
+      postSaveWarnings.push('写真'+incomingPhotos.length+'枚中'+photoFailCount+'枚の保存');
+    }
+  }
+
+  // localStorageに引き継ぎデータをセット（写真データを含むため容量超過で失敗することがある）
+  var transferData = {
+    customer_name: custName,
+    phone: (selectedBusinessType==='外注受付') ? get('outsourcePhone') : get('phone'),
+    address: get('ownerAddress'),
+    car_model: carNameForSave,
+    plate: plateForCheck,
+    vin: get('carVin'),
+    year: get('carYear'),
+    car_type: get('carModel'),
+    color_code: colorCode,
+    color_name: carColor,
+    insurance: get('insurance'),
+    note: get('symptoms'),
+    type: selectedBusinessType,
+    reception_id: recId,
+    coating: get('coating')||'',
+    car_category: get('carCategory')||'',
+    photos: incomingPhotos
+  };
+  try {
+    localStorage.setItem('fa_reception_transfer', JSON.stringify(transferData));
+  } catch(lsErr) {
+    console.error('見積画面への引き継ぎデータ保存エラー:',lsErr);
+    // 写真データが容量超過の原因になっている可能性が高いため、写真を除いて再試行
+    try {
+      localStorage.setItem('fa_reception_transfer', JSON.stringify(Object.assign({},transferData,{photos:[]})));
+      postSaveWarnings.push('見積画面への写真引き継ぎ（写真はestimate_photosには保存済みです）');
+    } catch(lsErr2) {
+      console.error('見積画面への引き継ぎデータ保存エラー（写真除外後も失敗）:',lsErr2);
+      postSaveWarnings.push('見積画面への案件情報の引き継ぎ');
+    }
+  }
+
+  // 外注受付：依頼会社をマスターに自動追加
+  if(selectedBusinessType==='外注受付'){
+    try {
+      upsertOutsourceMaster(get('outsourceCompany'), get('outsourceContact'), get('outsourcePhone'), get('outsourceBilling'));
+    } catch(omErr) {
+      console.error('外注先マスター登録エラー:',omErr);
+      postSaveWarnings.push('外注先マスターの登録');
+    }
+  }
+
+  hideLoading();
+  isSavingReception = false;
+  if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent=saveBtnOrigText; }
+
+  if(postSaveWarnings.length>0){
+    // 直後に表示される登録完了トースト／ダイアログと入れ替わって消えないよう少し遅らせて表示
+    (function(warnings){
+      setTimeout(function(){ showToast('⚠️受付は登録されました。ただし'+warnings.join('・')+'に失敗しました','error'); },3600);
+    })(postSaveWarnings);
+  }
+  afterReceptionSaved(caseNum, custName, rentalNeeded, selectedRentalCar);
 }
 
 function afterReceptionSaved(caseNum, name, needRental, rentalCar) {

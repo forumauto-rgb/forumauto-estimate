@@ -1687,6 +1687,8 @@ async function openEditModal(receptionId, estimateNo, customerName) {
 
   var ov = document.getElementById('editOverlay');
   ov.style.display = 'flex';
+  var modalBox = ov.firstElementChild;
+  if(modalBox) modalBox.scrollTop = 0;
 }
 
 function closeEditModal() {
