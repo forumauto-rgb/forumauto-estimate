@@ -450,7 +450,7 @@ textarea{resize:vertical;min-height:80px;}
       <div class="btn-row">
         <button class="btn btn-outline" onclick="goStep(selectedBusinessType==='板金塗装'||selectedBusinessType==='単品'||selectedBusinessType==='外注受付'?3:2)">← 戻る</button>
         <button class="btn btn-outline" onclick="clearForm()">🗑️ クリア</button>
-        <button class="btn btn-accent" onclick="saveReception()">💾 案件登録</button>
+        <button class="btn btn-accent" id="saveReceptionBtn" onclick="saveReception()">💾 案件登録</button>
       </div>
     </div>
 
@@ -988,11 +988,37 @@ function fileToBase64(file) {
   });
 }
 
+// 長辺1600px・JPEG品質0.8にリサイズ圧縮（損傷写真用。車検証OCR用は非圧縮のfileToBase64を使用）
+function compressImageFile(file) {
+  return new Promise(function(resolve,reject){
+    var reader = new FileReader();
+    reader.onload = function(){
+      var img = new Image();
+      img.onload = function(){
+        var maxSide = 1600;
+        var w = img.width, h = img.height;
+        if(w>maxSide||h>maxSide){
+          var ratio = Math.min(maxSide/w, maxSide/h);
+          w = Math.round(w*ratio); h = Math.round(h*ratio);
+        }
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg',0.8));
+      };
+      img.onerror = function(){ reject(new Error('画像読み込み失敗')); };
+      img.src = reader.result;
+    };
+    reader.onerror = function(){ reject(new Error('読み込み失敗')); };
+    reader.readAsDataURL(file);
+  });
+}
+
 async function addPhotos(input) {
   if(!input.files||!input.files.length) return;
   for(var i=0;i<input.files.length;i++){
     try{
-      var b64 = await fileToBase64(input.files[i]);
+      var b64 = await compressImageFile(input.files[i]);
       incomingPhotos.push(b64);
     }catch(e){console.warn('写真読み込みエラー',e);}
   }
@@ -1203,7 +1229,9 @@ function generateCaseNum() {
   return 'FA-'+now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(Date.now()).slice(-4);
 }
 
+var isSavingReception = false;
 async function saveReception() {
+  if(isSavingReception) return;
   var get = function(id){ var el=document.getElementById(id); return el?el.value:''; };
   var name = get('customerName');
   if(selectedBusinessType==='外注受付'){
@@ -1214,6 +1242,31 @@ async function saveReception() {
   if(get('carCategory')==='外車・高級車'&&!get('coating')){
     showToast('外車・高級車はコーティング処理の選択が必須です','error');return;
   }
+
+  var custNameForCheck = (selectedBusinessType==='外注受付') ? get('outsourceCompany') : (name||get('outsourceCompany'));
+  var plateForCheck = get('carNum');
+  if(custNameForCheck&&plateForCheck){
+    try {
+      var todayStart = new Date(); todayStart.setHours(0,0,0,0);
+      var todayEnd = new Date(); todayEnd.setHours(23,59,59,999);
+      var dupCandidates = await supabaseQuery('receptions','GET',null,
+        '?plate=eq.'+encodeURIComponent(plateForCheck)
+        +'&reception_datetime=gte.'+encodeURIComponent(todayStart.toISOString())
+        +'&reception_datetime=lte.'+encodeURIComponent(todayEnd.toISOString())
+        +'&select=id,customer_name,plate,reception_datetime&limit=20');
+      var normCheck = normalizeCustomerName(custNameForCheck);
+      var isDup = (dupCandidates||[]).some(function(r){ return normalizeCustomerName(r.customer_name)===normCheck; });
+      if(isDup){
+        if(!confirm('⚠️本日同じお客様の受付が既に登録されています。\nこのまま追加登録しますか？')) return;
+      }
+    } catch(dupErr){ /* チェックに失敗しても登録はブロックしない */ }
+  }
+
+  isSavingReception = true;
+  var saveBtn = document.getElementById('saveReceptionBtn');
+  var saveBtnOrigText = saveBtn?saveBtn.textContent:'';
+  if(saveBtn){ saveBtn.disabled=true; saveBtn.textContent='送信中…'; }
+
   showLoading('案件を登録中...');
   var caseNum = generateCaseNum();
   var colorCode = get('colorCode');
@@ -1267,7 +1320,8 @@ async function saveReception() {
       // 外注受付は外注先（依頼会社）を顧客として登録。所有者名（customerName）は登録しない
       var custName = (selectedBusinessType==='外注受付') ? get('outsourceCompany') : (name||get('outsourceCompany'));
       var custTel  = (selectedBusinessType==='外注受付') ? get('outsourcePhone') : get('phone');
-      var existing = await supabaseQuery('customers','GET',null,'?name=eq.'+encodeURIComponent(custName)+'&limit=1');
+      var existingCust = await findCustomerByNormalizedName(custName);
+      var existing = existingCust ? [existingCust] : [];
       var custNo = '';
       if(!existing||existing.length===0){
         custNo = 'C'+String(Date.now()).slice(-6);
@@ -1280,8 +1334,10 @@ async function saveReception() {
       if(carName2||carNum2){
         var existV = await supabaseQuery('vehicles','GET',null,'?plate=eq.'+encodeURIComponent(carNum2)+'&limit=1');
         if(!existV||existV.length===0){
+          // 車検証OCRの「車名」欄は実質メーカー名（例：トヨタ）が入るためmakerに格納し、
+          // 車種名(name)は判別できないため自動では空欄のままにする（担当者が必要なら手入力）
           await supabaseQuery('vehicles','POST',{
-            name:carName2,plate:carNum2,
+            maker:carName2,plate:carNum2,
             color_name:carColor,color_code:colorCode,
             customer_id:custNo,
             vehicle_no:'V'+String(Date.now()).slice(-6),
@@ -1292,6 +1348,7 @@ async function saveReception() {
         } else {
           var patchData = {};
           if(colorCode){patchData.color_code=colorCode;patchData.color_name=carColor;}
+          if(carName2) patchData.maker=carName2;
           if(get('carModel')) patchData.model=get('carModel');
           if(get('carVin'))   patchData.vin=get('carVin');
           if(get('carYear'))  patchData.year=get('carYear');
@@ -1319,16 +1376,26 @@ async function saveReception() {
 
     // 損傷写真をestimate_photosに保存してlocalStorageに引き継ぎ
     if(incomingPhotos.length>0&&recId){
-      try{
-        for(var pi=0;pi<incomingPhotos.length;pi++){
+      var photoFailCount = 0;
+      for(var pi=0;pi<incomingPhotos.length;pi++){
+        try{
           await supabaseQuery('estimate_photos','POST',{
             reception_id: recId,
             category: 'photoIncoming',
             data_url: incomingPhotos[pi],
             sort_order: pi
           });
+        }catch(pe){
+          photoFailCount++;
+          console.warn('写真保存エラー:',pe);
         }
-      }catch(pe){console.warn('写真保存エラー:',pe);}
+      }
+      if(photoFailCount>0){
+        // 直後に表示される登録完了トーストと入れ替わって消えないよう少し遅らせて表示
+        (function(total,fail){
+          setTimeout(function(){ showToast('⚠️写真'+total+'枚中'+fail+'枚の保存に失敗しました','error'); },3600);
+        })(incomingPhotos.length,photoFailCount);
+      }
     }
 
     // localStorageに引き継ぎデータをセット
@@ -1359,9 +1426,13 @@ async function saveReception() {
     }
 
     hideLoading();
+    isSavingReception = false;
+    if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent=saveBtnOrigText; }
     afterReceptionSaved(caseNum, custName, rentalNeeded, selectedRentalCar);
   } catch(e) {
     hideLoading();
+    isSavingReception = false;
+    if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent=saveBtnOrigText; }
     showToast('登録に失敗しました: '+e.message,'error');
   }
 }
@@ -1624,6 +1695,29 @@ document.addEventListener('click',function(e){
   if(dd&&inp&&!inp.contains(e.target)&&!dd.contains(e.target)) dd.style.display='none';
 });
 
+// ===== 顧客名の正規化・照合 =====
+// 全角/半角スペース・スペース有無の差を吸収して比較するための正規化
+function normalizeCustomerName(s) {
+  return (s||'').replace(/　/g,' ').replace(/\s+/g,'').trim();
+}
+// スペース区切りをワイルドカードにしたilikeパターン（"鈴木 孝"→%鈴木%孝%）
+function nameLikeFilterValue(val) {
+  var parts = (val||'').replace(/　/g,' ').trim().split(/\s+/).filter(Boolean);
+  if(parts.length===0) return '%25%25';
+  return '%25'+parts.map(encodeURIComponent).join('%25')+'%25';
+}
+// 顧客名（スペース差異を無視）で既存顧客を1件検索
+async function findCustomerByNormalizedName(name) {
+  var norm = normalizeCustomerName(name);
+  if(!norm) return null;
+  var candidates = await supabaseQuery('customers','GET',null,'?name=ilike.'+nameLikeFilterValue(name)+'&limit=50');
+  if(!candidates) return null;
+  for(var i=0;i<candidates.length;i++){
+    if(normalizeCustomerName(candidates[i].name)===norm) return candidates[i];
+  }
+  return null;
+}
+
 // ===== 顧客検索 =====
 var searchTimer = null;
 async function searchCustomer(val) {
@@ -1632,7 +1726,7 @@ async function searchCustomer(val) {
   clearTimeout(searchTimer);
   searchTimer=setTimeout(async function(){
     try {
-      var data=await supabaseQuery('customers','GET',null,'?name=ilike.%25'+encodeURIComponent(val)+'%25&select=name,tel,customer_no&limit=8');
+      var data=await supabaseQuery('customers','GET',null,'?name=ilike.'+nameLikeFilterValue(val)+'&select=name,tel,customer_no&limit=8');
       if(!dd)return;
       if(!data||data.length===0){dd.style.display='none';return;}
       dd.innerHTML=data.map(function(c){
