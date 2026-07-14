@@ -3531,18 +3531,18 @@ function renderCustomerPanel(){
   return `<div class="card" style="padding:12px">
     ${coefBar()}
     <div style="display:grid;grid-template-columns:1.4fr 1.4fr 1fr 0.8fr 0.8fr 1.4fr;gap:8px;margin-bottom:8px;align-items:end">
-      <div class="fg" style="position:relative"><label>顧客名</label>
-        <div style="display:flex;gap:3px">
-          <input id="cN" list="cNList" value="${customer.name}" oninput="customer.name=this.value" placeholder="山田 太郎" style="flex:1;min-width:0"><datalist id="cNList">${cMaster.map(c=>`<option value="${c.name}">`).join('')}</datalist>
-          <button class="btn btn-sm" onclick="showCL()" style="padding:6px 10px;min-height:36px;" title="顧客一覧から選ぶ（タップで候補一覧）">📋</button>
-          <button class="btn btn-sm" onclick="showReceptionList()" style="padding:6px 10px;min-height:36px;background:#e65100;color:white;border:none;border-radius:4px;cursor:pointer;" title="受付から引き込む">🚗受付</button>
+      <div class="fg" style="position:relative;align-self:start"><label>顧客名</label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <input id="cN" list="cNList" value="${customer.name}" oninput="customer.name=this.value" placeholder="山田 太郎" style="flex:1;min-width:120px"><datalist id="cNList">${cMaster.map(c=>`<option value="${c.name}">`).join('')}</datalist>
+          <button class="btn" onclick="showCL()" style="min-height:44px;min-width:44px;padding:8px 12px;font-size:13px;font-weight:bold;white-space:nowrap;">📋 一覧から選択</button>
+          <button class="btn" onclick="showReceptionList()" style="min-height:44px;min-width:44px;padding:8px 12px;font-size:13px;font-weight:bold;white-space:nowrap;background:#e65100;color:white;border:none;border-radius:4px;cursor:pointer;">🚗 受付から選択</button>
         </div>
         <div id="cLA" style="position:absolute;top:100%;left:0;z-index:999;min-width:320px;"></div>
       </div>
-      <div class="fg" style="position:relative"><label>車両名</label>
-        <div style="display:flex;gap:3px">
-          <input id="cC" list="cCList" value="${customer.car}" oninput="customer.car=this.value" placeholder="ハスラー" style="flex:1;min-width:0"><datalist id="cCList">${vMaster.map(v=>`<option value="${v.name}">`).join('')}</datalist>
-          <button class="btn btn-sm" onclick="showVL()" style="padding:6px 10px;min-height:36px;" title="車両一覧から選ぶ（タップで候補一覧）">🚗</button>
+      <div class="fg" style="position:relative;align-self:start"><label>車両名</label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <input id="cC" list="cCList" value="${customer.car}" oninput="customer.car=this.value" placeholder="ハスラー" style="flex:1;min-width:120px"><datalist id="cCList">${vMaster.map(v=>`<option value="${v.name}">`).join('')}</datalist>
+          <button class="btn" onclick="showVL()" style="min-height:44px;min-width:44px;padding:8px 12px;font-size:13px;font-weight:bold;white-space:nowrap;">🚗 一覧から選択</button>
         </div>
         <div id="vLA" style="position:absolute;top:100%;left:0;z-index:999;min-width:320px;"></div>
       </div>
@@ -3603,7 +3603,7 @@ function renderCustomerPanel(){
           <button onclick="customer.repairType='own';rIP()" style="padding:4px 10px;border-radius:5px;border:1.5px solid ${customer.repairType==='own'?'#43a047':'#ccc'};background:${customer.repairType==='own'?'#43a047':'white'};color:${customer.repairType==='own'?'white':'#555'};font-size:11px;font-weight:bold;cursor:pointer;">💴 自費</button>
           ${customer.repairType!=='own'?`
           <input placeholder="保険会社名" value="${customer.insCompany||''}" list="ins-list-main" oninput="customer.insCompany=this.value" style="padding:3px 6px;border:1px solid #ccc;border-radius:4px;font-size:11px;width:110px;"><datalist id="ins-list-main">${INS_LIST.map(function(s){return'<option value="'+s+'">'}).join('')}</datalist>
-          <button class="btn btn-sm" onclick="showInsuranceList()" style="padding:6px 8px;min-height:36px;" title="保険会社を選ぶ（タップで候補一覧）">🏢</button>
+          <button class="btn" onclick="showInsuranceList()" style="min-height:44px;min-width:44px;padding:8px 12px;font-size:13px;font-weight:bold;white-space:nowrap;">🏢 一覧から選択</button>
           <input placeholder="AJ・鑑定会社" value="${customer.ajCompany||''}" oninput="customer.ajCompany=this.value" style="padding:3px 6px;border:1px solid #ccc;border-radius:4px;font-size:11px;width:70px;">
           <input placeholder="支払担当者" value="${customer.ajStaff||''}" oninput="customer.ajStaff=this.value" style="padding:3px 6px;border:1px solid #ccc;border-radius:4px;font-size:11px;width:70px;">
           <input type="number" placeholder="免責額" value="${customer.deductible||''}" oninput="customer.deductible=this.value" style="padding:3px 6px;border:1px solid #ccc;border-radius:4px;font-size:11px;width:65px;">
@@ -5359,16 +5359,25 @@ function showMasterModal(type, kw){
   setTimeout(function(){var sb=document.getElementById('masterSearchBox');if(sb)sb.focus();},50);
 }
 // 保険会社名: iOSでdatalistの▼が機能しないため、タップ選択できるボタン一覧を用意
+function selectInsurance(name){
+  customer.insCompany=name;
+  var m=document.getElementById('__insModal');if(m)m.remove();
+  render();
+}
+function confirmInsuranceFreeInput(){
+  var el=document.getElementById('insFreeInput');
+  if(el) selectInsurance(el.value);
+}
 function showInsuranceList(){
   var old=document.getElementById('__insModal');if(old)old.remove();
   var rows=INS_LIST.map(function(s){
     var esc=s.replace(/'/g,"\\'");
-    return '<div style="padding:10px 14px;border-bottom:1px solid #f0f0f0;cursor:pointer;font-size:13px;color:#1a3a6b;font-weight:bold;" onmouseover="this.style.background=\'#e3f2fd\'" onmouseout="this.style.background=\'white\'" onclick="customer.insCompany=\''+esc+'\';document.getElementById(\'__insModal\').remove();render();">'+s+'</div>';
+    return '<div style="min-height:44px;display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid #f0f0f0;cursor:pointer;font-size:14px;color:#1a3a6b;font-weight:bold;box-sizing:border-box;" onmouseover="this.style.background=\'#e3f2fd\'" onmouseout="this.style.background=\'white\'" onclick="selectInsurance(\''+esc+'\')">'+s+'</div>';
   }).join('');
   var modal=document.createElement('div');
   modal.id='__insModal';
   modal.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding-top:80px;box-sizing:border-box;';
-  modal.innerHTML='<div style="background:white;border-radius:12px;width:90%;max-width:360px;max-height:70vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.25);">'    +'<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #eee;">'    +'<div style="font-size:14px;font-weight:bold;color:#1a3a6b;">🏢 保険会社を選択</div>'    +'<button onclick="document.getElementById(\'__insModal\').remove()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#888;">✕</button>'    +'</div>'    +'<div style="overflow-y:auto;flex:1;">'+rows+'</div>'    +'<div style="padding:8px 14px;border-top:1px solid #eee;font-size:11px;color:#999;">一覧にない場合は入力欄に直接入力してください</div>'    +'</div>';
+  modal.innerHTML='<div style="background:white;border-radius:12px;width:90%;max-width:360px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.25);">'    +'<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #eee;">'    +'<div style="font-size:15px;font-weight:bold;color:#1a3a6b;">🏢 保険会社を選択</div>'    +'<button onclick="document.getElementById(\'__insModal\').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#888;min-width:44px;min-height:44px;">✕</button>'    +'</div>'    +'<div style="overflow-y:auto;flex:1;">'+rows+'</div>'    +'<div style="padding:12px 14px;border-top:1px solid #eee;background:#fafafa;">'    +'<div style="font-size:12px;color:#666;margin-bottom:6px;">一覧にない場合はこちらに直接入力してください</div>'    +'<div style="display:flex;gap:6px;">'    +'<input id="insFreeInput" type="text" value="'+(customer.insCompany||'').replace(/"/g,'&quot;')+'" placeholder="保険会社名を入力" style="flex:1;min-height:44px;padding:8px 10px;font-size:14px;border:1.5px solid #c5cae9;border-radius:8px;box-sizing:border-box;">'    +'<button onclick="confirmInsuranceFreeInput()" style="min-height:44px;min-width:44px;padding:8px 14px;font-size:13px;font-weight:bold;background:#1a3a6b;color:white;border:none;border-radius:8px;cursor:pointer;white-space:nowrap;">この内容で確定</button>'    +'</div>'    +'</div>'    +'</div>';
   modal.onclick=function(e){if(e.target===modal)modal.remove();};
   document.body.appendChild(modal);
 }
