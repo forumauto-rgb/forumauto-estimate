@@ -7101,6 +7101,8 @@ async function applyReceptionParams() {
             date: new Date().toISOString().split('T')[0]
           });
         }
+        customer.name = td.customer_name;
+        customer.cid  = custId;
       }
 
       // 車両: Supabaseを直接検索し、既存があれば新規作成せずそのレコードを使う
@@ -7147,11 +7149,19 @@ async function applyReceptionParams() {
             vin: td.vin || '', fuel: '', drive: ''
           });
         }
+
+        var vmEntry = vMaster.find(function(v){ return v.plate === td.plate; });
+        customer.plate = td.plate;
+        customer.car   = vmEntry ? (vmEntry.name || td.car_model || '') : (td.car_model || '');
       }
 
       // マスター保存・画面更新
       autoSaveM();
       render();
+
+      if(td.customer_name || td.plate){
+        showNotify('✅ 受付情報を読み込みました：' + (td.customer_name||'') + ' 様 / ' + (td.plate||''));
+      }
     }
   } catch(te){ console.warn('受付引き継ぎエラー:', te); }
 
