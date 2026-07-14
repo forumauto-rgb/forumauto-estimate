@@ -7035,12 +7035,14 @@ function filterEstList(kw){
 }
 
 // ===== 受付システムからのURLパラメータを受け取り顧客情報を自動入力 =====
-function applyReceptionParams() {
+async function applyReceptionParams() {
   // ★ 受付からの引き継ぎ（写真・色番号・マスター登録）※nameがなくても実行
   try {
     var transferRaw = localStorage.getItem('fa_reception_transfer');
     if(transferRaw){
       var td = JSON.parse(transferRaw);
+      // 消費後は即削除（次回以降のページ読み込みで再処理されないようにする）
+      localStorage.removeItem('fa_reception_transfer');
 
       // 色番号・色名を引き継ぎ
       if(td.color_code)    customer.colorCode    = td.color_code;
@@ -7058,11 +7060,39 @@ function applyReceptionParams() {
         showNotify('📷 入庫時写真 ' + td.photos.length + '枚 を引き継ぎました');
       }
 
-      // cMasterに顧客登録（未登録の場合）
+      // 顧客: Supabaseを直接検索し、既存があれば新規作成せずそのレコードを使う
+      var custId = '';
       if(td.customer_name){
+        var existCustRemote = null;
+        try{
+          var curRes = await fetch(SUPABASE_URL+'/rest/v1/customers?name=eq.'+encodeURIComponent(td.customer_name)+'&limit=1',
+            {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+          var curData = await curRes.json();
+          existCustRemote = (curData && curData.length>0) ? curData[0] : null;
+        }catch(ce){ console.warn('顧客検索エラー（ローカルキャッシュで代替）:', ce); }
+
         var existCM = cMaster.find(function(c){ return c.name === td.customer_name; });
-        if(!existCM){
+        if(existCustRemote){
+          custId = existCustRemote.customer_no || existCustRemote.id.slice(0,8);
+          if(!existCM){
+            cMaster.unshift({
+              supabase_id: existCustRemote.id,
+              id: custId,
+              name: existCustRemote.name || td.customer_name,
+              honorific: existCustRemote.honorific || '様',
+              tel: existCustRemote.tel || '',
+              postal: existCustRemote.postal || '',
+              address: existCustRemote.address || '',
+              insurance: existCustRemote.insurance || '',
+              aj: existCustRemote.aj_staff || '',
+              memo: existCustRemote.memo || ''
+            });
+          }
+        } else if(existCM){
+          custId = existCM.id;
+        } else {
           var newCid = 'C' + Date.now().toString(36).toUpperCase().slice(-5);
+          custId = newCid;
           cMaster.unshift({
             id: newCid, name: td.customer_name, honorific: '様',
             tel: td.phone || '', postal: '', address: td.address || '',
@@ -7073,11 +7103,42 @@ function applyReceptionParams() {
         }
       }
 
-      // vMasterに車両登録（未登録の場合）
+      // 車両: Supabaseを直接検索し、既存があれば新規作成せずそのレコードを使う
       if(td.plate){
+        var existVehRemote = null;
+        try{
+          var vRes = await fetch(SUPABASE_URL+'/rest/v1/vehicles?plate=eq.'+encodeURIComponent(td.plate)+'&limit=1',
+            {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+          var vData = await vRes.json();
+          existVehRemote = (vData && vData.length>0) ? vData[0] : null;
+        }catch(ve){ console.warn('車両検索エラー（ローカルキャッシュで代替）:', ve); }
+
         var existVM = vMaster.find(function(v){ return v.plate === td.plate; });
-        if(!existVM){
-          var custId = (cMaster.find(function(c){ return c.name === td.customer_name; })||{}).id || '';
+        if(existVehRemote){
+          if(!existVM){
+            vMaster.unshift({
+              supabase_id: existVehRemote.id,
+              id: existVehRemote.vehicle_no || existVehRemote.id.slice(0,8),
+              plate: existVehRemote.plate || td.plate,
+              maker: existVehRemote.maker || '',
+              name: existVehRemote.name || td.car_model || '',
+              vin: existVehRemote.vin || td.vin || '',
+              year: existVehRemote.year_num || td.year || '',
+              drive: existVehRemote.drive || '2WD',
+              grade: existVehRemote.grade || td.car_type || '中型',
+              gradeCoef: existVehRemote.grade_coef || 1.1,
+              cid: existVehRemote.customer_id || custId,
+              color: existVehRemote.color_name || td.color_name || '',
+              colorCode: existVehRemote.color_code || td.color_code || '',
+              evhv: existVehRemote.ev_hv || '',
+              film: existVehRemote.film_type || '2コートソリッド',
+              paint: existVehRemote.paint_type || '2K(標準)',
+              clear: existVehRemote.clear_type || '標準クリヤー',
+              special: existVehRemote.special || 'なし',
+              memo: existVehRemote.memo || ''
+            });
+          }
+        } else if(!existVM){
           vMaster.unshift({
             id: 'V' + Date.now().toString(36).toUpperCase().slice(-5),
             cid: custId, name: td.car_model || '', plate: td.plate || '',
@@ -7091,10 +7152,6 @@ function applyReceptionParams() {
       // マスター保存・画面更新
       autoSaveM();
       render();
-
-      // 写真データは削除してIDだけ残す
-      td.photos = [];
-      localStorage.setItem('fa_reception_transfer', JSON.stringify(td));
     }
   } catch(te){ console.warn('受付引き継ぎエラー:', te); }
 
