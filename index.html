@@ -3526,30 +3526,63 @@ function coefBar(){
   </div>`;
 }
 
+// ====== 入力欄の自動幅調整 ======
+// field-sizing:content対応ブラウザはCSSに任せ、非対応ブラウザ(iPad Safari等)は
+// 入力文字数からwidthをch単位で計算するJSフォールバックで代替する
+var FIELD_SIZING_OK = (function(){
+  try{ return CSS.supports('field-sizing','content'); }catch(e){ return false; }
+})();
+// 全角文字(ひらがな・カタカナ・漢字・全角記号など)は1文字=約2ch分の幅とみなして計算する
+// （ch単位は半角の"0"基準のため、全角文字をそのまま1文字=1chで計算すると幅が足りず内容が見切れる）
+function awCharLen(val){
+  val = val || '';
+  var len = 0;
+  for(var i=0;i<val.length;i++){
+    var code = val.charCodeAt(i);
+    var isWide = (code >= 0x1100 && code <= 0x115F) || code === 0x2329 || code === 0x232A ||
+      (code >= 0x2E80 && code <= 0xA4CF && code !== 0x303F) ||
+      (code >= 0xAC00 && code <= 0xD7A3) ||
+      (code >= 0xF900 && code <= 0xFAFF) ||
+      (code >= 0xFF00 && code <= 0xFF60) ||
+      (code >= 0xFFE0 && code <= 0xFFE6);
+    len += isWide ? 2 : 1;
+  }
+  return len;
+}
+function awW(val, minCh, maxCh){
+  var ch = awCharLen(val) + 3;
+  if(ch < minCh) ch = minCh;
+  if(ch > maxCh) ch = maxCh;
+  return ch;
+}
+function awStyle(val, minCh, maxCh, extra){
+  return 'width:'+awW(val,minCh,maxCh)+'ch;min-width:'+minCh+'ch;max-width:'+maxCh+'ch;field-sizing:content;'+(extra||'');
+}
+function awResize(el, minCh, maxCh){
+  if(FIELD_SIZING_OK) return;
+  el.style.width = awW(el.value, minCh, maxCh)+'ch';
+}
+
 // ====== 顧客パネル ======
 function renderCustomerPanel(){
   return `<div class="card" style="padding:12px">
     ${coefBar()}
-    <div style="display:grid;grid-template-columns:1.4fr 1.4fr 1fr 0.8fr 0.8fr 1.4fr;gap:8px;margin-bottom:8px;align-items:end">
-      <div class="fg" style="position:relative;align-self:start"><label>顧客名</label>
-        <div style="display:flex;flex-wrap:wrap;gap:6px">
-          <input id="cN" list="cNList" value="${customer.name}" oninput="customer.name=this.value" placeholder="山田 太郎" style="flex:1;min-width:120px"><datalist id="cNList">${cMaster.map(c=>`<option value="${c.name}">`).join('')}</datalist>
-          <button class="btn" onclick="showCL()" style="min-height:44px;min-width:44px;padding:8px 12px;font-size:13px;font-weight:bold;white-space:nowrap;">📋 一覧から選択</button>
-          <button class="btn" onclick="showReceptionList()" style="min-height:44px;min-width:44px;padding:8px 12px;font-size:13px;font-weight:bold;white-space:nowrap;background:#e65100;color:white;border:none;border-radius:4px;cursor:pointer;">🚗 受付から選択</button>
-        </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;align-items:end">
+      <div class="fg" style="position:relative;flex:none"><label>顧客名</label>
+        <input id="cN" list="cNList" value="${customer.name}" oninput="customer.name=this.value;awResize(this,12,24)" placeholder="山田 太郎" style="${awStyle(customer.name,12,24)}"><datalist id="cNList">${cMaster.map(c=>`<option value="${c.name}">`).join('')}</datalist>
         <div id="cLA" style="position:absolute;top:100%;left:0;z-index:999;min-width:320px;"></div>
       </div>
-      <div class="fg" style="position:relative;align-self:start"><label>車両名</label>
-        <div style="display:flex;flex-wrap:wrap;gap:6px">
-          <input id="cC" list="cCList" value="${customer.car}" oninput="customer.car=this.value" placeholder="ハスラー" style="flex:1;min-width:120px"><datalist id="cCList">${vMaster.map(v=>`<option value="${v.name}">`).join('')}</datalist>
-          <button class="btn" onclick="showVL()" style="min-height:44px;min-width:44px;padding:8px 12px;font-size:13px;font-weight:bold;white-space:nowrap;">🚗 一覧から選択</button>
-        </div>
+      <button class="btn btn-sm" onclick="showCL()" style="height:30px;padding:0 8px;font-size:11px;font-weight:bold;white-space:nowrap;flex:none;">📋 一覧から選択</button>
+      <button class="btn btn-sm" onclick="showReceptionList()" style="height:30px;padding:0 8px;font-size:11px;font-weight:bold;white-space:nowrap;background:#e65100;color:white;border:none;border-radius:4px;cursor:pointer;flex:none;">🚗 受付から選択</button>
+      <div class="fg" style="position:relative;flex:none"><label>車両名</label>
+        <input id="cC" list="cCList" value="${customer.car}" oninput="customer.car=this.value;awResize(this,12,22)" placeholder="ハスラー" style="${awStyle(customer.car,12,22)}"><datalist id="cCList">${vMaster.map(v=>`<option value="${v.name}">`).join('')}</datalist>
         <div id="vLA" style="position:absolute;top:100%;left:0;z-index:999;min-width:320px;"></div>
       </div>
-      <div class="fg"><label>ナンバー</label><input id="cP" value="${customer.plate}" oninput="customer.plate=this.value" placeholder="浜松583ろ4831"></div>
-      <div class="fg"><label>車色名</label><input id="cCol" value="${customer.color||''}" oninput="customer.color=this.value" placeholder="パールホワイト"></div>
-      <div class="fg"><label>色番号</label><input id="cColCode" value="${customer.colorCode||''}" oninput="customer.colorCode=this.value;cAutoColorName(this.value)" placeholder="040" style="font-family:monospace"></div>
-      <div class="fg"><label>車格区分 <span style="font-size:10px;color:#999;font-weight:normal">${(GRADE_MASTER.find(x=>x.name===customer.grade)||{desc:''}).desc}</span></label>
+      <button class="btn btn-sm" onclick="showVL()" style="height:30px;padding:0 8px;font-size:11px;font-weight:bold;white-space:nowrap;flex:none;">🚗 一覧から選択</button>
+      <div class="fg" style="flex:none"><label>ナンバー</label><input id="cP" value="${customer.plate}" oninput="customer.plate=this.value;awResize(this,16,24)" placeholder="浜松583ろ4831" style="${awStyle(customer.plate,16,24)}"></div>
+      <div class="fg" style="flex:none"><label>車色名</label><input id="cCol" value="${customer.color||''}" oninput="customer.color=this.value;awResize(this,16,24)" placeholder="パールホワイト" style="${awStyle(customer.color||'',16,24)}"></div>
+      <div class="fg" style="flex:none"><label>色番号</label><input id="cColCode" value="${customer.colorCode||''}" oninput="customer.colorCode=this.value;cAutoColorName(this.value);awResize(this,7,12)" placeholder="040" style="${awStyle(customer.colorCode||'',7,12,'font-family:monospace;')}"></div>
+      <div class="fg" style="flex:none;min-width:150px"><label>車格区分 <span style="font-size:10px;color:#999;font-weight:normal">${(GRADE_MASTER.find(x=>x.name===customer.grade)||{desc:''}).desc}</span></label>
         <select id="cG" onchange="customer.grade=this.value;render()" style="width:100%">
           ${GRADE_MASTER.map(g=>`<option value="${g.name}"${customer.grade===g.name?' selected':''}>${g.name}</option>`).join('')}
         </select>
@@ -3603,7 +3636,7 @@ function renderCustomerPanel(){
           <button onclick="customer.repairType='own';rIP()" style="padding:4px 10px;border-radius:5px;border:1.5px solid ${customer.repairType==='own'?'#43a047':'#ccc'};background:${customer.repairType==='own'?'#43a047':'white'};color:${customer.repairType==='own'?'white':'#555'};font-size:11px;font-weight:bold;cursor:pointer;">💴 自費</button>
           ${customer.repairType!=='own'?`
           <input placeholder="保険会社名" value="${customer.insCompany||''}" list="ins-list-main" oninput="customer.insCompany=this.value" style="padding:3px 6px;border:1px solid #ccc;border-radius:4px;font-size:11px;width:110px;"><datalist id="ins-list-main">${INS_LIST.map(function(s){return'<option value="'+s+'">'}).join('')}</datalist>
-          <button class="btn" onclick="showInsuranceList()" style="min-height:44px;min-width:44px;padding:8px 12px;font-size:13px;font-weight:bold;white-space:nowrap;">🏢 一覧から選択</button>
+          <button class="btn btn-sm" onclick="showInsuranceList()" style="padding:3px 8px;font-size:11px;font-weight:bold;white-space:nowrap;">🏢 一覧から選択</button>
           <input placeholder="AJ・鑑定会社" value="${customer.ajCompany||''}" oninput="customer.ajCompany=this.value" style="padding:3px 6px;border:1px solid #ccc;border-radius:4px;font-size:11px;width:70px;">
           <input placeholder="支払担当者" value="${customer.ajStaff||''}" oninput="customer.ajStaff=this.value" style="padding:3px 6px;border:1px solid #ccc;border-radius:4px;font-size:11px;width:70px;">
           <input type="number" placeholder="免責額" value="${customer.deductible||''}" oninput="customer.deductible=this.value" style="padding:3px 6px;border:1px solid #ccc;border-radius:4px;font-size:11px;width:65px;">
@@ -4037,7 +4070,7 @@ function renderMaster(){
       h+='</div></td>';
       h+='<td><select onchange="vMaster['+i+'].maker=this.value;autoSaveM();render()" style="height:26px;border:1px solid #e0e0e0;border-radius:4px;font-size:11px;width:80px">'+getMakerOptions(v.maker||'')+'</select></td>';
       h+='<td><input list="cl'+i+'" value="'+(v.name||'').replace(/"/g,'&quot;')+'" oninput="vMaster['+i+'].name=this.value;autoSaveM()" placeholder="車種" style="height:26px;border:1px solid #e0e0e0;border-radius:4px;font-size:11px;width:90px;padding:0 4px;"><datalist id="cl'+i+'">'+getCarDatalist(v.maker||'トヨタ')+'</datalist></td>';
-      h+='<td><input value="'+(v.vin||'').replace(/"/g,'&quot;')+'" oninput="vMaster['+i+'].vin=this.value" placeholder="ZVW50-80115294"></td>';
+      h+='<td><input value="'+(v.vin||'').replace(/"/g,'&quot;')+'" oninput="vMaster['+i+'].vin=this.value;awResize(this,18,28)" placeholder="ZVW50-80115294" style="'+awStyle(v.vin||'',18,28)+'"></td>';
       h+='<td style="text-align:center"><input id="year_'+i+'" value="'+(v.year||'')+'" oninput="vMaster['+i+'].year=this.value;" onblur="var y=convertToWesternYear(this.value);vMaster['+i+'].year=y;this.value=y;autoSaveM();var sp=document.getElementById(\'year_disp_\'+'+i+');if(sp)sp.textContent=y?\'(\'+y+\')\':\'\';" placeholder="R6/H28" style="width:50px"><br><span id="year_disp_'+i+'" style="font-size:9px;color:#1565c0;">'+(v.year?'('+v.year+')':'')+'</span></td>';
       h+='<td><select onchange="vMaster['+i+'].drive=this.value" style="height:26px;border:1px solid #e0e0e0;border-radius:4px;font-size:11px;width:48px">';
       ['2WD','4WD','AWD','FF','FR','MR','RR','AT','CVT'].forEach(function(d){h+='<option'+((v.drive||'2WD')===d?' selected':'')+'>'+d+'</option>';});
