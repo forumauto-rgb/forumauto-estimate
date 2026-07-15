@@ -443,7 +443,7 @@ async function syncMasterToCloud(){
     }
     if(vMaster.length>0){
       var vData=vMaster.map(function(v){return{
-        vehicle_no:v.id||'',plate:v.plate||'',maker:v.maker||'',name:v.name||'',
+        vehicle_no:v.id||'',plate:v.plate||'',maker:v.maker||'',name:v.name||'',model:v.model||'',
         vin:v.vin||'',year_num:parseInt(v.year)||null,drive:v.drive||'2WD',
         grade:v.grade||'中型',grade_coef:parseFloat(v.gradeCoef)||1.1,
         customer_id:v.cid||null,color_name:v.color||'',color_code:v.colorCode||'',
@@ -509,6 +509,7 @@ async function syncToCloud(){
         plate:v.plate||'',
         maker:v.maker||'',
         name:v.name||'',
+        model:v.model||'',
         vin:v.vin||'',
         year_num:parseInt(v.year)||null,
         drive:v.drive||'2WD',
@@ -588,6 +589,7 @@ async function loadFromCloud(){
         plate: v.plate||'',
         maker: v.maker||'',
         name: v.name||'',
+        model: v.model||'',
         vin: v.vin||'',
         year: v.year_num||'',
         drive: v.drive||'2WD',
@@ -1028,7 +1030,7 @@ if(!staffMaster.length){staffMaster=['スタッフA','スタッフB','スタッ�
 function saveStaffMaster(){try{localStorage.setItem('fa_staff',JSON.stringify(staffMaster));}catch(e){}}
 function getStaffOptions(sel){var o='<option value="">　</option>';staffMaster.forEach(function(s){o+='<option value="'+s+'"'+(sel===s?' selected':'')+'>'+s+'</option>';});return o;}
 
-let customer={name:'',car:'',plate:'',color:'',grade:'中型',date:new Date().toISOString().split('T')[0],no:''};
+let customer={name:'',car:'',model:'',plate:'',color:'',grade:'中型',date:new Date().toISOString().split('T')[0],no:''};
 // 塗装係数：4因子
 let pc4={film:'2コートソリッド',paint:'2K(標準)',clear:'標準クリヤー',special:'なし'};
 let partsItems=[{name:'',partNo:'',cost:'',profit:0,qty:1}];
@@ -3580,6 +3582,7 @@ function renderCustomerPanel(){
       </div>
       <button class="btn btn-sm" onclick="showVL()" style="height:30px;padding:0 8px;font-size:11px;font-weight:bold;white-space:nowrap;flex:none;">🚗 一覧から選択</button>
       <div class="fg" style="flex:none"><label>ナンバー</label><input id="cP" value="${customer.plate}" oninput="customer.plate=this.value;awResize(this,16,24)" placeholder="浜松583ろ4831" style="${awStyle(customer.plate,16,24)}"></div>
+      <div class="fg" style="flex:none"><label>型式</label><input id="cModel" value="${customer.model||''}" oninput="customer.model=this.value;awResize(this,9,16)" placeholder="ZVW30" style="${awStyle(customer.model||'',9,16)}"></div>
       <div class="fg" style="flex:none"><label>車色名</label><input id="cCol" value="${customer.color||''}" oninput="customer.color=this.value;awResize(this,16,24)" placeholder="パールホワイト" style="${awStyle(customer.color||'',16,24)}"></div>
       <div class="fg" style="flex:none"><label>色番号</label><input id="cColCode" value="${customer.colorCode||''}" oninput="customer.colorCode=this.value;cAutoColorName(this.value);awResize(this,7,12)" placeholder="040" style="${awStyle(customer.colorCode||'',7,12,'font-family:monospace;')}"></div>
       <div class="fg" style="flex:none;min-width:150px"><label>車格区分 <span style="font-size:10px;color:#999;font-weight:normal">${(GRADE_MASTER.find(x=>x.name===customer.grade)||{desc:''}).desc}</span></label>
@@ -4032,7 +4035,7 @@ function renderMaster(){
     h+='<button class="btn btn-p btn-sm" onclick="(function(){var ac=customer.cid||\'\'';
     h+=';var ag=GRADE_MASTER.find(function(x){return x.name===customer.grade;})||{coef:1.1,foreign:1.0}';
     h+=';vMaster.push({id:\'V\'+Date.now().toString(36).toUpperCase().slice(-5),cid:ac,plate:customer.plate||\'\'';
-    h+=',maker:\'\',name:customer.car||\'\'';
+    h+=',maker:\'\',name:customer.car||\'\',model:customer.model||\'\'';
     h+=',vin:\'\',year:\'\',drive:\'2WD\',grade:customer.grade||\'中型\',gradeCoef:ag.coef,foreignCoef:ag.foreign||1.0';
     h+=',evhv:\'\',colorCode:customer.colorCode||\'\',color:customer.color||\'\'';
     h+=',film:pc4.film||\'2コートソリッド\',paint:pc4.paint||\'2K(標準)\',clear:pc4.clear||\'標準クリヤー\',special:pc4.special||\'なし\',memo:\'\'})';
@@ -4042,7 +4045,7 @@ function renderMaster(){
     h+='<div style="overflow-x:auto"><table class="mst-tbl">';
     h+='<thead><tr>';
     h+='<th style="width:52px">車両ID</th><th style="width:52px">顧客ID</th><th style="width:100px">登録番号</th>';
-    h+='<th style="width:60px">メーカー</th><th style="width:80px">車名</th><th style="width:100px">車体番号</th>';
+    h+='<th style="width:60px">メーカー</th><th style="width:80px">車名</th><th style="width:80px">型式</th><th style="width:100px">車体番号</th>';
     h+='<th style="width:38px">年式</th><th style="width:44px">駆動</th><th style="width:100px">車格区分</th>';
     h+='<th style="width:44px">車格係数</th><th style="width:44px">外車係数</th><th style="width:44px">EV/HV</th>';
     h+='<th style="width:64px">色番号</th>';
@@ -4070,6 +4073,7 @@ function renderMaster(){
       h+='</div></td>';
       h+='<td><select onchange="vMaster['+i+'].maker=this.value;autoSaveM();render()" style="height:26px;border:1px solid #e0e0e0;border-radius:4px;font-size:11px;width:80px">'+getMakerOptions(v.maker||'')+'</select></td>';
       h+='<td><input list="cl'+i+'" value="'+(v.name||'').replace(/"/g,'&quot;')+'" oninput="vMaster['+i+'].name=this.value;autoSaveM()" placeholder="車種" style="height:26px;border:1px solid #e0e0e0;border-radius:4px;font-size:11px;width:90px;padding:0 4px;"><datalist id="cl'+i+'">'+getCarDatalist(v.maker||'トヨタ')+'</datalist></td>';
+      h+='<td><input value="'+(v.model||'').replace(/"/g,'&quot;')+'" oninput="vMaster['+i+'].model=this.value;autoSaveM();awResize(this,9,16)" placeholder="ZVW30" style="'+awStyle(v.model||'',9,16)+'"></td>';
       h+='<td><input value="'+(v.vin||'').replace(/"/g,'&quot;')+'" oninput="vMaster['+i+'].vin=this.value;awResize(this,18,28)" placeholder="ZVW50-80115294" style="'+awStyle(v.vin||'',18,28)+'"></td>';
       h+='<td style="text-align:center"><input id="year_'+i+'" value="'+(v.year||'')+'" oninput="vMaster['+i+'].year=this.value;" onblur="var y=convertToWesternYear(this.value);vMaster['+i+'].year=y;this.value=y;autoSaveM();var sp=document.getElementById(\'year_disp_\'+'+i+');if(sp)sp.textContent=y?\'(\'+y+\')\':\'\';" placeholder="R6/H28" style="width:50px"><br><span id="year_disp_'+i+'" style="font-size:9px;color:#1565c0;">'+(v.year?'('+v.year+')':'')+'</span></td>';
       h+='<td><select onchange="vMaster['+i+'].drive=this.value" style="height:26px;border:1px solid #e0e0e0;border-radius:4px;font-size:11px;width:48px">';
@@ -5245,14 +5249,14 @@ function saveToM(){
     const vi=vMaster.findIndex(v=>v.plate===customer.plate);
     const g=GRADE_MASTER.find(x=>x.name===customer.grade)||{coef:1.1,foreign:1.0};
     const newVid='V'+(vMaster.length+1).toString().padStart(4,'0');
-    const vo={id:vi>=0?vMaster[vi].id:newVid,cid:actualCid,plate:customer.plate,maker:'',name:customer.car,vin:'',year:'',drive:'2WD',grade:customer.grade,gradeCoef:g.coef,foreignCoef:g.foreign||1.0,evhv:'',color:customer.color||'',film:pc4.film,paint:pc4.paint,clear:pc4.clear,special:pc4.special,memo:''};
+    const vo={id:vi>=0?vMaster[vi].id:newVid,cid:actualCid,plate:customer.plate,maker:'',name:customer.car,model:customer.model||'',vin:'',year:'',drive:'2WD',grade:customer.grade,gradeCoef:g.coef,foreignCoef:g.foreign||1.0,evhv:'',color:customer.color||'',film:pc4.film,paint:pc4.paint,clear:pc4.clear,special:pc4.special,memo:''};
     if(vi>=0)vMaster[vi]={...vMaster[vi],...vo};else vMaster.unshift(vo);
   }
   try{localStorage.setItem('fa_c6',JSON.stringify(cMaster));localStorage.setItem('fa_v6',JSON.stringify(vMaster));}catch(e){}
   alert('マスターに保存しました：'+customer.name+'\n顧客ID：'+actualCid);
 }
 function clearC(){try{localStorage.removeItem('fa_last_draft_id');localStorage.removeItem('fa_last_draft_no');}catch(e){}
-customer={name:'',car:'',plate:'',color:'',grade:'中型',date:customer.date,no:'',photos:[],photoIncoming:[],photoWork:[],photoDone:[],photoTags:{},repairType:'insurance',insCompany:'',ajCompany:'',ajStaff:'',deductible:0,discount:0,discountType:'loss',paymentDue:'',paymentDate:'',mileage:'',estNote:'',signatureData:'',repairStatus:'受付',staffName:'',deliveryDate:'',
+customer={name:'',car:'',model:'',plate:'',color:'',grade:'中型',date:customer.date,no:'',photos:[],photoIncoming:[],photoWork:[],photoDone:[],photoTags:{},repairType:'insurance',insCompany:'',ajCompany:'',ajStaff:'',deductible:0,discount:0,discountType:'loss',paymentDue:'',paymentDate:'',mileage:'',estNote:'',signatureData:'',repairStatus:'受付',staffName:'',deliveryDate:'',
   colorCode:'',trim:'',paintType:'',
   photoCheckList:{zenkai:'',kinsetsu:'',shikisa:'',bunkai:'',kansei:''},
   damagePoints:[],
@@ -5445,6 +5449,7 @@ function lC(i){
 function lV(i){
   const v=vMaster[i];
   customer.car=v.name||'';
+  customer.model=v.model||'';
   customer.plate=v.plate||'';
   customer.color=v.color||'';
   customer.colorCode=v.colorCode||'';
@@ -6704,7 +6709,7 @@ function autoSaveToMaster(){
     var vo = {
       id: vi>=0 ? vMaster[vi].id : newVid,
       cid: actualCid, plate:customer.plate||'',
-      maker:'', name:customer.car||'', vin:'', year:'', drive:'2WD',
+      maker:'', name:customer.car||'', model:customer.model||'', vin:'', year:'', drive:'2WD',
       grade:customer.grade, gradeCoef:g.coef, foreignCoef:g.foreign||1.0,
       evhv:'', color:customer.color||'',
       film:pc4.film, paint:pc4.paint, clear:pc4.clear, special:pc4.special, memo:''
@@ -7181,10 +7186,11 @@ async function applyReceptionParams() {
               plate: existVehRemote.plate || td.plate,
               maker: existVehRemote.maker || '',
               name: existVehRemote.name || td.car_model || '',
+              model: existVehRemote.model || td.car_type || '',
               vin: existVehRemote.vin || td.vin || '',
               year: existVehRemote.year_num || td.year || '',
               drive: existVehRemote.drive || '2WD',
-              grade: existVehRemote.grade || td.car_type || '中型',
+              grade: existVehRemote.grade || '中型',
               gradeCoef: existVehRemote.grade_coef || 1.1,
               cid: existVehRemote.customer_id || custId,
               color: existVehRemote.color_name || td.color_name || '',
@@ -7200,9 +7206,9 @@ async function applyReceptionParams() {
         } else if(!existVM){
           vMaster.unshift({
             id: 'V' + Date.now().toString(36).toUpperCase().slice(-5),
-            cid: custId, name: td.car_model || '', plate: td.plate || '',
+            cid: custId, name: td.car_model || '', model: td.car_type || '', plate: td.plate || '',
             colorCode: td.color_code || '', color: td.color_name || '',
-            maker: '', grade: td.car_type || '', year: td.year || '',
+            maker: '', grade: '中型', year: td.year || '',
             vin: td.vin || '', fuel: '', drive: ''
           });
         }
@@ -7210,6 +7216,7 @@ async function applyReceptionParams() {
         var vmEntry = vMaster.find(function(v){ return v.plate === td.plate; });
         customer.plate = td.plate;
         customer.car   = vmEntry ? (vmEntry.name || td.car_model || '') : (td.car_model || '');
+        customer.model = vmEntry ? (vmEntry.model || td.car_type || '') : (td.car_type || '');
       }
 
       // マスター保存・画面更新
