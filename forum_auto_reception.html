@@ -307,7 +307,7 @@ textarea{resize:vertical;min-height:80px;}
           <div class="form-group"><label>ナンバー</label><input type="text" id="carNum" placeholder="静岡 300 あ 1234"></div>
           <div class="form-group"><label>型式</label><input type="text" id="carModel" placeholder="ZVW30"></div>
           <div class="form-group"><label>車体番号</label><input type="text" id="carVin" placeholder="ZVW30-1234567"></div>
-          <div class="form-group"><label>年式（初度登録）</label><input type="text" id="carYear" placeholder="令和2年3月"></div>
+          <div class="form-group"><label>年式（初度登録）</label><input type="text" id="carYear" placeholder="例: R2/02 または 2020/02" onblur="this.value=convertToWesternYear(this.value)"></div>
           <div class="form-group">
             <label>色番号<span style="font-size:10px;font-weight:400;text-transform:none;color:#888;"> ※ 塗料台帳の番号</span></label>
             <input type="text" id="colorCode" placeholder="例：040・1F7・PAX" oninput="lookupColorName(this.value);checkPaintDifficulty(this.value)" autocomplete="off">
@@ -963,6 +963,45 @@ function renderOCRResult(d) {
   document.getElementById('ocrResultArea').style.display='block';
 }
 
+// 和暦(略記R/H/S/T・漢字令和/平成/昭和/大正)・西暦を「YYYY」または「YYYY/MM」の西暦表記に統一する。
+// 例: R2/02→2020/02、H28/5→2016/05、S63/10→1988/10、令和2年3月→2020/03、2020→2020、2020/3→2020/03
+// 変換できない入力はそのまま返す（手入力の自由度を維持し、データを壊さない）
+function convertToWesternYear(val){
+  if(!val) return '';
+  val = val.toString().trim();
+  if(!val) return '';
+  // 全角数字を半角に変換
+  val = val.replace(/[０-９]/g, function(c){ return String.fromCharCode(c.charCodeAt(0)-0xFEE0); });
+
+  var ERA = [
+    {re:/^令和/, base:2018}, {re:/^平成/, base:1988}, {re:/^昭和/, base:1925}, {re:/^大正/, base:1911},
+    {re:/^[Rr]/, base:2018}, {re:/^[Hh]/, base:1988}, {re:/^[Ss]/, base:1925}, {re:/^[Tt]/, base:1911}
+  ];
+  for(var i=0;i<ERA.length;i++){
+    var era = ERA[i];
+    if(era.re.test(val)){
+      var rest = val.replace(era.re,'');
+      var m = rest.match(/^(\d{1,2}|元)\s*年?\s*[\/\.\-]?\s*(\d{1,2})?\s*月?$/);
+      if(m){
+        var yNum = (m[1]==='元') ? 1 : parseInt(m[1],10);
+        var year = era.base + yNum;
+        var month = m[2] ? ('0'+parseInt(m[2],10)).slice(-2) : '';
+        return month ? (year+'/'+month) : String(year);
+      }
+      return val; // 元号は検出できたが年月の解析に失敗 → 変換せずそのまま返す
+    }
+  }
+
+  // 西暦(YYYY, YYYY/MM, YYYY.MM, YYYY-MM, YYYY年MM月)
+  var mw = val.match(/^(\d{4})\s*[年\/\.\-]?\s*(\d{1,2})?\s*月?$/);
+  if(mw){
+    var month2 = mw[2] ? ('0'+parseInt(mw[2],10)).slice(-2) : '';
+    return month2 ? (mw[1]+'/'+month2) : mw[1];
+  }
+
+  return val;
+}
+
 function applyOCR() {
   var get = function(id){ var el=document.getElementById(id); return el?el.value:''; };
   var set = function(id,val){ var el=document.getElementById(id); if(el&&val)el.value=val; };
@@ -972,7 +1011,7 @@ function applyOCR() {
   set('carNum', get('ocr_plate'));
   set('carModel', get('ocr_model'));
   set('carVin', get('ocr_vin'));
-  set('carYear', get('ocr_year'));
+  set('carYear', convertToWesternYear(get('ocr_year')));
   showToast('✅ 車検証の情報を入力しました','success');
   document.getElementById('ocrResultArea').style.display='none';
   document.getElementById('ocrDropArea').style.display='block';
@@ -1352,6 +1391,7 @@ async function saveReception() {
     }
     var carName2 = carNameForSave;
     var carNum2 = plateForCheck;
+    var carYearNorm = convertToWesternYear(get('carYear'));
     if(carName2||carNum2){
       var existV = await supabaseQuery('vehicles','GET',null,'?plate=eq.'+encodeURIComponent(carNum2)+'&limit=1');
       if(!existV||existV.length===0){
@@ -1364,7 +1404,8 @@ async function saveReception() {
           vehicle_no:'V'+String(Date.now()).slice(-6),
           model:get('carModel')||'',
           vin:get('carVin')||'',
-          year:get('carYear')||''
+          year:carYearNorm||'',
+          year_num:parseInt(carYearNorm)||null
         });
       } else {
         var patchData = {};
@@ -1372,7 +1413,7 @@ async function saveReception() {
         if(carName2) patchData.maker=carName2;
         if(get('carModel')) patchData.model=get('carModel');
         if(get('carVin'))   patchData.vin=get('carVin');
-        if(get('carYear'))  patchData.year=get('carYear');
+        if(get('carYear')){ patchData.year=carYearNorm; patchData.year_num=parseInt(carYearNorm)||null; }
         if(Object.keys(patchData).length>0){
           await fetch(SUPABASE_URL+'/rest/v1/vehicles?plate=eq.'+encodeURIComponent(carNum2),{
             method:'PATCH',
@@ -1429,7 +1470,7 @@ async function saveReception() {
     car_model: carNameForSave,
     plate: plateForCheck,
     vin: get('carVin'),
-    year: get('carYear'),
+    year: carYearNorm,
     car_type: get('carModel'),
     color_code: colorCode,
     color_name: carColor,

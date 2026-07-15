@@ -444,7 +444,7 @@ async function syncMasterToCloud(){
     if(vMaster.length>0){
       var vData=vMaster.map(function(v){return{
         vehicle_no:v.id||'',plate:v.plate||'',maker:v.maker||'',name:v.name||'',model:v.model||'',
-        vin:v.vin||'',year_num:parseInt(v.year)||null,drive:v.drive||'2WD',
+        vin:v.vin||'',year:v.year||'',year_num:parseInt(v.year)||null,drive:v.drive||'2WD',
         grade:v.grade||'中型',grade_coef:parseFloat(v.gradeCoef)||1.1,
         customer_id:v.cid||null,color_name:v.color||'',color_code:v.colorCode||'',
         ev_hv:v.evhv||'',film_type:v.film||'2コートソリッド',
@@ -511,6 +511,7 @@ async function syncToCloud(){
         name:v.name||'',
         model:v.model||'',
         vin:v.vin||'',
+        year:v.year||'',
         year_num:parseInt(v.year)||null,
         drive:v.drive||'2WD',
         grade:v.grade||'中型',
@@ -4075,7 +4076,7 @@ function renderMaster(){
       h+='<td><input list="cl'+i+'" value="'+(v.name||'').replace(/"/g,'&quot;')+'" oninput="vMaster['+i+'].name=this.value;autoSaveM()" placeholder="車種" style="height:26px;border:1px solid #e0e0e0;border-radius:4px;font-size:11px;width:90px;padding:0 4px;"><datalist id="cl'+i+'">'+getCarDatalist(v.maker||'トヨタ')+'</datalist></td>';
       h+='<td><input value="'+(v.model||'').replace(/"/g,'&quot;')+'" oninput="vMaster['+i+'].model=this.value;autoSaveM();awResize(this,9,16)" placeholder="ZVW30" style="'+awStyle(v.model||'',9,16)+'"></td>';
       h+='<td><input value="'+(v.vin||'').replace(/"/g,'&quot;')+'" oninput="vMaster['+i+'].vin=this.value;awResize(this,18,28)" placeholder="ZVW50-80115294" style="'+awStyle(v.vin||'',18,28)+'"></td>';
-      h+='<td style="text-align:center"><input id="year_'+i+'" value="'+(v.year||'')+'" oninput="vMaster['+i+'].year=this.value;" onblur="var y=convertToWesternYear(this.value);vMaster['+i+'].year=y;this.value=y;autoSaveM();var sp=document.getElementById(\'year_disp_\'+'+i+');if(sp)sp.textContent=y?\'(\'+y+\')\':\'\';" placeholder="R6/H28" style="width:50px"><br><span id="year_disp_'+i+'" style="font-size:9px;color:#1565c0;">'+(v.year?'('+v.year+')':'')+'</span></td>';
+      h+='<td style="text-align:center"><input id="year_'+i+'" value="'+(v.year||'')+'" oninput="vMaster['+i+'].year=this.value;" onblur="var y=convertToWesternYear(this.value);vMaster['+i+'].year=y;this.value=y;autoSaveM();var sp=document.getElementById(\'year_disp_\'+'+i+');if(sp)sp.textContent=y?\'(\'+y+\')\':\'\';" placeholder="例:R2/02" title="例: R2/02 または 2020/02" style="width:50px"><br><span id="year_disp_'+i+'" style="font-size:9px;color:#1565c0;">'+(v.year?'('+v.year+')':'')+'</span></td>';
       h+='<td><select onchange="vMaster['+i+'].drive=this.value" style="height:26px;border:1px solid #e0e0e0;border-radius:4px;font-size:11px;width:48px">';
       ['2WD','4WD','AWD','FF','FR','MR','RR','AT','CVT'].forEach(function(d){h+='<option'+((v.drive||'2WD')===d?' selected':'')+'>'+d+'</option>';});
       h+='</select></td>';
@@ -6333,23 +6334,42 @@ function lookupZipForCustomer(i){
 
 
 // ===== 年号→西暦変換 =====
+// 和暦(略記R/H/S/T・漢字令和/平成/昭和/大正)・西暦を「YYYY」または「YYYY/MM」の西暦表記に統一する。
+// 例: R2/02→2020/02、H28/5→2016/05、S63/10→1988/10、令和2年3月→2020/03、2020→2020、2020/3→2020/03
+// 変換できない入力はそのまま返す（手入力の自由度を維持し、データを壊さない）
 function convertToWesternYear(val){
   if(!val) return '';
   val = val.toString().trim();
-  // 西暦4桁はそのまま
-  if(/^\d{4}$/.test(val)) return val;
-  // 令和・R
-  var m = val.match(/^[Rr令](\d+)$/);
-  if(m){ return (2018 + parseInt(m[1])).toString(); }
-  // 平成・H
-  m = val.match(/^[Hh平](\d+)$/);
-  if(m){ return (1988 + parseInt(m[1])).toString(); }
-  // 昭和・S
-  m = val.match(/^[Ss昭](\d+)$/);
-  if(m){ return (1925 + parseInt(m[1])).toString(); }
-  // 大正・T
-  m = val.match(/^[Tt大](\d+)$/);
-  if(m){ return (1911 + parseInt(m[1])).toString(); }
+  if(!val) return '';
+  // 全角数字を半角に変換
+  val = val.replace(/[０-９]/g, function(c){ return String.fromCharCode(c.charCodeAt(0)-0xFEE0); });
+
+  var ERA = [
+    {re:/^令和/, base:2018}, {re:/^平成/, base:1988}, {re:/^昭和/, base:1925}, {re:/^大正/, base:1911},
+    {re:/^[Rr]/, base:2018}, {re:/^[Hh]/, base:1988}, {re:/^[Ss]/, base:1925}, {re:/^[Tt]/, base:1911}
+  ];
+  for(var i=0;i<ERA.length;i++){
+    var era = ERA[i];
+    if(era.re.test(val)){
+      var rest = val.replace(era.re,'');
+      var m = rest.match(/^(\d{1,2}|元)\s*年?\s*[\/\.\-]?\s*(\d{1,2})?\s*月?$/);
+      if(m){
+        var yNum = (m[1]==='元') ? 1 : parseInt(m[1],10);
+        var year = era.base + yNum;
+        var month = m[2] ? ('0'+parseInt(m[2],10)).slice(-2) : '';
+        return month ? (year+'/'+month) : String(year);
+      }
+      return val; // 元号は検出できたが年月の解析に失敗 → 変換せずそのまま返す
+    }
+  }
+
+  // 西暦(YYYY, YYYY/MM, YYYY.MM, YYYY-MM, YYYY年MM月)
+  var mw = val.match(/^(\d{4})\s*[年\/\.\-]?\s*(\d{1,2})?\s*月?$/);
+  if(mw){
+    var month2 = mw[2] ? ('0'+parseInt(mw[2],10)).slice(-2) : '';
+    return month2 ? (mw[1]+'/'+month2) : mw[1];
+  }
+
   return val;
 }
 
@@ -7188,7 +7208,7 @@ async function applyReceptionParams() {
               name: existVehRemote.name || td.car_model || '',
               model: existVehRemote.model || td.car_type || '',
               vin: existVehRemote.vin || td.vin || '',
-              year: existVehRemote.year_num || td.year || '',
+              year: existVehRemote.year_num || convertToWesternYear(td.year) || '',
               drive: existVehRemote.drive || '2WD',
               grade: existVehRemote.grade || '中型',
               gradeCoef: existVehRemote.grade_coef || 1.1,
@@ -7208,7 +7228,7 @@ async function applyReceptionParams() {
             id: 'V' + Date.now().toString(36).toUpperCase().slice(-5),
             cid: custId, name: td.car_model || '', model: td.car_type || '', plate: td.plate || '',
             colorCode: td.color_code || '', color: td.color_name || '',
-            maker: '', grade: '中型', year: td.year || '',
+            maker: '', grade: '中型', year: convertToWesternYear(td.year) || '',
             vin: td.vin || '', fuel: '', drive: ''
           });
         }
