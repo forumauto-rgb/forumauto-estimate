@@ -1484,6 +1484,8 @@ async function saveReception() {
     reception_id: recId,
     coating: get('coating')||'',
     car_category: get('carCategory')||'',
+    dest_address: get('destAddr')||'',
+    remarks: get('remarks')||'',
     photos: incomingPhotos
   };
   try {
@@ -2558,7 +2560,7 @@ async function saveReceptionEdit() {
     rental_end_date:document.getElementById('re_rental_end').value||null,
     car_category:document.getElementById('re_car_category').value||null,
     coating:document.getElementById('re_coating').value||null,
-    dest_address:document.getElementById('re_dest_address').value||null,
+    dest_address:document.getElementById('re_towing').checked?(document.getElementById('re_dest_address').value||null):null,
     remarks:document.getElementById('re_remarks').value||null
   };
   if(dateVal)payload.reception_datetime=dateVal+'T00:00:00+09:00';

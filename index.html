@@ -7144,6 +7144,8 @@ async function applyReceptionParams() {
       if(td.reception_id)  customer.receptionId = td.reception_id;
       if(td.coating)       customer.coating      = td.coating;
       if(td.car_category)  customer.carCategory  = td.car_category;
+      if(td.dest_address)  customer.destAddr     = td.dest_address;
+      if(td.remarks)       customer.remarks      = td.remarks;
 
       // 入庫時写真を引き継ぎ
       if(td.photos && td.photos.length > 0){
