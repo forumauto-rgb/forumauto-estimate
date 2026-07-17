@@ -615,6 +615,65 @@ async function loadFromCloud(){
   }
 }
 
+// 削除したはずのマスターがクラウドに復活するバグの応急対策:
+// 他タブ/他端末が古いキャッシュのままcMaster/vMasterを丸ごとアップサートすると、
+// 既に削除されたレコードが復活してしまう。起動時・タブ復帰時・削除直後に
+// クラウドの最新状態でcMaster/vMasterだけを静かに上書きし、復活の窓を狭める。
+// マスター管理タブを表示中は入力途中の内容を消さないよう自動更新をスキップする（forceの場合を除く）。
+async function refreshMasterCache(force){
+  if(!force && curTab === 'master') return;
+  try{
+    const customers = await dbGetAll('customers');
+    if(customers && customers.length>0){
+      cMaster = customers.map(c=>({
+        supabase_id: c.id,
+        id: c.customer_no||c.id.slice(0,8),
+        name: c.name||'',
+        honorific: c.honorific||'様',
+        tel: c.tel||'',
+        postal: c.postal||'',
+        address: c.address||'',
+        insurance: c.insurance||'',
+        aj: c.aj_staff||'',
+        memo: c.memo||''
+      }));
+      localStorage.setItem('fa_c6', JSON.stringify(cMaster));
+    }
+    const vehicles = await dbGetAll('vehicles');
+    if(vehicles && vehicles.length>0){
+      vMaster = vehicles.map(v=>({
+        supabase_id: v.id,
+        id: v.vehicle_no||v.id.slice(0,8),
+        plate: v.plate||'',
+        maker: v.maker||'',
+        name: v.name||'',
+        model: v.model||'',
+        vin: v.vin||'',
+        year: v.year_num||'',
+        drive: v.drive||'2WD',
+        grade: v.grade||'中型',
+        gradeCoef: v.grade_coef||1.1,
+        cid: v.customer_id||'',
+        color: v.color_name||'',
+        colorCode: v.color_code||'',
+        evhv: v.ev_hv||'',
+        film: v.film_type||'2コートソリッド',
+        paint: v.paint_type||'2K(標準)',
+        clear: v.clear_type||'標準クリヤー',
+        special: v.special||'なし',
+        memo: v.memo||''
+      }));
+      localStorage.setItem('fa_v6', JSON.stringify(vMaster));
+    }
+    if(curTab==='master') render();
+  }catch(e){console.warn('マスターキャッシュ自動更新失敗:',e);}
+}
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState === 'visible'){
+    refreshMasterCache();
+  }
+});
+
 async function loadStaffFromCloud(){
   try{
     var data=await supabaseFetchAll(SUPABASE_URL+'/rest/v1/staff?status=eq.在籍&select=name&order=join_date.asc');
@@ -632,6 +691,7 @@ setTimeout(function(){
     if(ok){
       updateCloudTag();
       loadStaffFromCloud();
+      refreshMasterCache();
       refreshAiUserRulesCache();
       console.log('Supabase接続OK');
     } else {
@@ -3929,7 +3989,7 @@ function renderStaffTab(){
     return '<tr>'
       +'<td style="text-align:center;color:#888;font-size:11px;">'+(i+1)+'</td>'
       +'<td><input value="'+s.replace(/"/g,'&quot;')+'" oninput="staffMaster['+i+']=this.value" placeholder="担当者名" style="width:100%;font-size:13px;height:28px;padding:0 6px;border:1px solid #e0e0e0;border-radius:4px;"></td>'
-      +'<td><button class="del-btn" onclick="if(confirm(\'削除?\')){{staffMaster.splice('+i+',1);render()}}">✕</button></td>'
+      +'<td><button class="del-btn" onclick="deleteStaff('+i+')">✕</button></td>'
       +'</tr>';
   }).join('');
   return '<div style="max-width:400px;">'
@@ -6966,8 +7026,10 @@ async function sendToSheet(){
 async function deleteEstimate(estId, estNo){
   if(!confirm('「'+estNo+'」を削除しますか？\nこの操作は元に戻せません。')){return;}
   try{
-    await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
-    await fetch(SUPABASE_URL+'/rest/v1/estimate_photos?estimate_id=eq.'+estId,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+    var rItems=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+    if(!rItems.ok){ showNotify('❌ 明細の削除に失敗しました: '+rItems.status); return; }
+    var rPhotos=await fetch(SUPABASE_URL+'/rest/v1/estimate_photos?estimate_id=eq.'+estId,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+    if(!rPhotos.ok){ showNotify('❌ 写真の削除に失敗しました: '+rPhotos.status); return; }
     var r=await fetch(SUPABASE_URL+'/rest/v1/estimates?id=eq.'+estId,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
     if(r.ok){
       showNotify('🗑 '+estNo+' を削除しました');
@@ -7418,6 +7480,7 @@ async function deleteVehicle(i){
   autoSaveM();
   render();
   showNotify('✅ '+deleted.length+'件削除しました');
+  refreshMasterCache(true);
 }
 
 async function deleteCustomer(i){
@@ -7458,6 +7521,41 @@ async function deleteCustomer(i){
   autoSaveM();
   render();
   showNotify('✅ '+deleted.length+'件削除しました');
+  refreshMasterCache(true);
+}
+
+async function deleteStaff(i){
+  var name = staffMaster[i];
+  if(!confirm('クラウドからも完全に削除します。元に戻せません。\nよろしいですか？')) return;
+  var key = 'name=eq.'+encodeURIComponent(name)+'&status=eq.在籍';
+  var deleted;
+  try{
+    var r = await fetch(SUPABASE_URL+'/rest/v1/staff?'+key, {
+      method:'DELETE',
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Prefer':'return=representation'}
+    });
+    if(!r.ok){
+      var errText = await r.text();
+      showNotify('❌ クラウド削除失敗('+r.status+')');
+      console.error('deleteStaff失敗 status='+r.status, errText);
+      return;
+    }
+    deleted = await r.json();
+  }catch(e){
+    showNotify('❌ クラウド削除失敗(ネットワークエラー)');
+    console.error('deleteStaff error:',e);
+    return;
+  }
+  if(deleted.length === 0){
+    showNotify('❌ 削除0件: キー不一致 (name='+name+')\nSupabase RLS に DELETE ポリシーが未設定の可能性があります');
+    console.error('deleteStaff: 0件削除 name='+name);
+    return;
+  }
+  staffMaster.splice(i,1);
+  saveStaffMaster();
+  render();
+  showNotify('✅ '+deleted.length+'件削除しました');
+  loadStaffFromCloud().then(function(){ if(curTab==='master') render(); });
 }
 
 function autoSaveM(){
