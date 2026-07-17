@@ -4142,7 +4142,7 @@ function renderMaster(){
       h+='<input value="'+(v.plate||'')+'" oninput="vMaster['+i+'].plate=this.value" placeholder="品川300 あ12-34" style="width:60px;overflow:hidden;text-overflow:ellipsis;cursor:pointer" onclick="this.style.width=\'160px\';this.style.zIndex=999;this.style.position=\'relative\';this.style.background=\'#fffde7\';this.style.boxShadow=\'0 2px 10px rgba(0,0,0,0.2)\'" onblur="this.style.width=\'60px\';this.style.zIndex=\'\';this.style.position=\'\';this.style.background=\'\';this.style.boxShadow=\'\'" title="'+(v.plate||'').replace(/"/g,'&quot;')+'">';
       h+='</div></td>';
       h+='<td><select onchange="vMaster['+i+'].maker=this.value;autoSaveM();render()" style="height:26px;border:1px solid #e0e0e0;border-radius:4px;font-size:11px;width:80px">'+getMakerOptions(v.maker||'')+'</select></td>';
-      h+='<td><input list="cl'+i+'" value="'+(v.name||'').replace(/"/g,'&quot;')+'" oninput="vMaster['+i+'].name=this.value;autoSaveM()" placeholder="車種" style="height:26px;border:1px solid #e0e0e0;border-radius:4px;font-size:11px;width:90px;padding:0 4px;"><datalist id="cl'+i+'">'+getCarDatalist(v.maker||'トヨタ')+'</datalist></td>';
+      h+='<td><input list="cl'+i+'" value="'+(v.name||'').replace(/"/g,'&quot;')+'" oninput="vMaster['+i+'].name=this.value;autoSaveM()" placeholder="車種" style="height:26px;border:1px solid #e0e0e0;border-radius:4px;font-size:11px;width:90px;padding:0 4px;"><datalist id="cl'+i+'">'+getCarDatalist(v.maker||'')+'</datalist></td>';
       h+='<td><input value="'+(v.model||'').replace(/"/g,'&quot;')+'" oninput="vMaster['+i+'].model=this.value;autoSaveM();awResize(this,9,16)" placeholder="ZVW30" style="'+awStyle(v.model||'',9,16)+'"></td>';
       h+='<td><input value="'+(v.vin||'').replace(/"/g,'&quot;')+'" oninput="vMaster['+i+'].vin=this.value;awResize(this,18,28)" placeholder="ZVW50-80115294" style="'+awStyle(v.vin||'',18,28)+'"></td>';
       h+='<td style="text-align:center"><input id="year_'+i+'" value="'+(v.year||'')+'" oninput="vMaster['+i+'].year=this.value;" onblur="var y=convertToWesternYear(this.value);vMaster['+i+'].year=y;this.value=y;autoSaveM();var sp=document.getElementById(\'year_disp_\'+'+i+');if(sp)sp.textContent=y?\'(\'+y+\')\':\'\';" placeholder="例:R2/02" title="例: R2/02 または 2020/02" style="width:50px"><br><span id="year_disp_'+i+'" style="font-size:9px;color:#1565c0;">'+(v.year?'('+v.year+')':'')+'</span></td>';
@@ -6360,7 +6360,7 @@ var MAKER_MASTER={
 };
 
 function getMakerOptions(selectedMaker){
-  var html='';
+  var html='<option value=""'+(selectedMaker?'':' selected')+'>─未選択─</option>';
   Object.keys(MAKER_MASTER).forEach(function(m){
     html+='<option value="'+m+'"'+(selectedMaker===m?' selected':'')+'>'+m+'</option>';
   });
