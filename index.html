@@ -679,6 +679,7 @@ async function loadStaffFromCloud(){
     var data=await supabaseFetchAll(SUPABASE_URL+'/rest/v1/staff?status=eq.在籍&select=name&order=join_date.asc');
     if(data&&data.length){
       staffMaster=data.map(function(s){return s.name;});
+      staffMasterNew=staffMaster.map(function(){return false;});
       saveStaffMaster();
     }
   }catch(e){console.warn('スタッフマスター取得エラー:',e);}
@@ -1088,7 +1089,36 @@ let vMaster=[];
 let staffMaster=[];
 try{staffMaster=JSON.parse(localStorage.getItem('fa_staff')||'[]');}catch(e){}
 if(!staffMaster.length){staffMaster=['スタッフA','スタッフB','スタッフC'];}
-function saveStaffMaster(){try{localStorage.setItem('fa_staff',JSON.stringify(staffMaster));}catch(e){}}
+// staffMasterと同じ添字で対応する「クラウド未同期の新規追加」フラグ（復活防止のため、未確認の名前を無条件送信しないようにする）
+let staffMasterNew=staffMaster.map(function(){return false;});
+async function saveStaffMaster(){
+  try{localStorage.setItem('fa_staff',JSON.stringify(staffMaster));}catch(e){}
+  var ok = await testConnection();
+  if(!ok){ showNotify('⚠ Supabase未接続のためクラウド保存できませんでした（ローカルのみ保存）'); return; }
+  try{
+    // 復活防止: 送信前に必ずクラウド最新の在籍者名を取得
+    var freshData = await supabaseFetchAll(SUPABASE_URL+'/rest/v1/staff?status=eq.在籍&select=name&order=join_date.asc');
+    var cloudNames = (freshData||[]).map(function(s){return s.name;});
+    var toAdd=[], skipped=[];
+    staffMaster.forEach(function(n,i){
+      if(!n||cloudNames.indexOf(n)>=0) return;
+      if(staffMasterNew[i]) toAdd.push(n); else skipped.push(n);
+    });
+    for(var j=0;j<toAdd.length;j++){
+      var r=await fetch(SUPABASE_URL+'/rest/v1/staff',{
+        method:'POST',
+        headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+        body:JSON.stringify({name:toAdd[j],name_kana:'',dept:'',role:'',join_date:null,status:'在籍',phone:'',emergency_contact:'',certs:'',notes:''})
+      });
+      if(!r.ok) throw new Error('担当者「'+toAdd[j]+'」保存失敗('+r.status+'): '+await r.text());
+    }
+    staffMasterNew = staffMaster.map(function(){return false;});
+    var skipMsg = skipped.length>0 ? ('\n⚠ 未反映: '+skipped.join('、')+'（既存名の変更は未対応。削除して追加し直してください）') : '';
+    showNotify('✅ 担当者マスターを保存しました（クラウド同期済み: 新規'+toAdd.length+'件）'+skipMsg);
+  }catch(e){
+    showNotify('❌ クラウド保存失敗: '+e.message);
+  }
+}
 function getStaffOptions(sel){var o='<option value="">　</option>';staffMaster.forEach(function(s){o+='<option value="'+s+'"'+(sel===s?' selected':'')+'>'+s+'</option>';});return o;}
 
 let customer={name:'',car:'',model:'',plate:'',color:'',grade:'中型',date:new Date().toISOString().split('T')[0],no:''};
@@ -3996,8 +4026,8 @@ function renderStaffTab(){
     +'<div style="font-size:11px;color:#555;margin-bottom:10px;background:#fff8e1;border-radius:6px;padding:8px 12px;border-left:3px solid #f9a825;">'
     +'💡 作業指示書の担当者欄に表示されます。追加・編集後は「💾 保存」を押してください。</div>'
     +'<div style="display:flex;gap:8px;margin-bottom:10px;">'
-    +'<button class="btn btn-p btn-sm" onclick="staffMaster.push(&quot;新スタッフ&quot;+(staffMaster.length+1));render()">＋追加</button>'
-    +'<button class="btn btn-g btn-sm" onclick="saveStaffMaster();showNotify(&quot;👷 担当者マスターを保存しました&quot;)">💾 保存</button>'
+    +'<button class="btn btn-p btn-sm" onclick="staffMaster.push(&quot;新スタッフ&quot;+(staffMaster.length+1));staffMasterNew.push(true);render()">＋追加</button>'
+    +'<button class="btn btn-g btn-sm" onclick="saveStaffMaster()">💾 保存</button>'
     +'</div>'
     +'<table class="mst-tbl" style="max-width:360px;">'
     +'<thead><tr><th style="width:40px">No</th><th>担当者名</th><th style="width:36px"></th></tr></thead>'
@@ -4070,7 +4100,7 @@ function renderMaster(){
 
   if(mTab==='customer'){
     h+='<div style="display:flex;gap:8px;margin-bottom:10px">';
-    h+='<button class="btn btn-p btn-sm" onclick="cMaster.push({id:\'C\'+Date.now().toString(36).toUpperCase().slice(-5),name:\'\',honorific:\'様\',tel:\'\',postal:\'\',address:\'\',insurance:\'\',aj:\'\',memo:\'\',date:new Date().toISOString().split(\'T\')[0]});render()">＋新規顧客</button>';
+    h+='<button class="btn btn-p btn-sm" onclick="cMaster.push({id:\'C\'+Date.now().toString(36).toUpperCase().slice(-5),name:\'\',honorific:\'様\',tel:\'\',postal:\'\',address:\'\',insurance:\'\',aj:\'\',memo:\'\',date:new Date().toISOString().split(\'T\')[0],_localNew:true});render()">＋新規顧客</button>';
     h+='<button class="btn btn-g btn-sm" onclick="sM()">💾 保存</button>';
     h+='</div>';
     h+='<div style="overflow-x:auto"><table class="mst-tbl">';
@@ -4108,7 +4138,7 @@ function renderMaster(){
     h+=',maker:\'\',name:customer.car||\'\',model:customer.model||\'\'';
     h+=',vin:\'\',year:\'\',drive:\'2WD\',grade:customer.grade||\'中型\',gradeCoef:ag.coef,foreignCoef:ag.foreign||1.0';
     h+=',evhv:\'\',colorCode:customer.colorCode||\'\',color:customer.color||\'\'';
-    h+=',film:pc4.film||\'2コートソリッド\',paint:pc4.paint||\'2K(標準)\',clear:pc4.clear||\'標準クリヤー\',special:pc4.special||\'なし\',memo:\'\'})';
+    h+=',film:pc4.film||\'2コートソリッド\',paint:pc4.paint||\'2K(標準)\',clear:pc4.clear||\'標準クリヤー\',special:pc4.special||\'なし\',memo:\'\',_localNew:true})';
     h+=';render();showNotify(\'🚗 新規車両を追加しました\'+(ac?\'\\n顧客ID: \'+ac+\' を自動設定しました\':\'\'));})()">＋新規車両</button>';
     h+='<button class="btn btn-g btn-sm" onclick="sM()">💾 保存</button>';
     h+='</div>';
@@ -5307,6 +5337,7 @@ function dP(e,to){e.preventDefault();if(dragSrc===null||dragSrc===to)return;cons
 function applyProcessSort(){sel.sort(function(a,b){return getProcessOrder(a)-getProcessOrder(b);});sortMode='process';rIP();}
 function applyWorkSort(){var sorted=sortByWork(sel.slice());sel.length=0;sorted.forEach(function(s){sel.push(s);});sortMode='work';rIP();}
 
+// 未使用: どのボタンからも呼ばれていない(2026-07-18調査で判明)。操作マニュアル内の説明文と現行UIが不一致のため注記のみ残す
 function saveToM(){
   if(!customer.name){alert('顧客名を入力してください');return;}
   const ei=cMaster.findIndex(c=>c.name===customer.name);
@@ -5556,14 +5587,87 @@ function lV(i){
     showNotify(msg);
   },50);
 }
-function sM(){
+async function sM(){
+  var ok = await testConnection();
+  if(!ok){
+    try{
+      localStorage.setItem('fa_cMaster',JSON.stringify(cMaster));
+      localStorage.setItem('fa_vMaster',JSON.stringify(vMaster));
+      localStorage.setItem('fa_c6',JSON.stringify(cMaster));
+      localStorage.setItem('fa_v6',JSON.stringify(vMaster));
+    }catch(e){}
+    showNotify('⚠ Supabase未接続のためクラウド保存できませんでした（ローカルのみ保存）');
+    return;
+  }
+  var localC = cMaster.map(function(c){return Object.assign({},c);});
+  var localV = vMaster.map(function(v){return Object.assign({},v);});
   try{
+    // 復活防止: 送信前に必ずクラウド最新を取得(refreshMasterCache)し、他端末で削除済みの行を復活させない
+    await refreshMasterCache(true);
+
+    var mergedC = cMaster.slice(), skippedC = 0;
+    localC.forEach(function(lc){
+      var idx = mergedC.findIndex(function(c){return c.id===lc.id;});
+      if(idx>=0){ mergedC[idx] = Object.assign({}, mergedC[idx], lc, {supabase_id:mergedC[idx].supabase_id}); }
+      else if(lc._localNew){ mergedC.push(lc); }
+      else { skippedC++; }
+    });
+    var mergedV = vMaster.slice(), skippedV = 0;
+    localV.forEach(function(lv){
+      var idx = mergedV.findIndex(function(v){return v.id===lv.id;});
+      if(idx>=0){ mergedV[idx] = Object.assign({}, mergedV[idx], lv, {supabase_id:mergedV[idx].supabase_id}); }
+      else if(lv._localNew){ mergedV.push(lv); }
+      else { skippedV++; }
+    });
+
+    if(mergedC.length>0){
+      var cData=mergedC.map(function(c){return{
+        customer_no:c.id||'',name:c.name||'(名前なし)',honorific:c.honorific||'様',
+        tel:c.tel||'',postal:c.postal||'',address:c.address||'',
+        insurance:c.insurance||'',aj_staff:c.aj||'',memo:c.memo||''
+      };});
+      var rc=await fetch(SUPABASE_URL+'/rest/v1/customers?on_conflict=customer_no',{
+        method:'POST',
+        headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
+        body:JSON.stringify(cData)
+      });
+      if(!rc.ok) throw new Error('顧客保存失敗('+rc.status+'): '+await rc.text());
+    }
+    if(mergedV.length>0){
+      var vData=mergedV.map(function(v){return{
+        vehicle_no:v.id||'',plate:v.plate||'',maker:v.maker||'',name:v.name||'',model:v.model||'',
+        vin:v.vin||'',year:v.year||'',year_num:parseInt(v.year)||null,drive:v.drive||'2WD',
+        grade:v.grade||'中型',grade_coef:parseFloat(v.gradeCoef)||1.1,
+        customer_id:v.cid||null,color_name:v.color||'',color_code:v.colorCode||'',
+        ev_hv:v.evhv||'',film_type:v.film||'2コートソリッド',
+        paint_type:v.paint||'2K(標準)',clear_type:v.clear||'標準クリヤー',
+        special:v.special||'なし',memo:v.memo||''
+      };});
+      var rv=await fetch(SUPABASE_URL+'/rest/v1/vehicles?on_conflict=vehicle_no',{
+        method:'POST',
+        headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
+        body:JSON.stringify(vData)
+      });
+      if(!rv.ok) throw new Error('車両保存失敗('+rv.status+'): '+await rv.text());
+    }
+
+    mergedC.forEach(function(c){delete c._localNew;});
+    mergedV.forEach(function(v){delete v._localNew;});
+    cMaster = mergedC;
+    vMaster = mergedV;
     localStorage.setItem('fa_cMaster',JSON.stringify(cMaster));
     localStorage.setItem('fa_vMaster',JSON.stringify(vMaster));
     localStorage.setItem('fa_c6',JSON.stringify(cMaster));
     localStorage.setItem('fa_v6',JSON.stringify(vMaster));
-  }catch(e){}
-  alert('保存しました（'+cMaster.length+'顧客 / '+vMaster.length+'車両）');
+    render();
+    var skipMsg = (skippedC+skippedV)>0 ? ('\n⚠ 他端末で削除済みの'+(skippedC+skippedV)+'件は復活させず除外しました') : '';
+    showNotify('✅ 保存しました（クラウド同期済み: '+cMaster.length+'顧客 / '+vMaster.length+'車両）'+skipMsg);
+  }catch(e){
+    cMaster = localC;
+    vMaster = localV;
+    render();
+    showNotify('❌ クラウド保存失敗: '+e.message);
+  }
 }
 async function doPrint(){
   var styleId='__printStyle';
@@ -7552,6 +7656,7 @@ async function deleteStaff(i){
     return;
   }
   staffMaster.splice(i,1);
+  staffMasterNew.splice(i,1);
   saveStaffMaster();
   render();
   showNotify('✅ '+deleted.length+'件削除しました');
