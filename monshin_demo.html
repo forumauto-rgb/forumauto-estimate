@@ -165,18 +165,27 @@ function routeAfter(key, val, next){
 // 類型判定(第7章)
 function decideType(){
   const f=A.fault||'', pay=A.payment||'', vi=A.vehicleIns||'', it=A.intent||'', g=A.goal||'';
+  const R=(x)=>x.filter(Boolean).join(' × ');
   if(f.startsWith('相手が全部悪い')){
-    if(it.startsWith('修理せず')) return ['C','実損害見積型','修理しなくても実損害の賠償は正当な権利。実損害見積を作成して渡す。上乗せ査定は不可の線引きを明確に。'];
-    if(g.startsWith('とにかく早く')) return ['A','早期協定型','相手保険での修理。写真と整合性ある見積を最優先で作成し、AJが承認を取りやすい資料を先回りで用意。代車手配を即対応。'];
-    if(g.startsWith('補償も')) return ['B','権利説明型','工場選択の自由・実損害賠償は正当な権利であることを正確に説明。修理見積と実損害見積は出せるが交渉用の上乗せ査定は出せないことを明示し、「個人での上乗せ交渉はなかなか大変ですよ」と添えてお客様に選んでいただく(3点セット)。'];
-    return ['D','相談型','3つのお約束を最初に伝えて安心してもらい、選択肢(早く直す/補償重視)を一つずつ説明して選んでもらう。'];
+    if(it.startsWith('修理せず')) return ['C','実損害見積型','修理しなくても実損害の賠償は正当な権利。実損害見積を作成して渡す。上乗せ査定は不可の線引きを明確に。',R(['過失=100対0','お気持ち=修理せず賠償のみ']),
+    '「修理をされない場合でも、実際の損害分の賠償を受け取るのは正当な権利ですので、ご安心ください。そのための損害のお見積りを当店でお作りします。ひとつだけ正直にお伝えしますと、実際の損害より金額を上乗せするためのお見積りは、当店ではお作りできません。実際の損害をきちんと証明する書類なら、しっかりご用意できますよ。」'];
+    if(g.startsWith('とにかく早く')) return ['A','早期協定型','相手保険での修理。写真と整合性ある見積を最優先で作成し、AJが承認を取りやすい資料を先回りで用意。代車手配を即対応。',R(['過失=100対0','ご希望=とにかく早く直したい']),
+    '「かしこまりました。最短で直す段取りを組みますね。本日お車のお写真を撮らせていただいて、保険会社さんがすぐにOKを出せるお見積りを整えます。書類がきちんとしていると話が早いんです。お代車もすぐご用意しますので、ご不便のないようにいたします。」'];
+    if(g.startsWith('補償も')) return ['B','権利説明型','工場選択の自由・実損害賠償は正当な権利であることを正確に説明。修理見積と実損害見積は出せるが交渉用の上乗せ査定は出せないことを明示し、「個人での上乗せ交渉はなかなか大変ですよ」と添えてお客様に選んでいただく(3点セット)。',R(['過失=100対0','ご希望=補償もしっかり']),
+    '「今回はお客様に落ち度のない事故ですから、修理も補償も、受け取れるものをきちんと受け取っていただくのが正当な権利です。修理のお見積りと、実際の損害のお見積りまでは当店でしっかりお作りします。ただ、金額を上乗せするための査定はお作りできないんです。上乗せの交渉をご自分でなさるのは、正直なかなか大変ですよ。当店としては、実際の損害を漏れなくきちんと積み上げるお手伝いをさせていただきます。どう進めるかは○○様に決めていただけます。」'];
+    return ['D','相談型','3つのお約束を最初に伝えて安心してもらい、選択肢(早く直す/補償重視)を一つずつ説明して選んでもらう。',R(['過失=100対0','ご希望=相談したい']),
+    '「ご安心ください。お写真もお見積りも当店がすべてご用意しますので、難しいことは何もお客様にお願いしません。進め方は大きく2つあります。1つめは、とにかく早くお車を直す進め方です。保険会社さんとの話がまとまり次第、すぐ修理に入ります。2つめは、補償の内容をしっかり確かめながら進めるやり方です。お代車の費用など、受け取れるものを漏れなく確認してから進めます。少しお時間はかかりますが、取りこぼしがありません。どちらが○○様のお気持ちに近いですか?」'];
   }
   if(f.startsWith('自分にも過失')){
-    if(vi==='入っている') return ['E','自車両保険検討型','車両保険の利用を検討。等級への影響と自己負担の比較は概算見積後にスタッフから説明。'];
-    return ['F','実費併用型','過失分は実費になる可能性を早めに説明。実費と保険の併用見積を用意。'];
+    if(vi==='入っている') return ['E','自車両保険検討型','車両保険の利用を検討。等級への影響と自己負担の比較は概算見積後にスタッフから説明。',R(['過失=自分にも過失あり','車両保険=入っている']),
+    '「今回のポイントは、ご自分の車両保険をお使いになるかどうかです。使うと来年からの保険料(等級)が上がりますので、修理代とどちらが得か比べてから決めるのが一番です。まず当店でお見積りをお出ししますね。金額が出てから一緒に考えましょう。今日決めていただくことは何もありませんから、ご安心ください。」'];
+    return ['F','実費併用型','過失分は実費になる可能性を早めに説明。実費と保険の併用見積を用意。',R(['過失=自分にも過失あり','車両保険='+(vi||'なし・不明')]),
+    '「過失の分は、ご自身のご負担になる可能性があります。先に正直にお伝えしておきますね。その分、ご負担をなるべく抑えられるよう、直し方の選択肢を入れたお見積りをお作りします。金額を見てから、どこまで直すか一緒に決めましょう。」'];
   }
-  if(f) return ['G','両にらみ型','証拠固め(写真・現車確認)を最優先。過失が決まってから支払い方法を確定。見積は先行してよい。'];
-  if(pay==='保険を使うか迷っている') return ['H','比較判断型','概算見積を先に出し、保険利用と実費の比較で判断してもらう。免責金額・等級の説明。'];
+  if(f) return ['G','両にらみ型','証拠固め(写真・現車確認)を最優先。過失が決まってから支払い方法を確定。見積は先行してよい。',R(['過失='+f]),
+  '「過失割合が決まるまで、お支払いの方法は保留で大丈夫ですよ。その間に当店でやっておくべきことがあります。お車のお写真と現車の確認です。これさえきちんと揃っていれば、割合がどう決まっても困ることはありません。今日はその準備をしっかりさせていただきますね。」'];
+  if(pay==='保険を使うか迷っている') return ['H','比較判断型','概算見積を先に出し、保険利用と実費の比較で判断してもらう。免責金額・等級の説明。',R(['お支払い=保険を使うか迷っている']),
+  '「保険を使うかどうかは、金額を見てから決めるのが一番です。まず概算のお見積りをお出ししますね。保険を使うと来年からの保険料が上がりますので、修理代と比べてどちらが得か、表にして一緒に見比べましょう。それから決めていただければ大丈夫です。」'];
   return null;
 }
 
@@ -308,7 +317,23 @@ Q20:{n:'連絡方法', p:20, html:()=>`
   <div class="qnum">最後の確認 4/4</div>
   <h1 class="qtext">ご連絡はどの方法がよいですか?</h1>
   <p class="qnote">ご登録の連絡先: 090-XXXX-XXXX(デモ表示)</p>
-  <div class="choices">${choiceBtns(['電話','LINE','メール'],'contact','STAFF')}</div>`},
+  <div class="choices">${choiceBtns(['電話','LINE','メール'],'contact','HANDOVER')}</div>`},
+
+HANDOVER:{n:'お渡しください', p:21, html:()=>`
+  <div class="doneWrap">
+    <div class="circle" style="background:var(--navy)">✓</div>
+    <h2>ご回答ありがとうございました</h2>
+    <p>iPadを<b>スタッフにお渡しください。</b><br>内容を確認いたします。</p>
+    <button class="ghost" style="width:100%; max-width:420px; margin-top:24px" onclick="go('PIN')">スタッフ確認へ(スタッフ操作)</button>
+  </div>`},
+
+PIN:{n:'スタッフ解錠', p:21, html:()=>`
+  <div class="qnum">スタッフ専用</div>
+  <h1 class="qtext">暗証番号を入力してください。</h1>
+  <p class="qnote">この先はスタッフ用の画面です。(デモの番号: 0632)</p>
+  <div id="padView">－ － － －</div>
+  <p id="pinErr" style="display:none; color:#c00000; text-align:center; font-size:18px; font-weight:700">番号が違います。もう一度入力してください。</p>
+  <div class="pad">${[1,2,3,4,5,6,7,8,9,'←',0,'OK'].map(k=>`<button onclick="pinKey('${k}')">${k}</button>`).join('')}</div>`},
 
 STAFF:{n:'スタッフ確認', p:21, html:()=>{
   const rows=[['ご利用','first'],['損傷部位','partsView'],['程度','level'],['走行','drivable'],['原因','cause'],['事故日','accDate'],['過失割合','fault'],['警察届出','police'],['お支払い','payment'],['実費のご希望','wishSelf'],['保険','insSide'],['保険会社','insCo'],['車両保険','vehicleIns'],['レンタカー特約','rentalRider'],['修理のお気持ち','intent'],['一番のご希望','goal'],['代車','courtesy'],['コーティング','coating'],['仕上がり','delivery'],['連絡方法','contact']];
@@ -318,25 +343,33 @@ STAFF:{n:'スタッフ確認', p:21, html:()=>{
   <h1 class="qtext">回答の確認と軌道修正</h1>
   <p class="qnote">行をタップするとその質問に戻って修正できます。</p>
   <div class="staffList">${rows.filter(r=>A[r[1]]).map(r=>`<div class="srow" onclick="jump('${r[1]}')"><span class="k">${r[0]}</span><span class="v">${esc(String(A[r[1]]))}</span></div>`).join('')}</div>
-  ${t?`<div class="typebox"><h3>類型 ${t[0]}: ${t[1]}</h3><p>${t[2]}</p>
+  ${t?`<div class="typebox"><h3>類型 ${t[0]}: ${t[1]}</h3><p style="color:var(--gold-soft); font-size:16px">判定根拠: ${t[3]}</p><p>${t[2]}</p>
+  ${t[4]?`<div style="background:rgba(255,255,255,.12); border-left:4px solid var(--gold-soft); border-radius:8px; padding:12px 14px; margin-top:10px"><p style="margin:0 0 4px; color:var(--gold-soft); font-size:15px; font-weight:700">こんな感じでお話しください(説明例)</p><p style="margin:0; font-size:18px; line-height:1.8">${t[4]}</p></div>`:''}
   <p class="ban">禁止事項: 交渉の指南はしない/金額の吊り上げに協力しない/保険会社の批判はしない。怒らず主張せず、質問で語らせ、根拠を静かに置く。</p></div>`:''}
   <button class="primary" style="width:100%" onclick="go('PROMISE')">確認しました → お客様のサインへ</button>`;}},
 
-PROMISE:{n:'お約束とサイン', p:22, html:()=>`
-  <div class="promise">
+PROMISE:{n:'お約束とサイン', p:22, html:()=>{
+  const rows=[['ご利用','first'],['損傷部位','partsView'],['程度','level'],['走行','drivable'],['原因','cause'],['事故日','accDate'],['過失割合','fault'],['警察届出','police'],['お支払い','payment'],['実費のご希望','wishSelf'],['保険','insSide'],['保険会社','insCo'],['車両保険','vehicleIns'],['レンタカー特約','rentalRider'],['修理のお気持ち','intent'],['一番のご希望','goal'],['代車','courtesy'],['コーティング','coating'],['仕上がり','delivery'],['連絡方法','contact']];
+  A.partsView=(A.parts||[]).join('・');
+  return `
+  <div class="qnum">最終確認</div>
+  <h1 class="qtext">ご回答の最終確認</h1>
+  <p class="qnote">スタッフとご一緒に、1項目ずつご確認ください。直したい項目はタップすると戻れます。</p>
+  <div class="staffList">${rows.filter(r=>A[r[1]]).map(r=>`<div class="srow" onclick="jump('${r[1]}')"><span class="k">${r[0]}</span><span class="v">${esc(String(A[r[1]]))}</span></div>`).join('')}</div>
+  <div class="promise" style="margin-top:22px">
     <h3>お客様への 3つのお約束</h3>
     <ol>
-      <li>修理に必要な<b>証拠と根拠</b>(お車の写真・理由の通った見積書)は、当店が完璧にご用意します。ご安心ください。</li>
-      <li><b>性能・安全性・耐久性・経済性・美観</b>をきちんと回復する修理をいたします。</li>
-      <li>ご不明な点は、いつでも何度でもご説明いたします。</li>
+      <li>お車のお写真やお見積りなど、修理に必要なものは<b>すべて当店がご用意します。</b>難しい手続きをお客様にお願いすることはありません。どうぞご安心ください。</li>
+      <li>修理の基本であります<b>性能・安全性・耐久性・経済性・美観</b>を、きちんと元どおりに回復する修理をいたします。</li>
+      <li>ご不明な点は、<b>いつでも何度でも</b>ご説明いたします。</li>
     </ol>
   </div>
-  <p class="qnote" style="margin-top:18px; font-size:20px; color:var(--ink)">本日お答えいただいた内容に間違いがないことを確認し、下の枠にサインをお願いいたします。</p>
+  <p class="qnote" style="margin-top:18px; font-size:20px; color:var(--ink)">ご確認いただけましたら、下の枠にサインをお願いいたします。</p>
   <canvas id="signPad"></canvas>
   <div class="signRow">
     <button class="ghost" onclick="clearSign()">書き直す</button>
     <button class="primary" style="flex:2; margin-top:0" onclick="go('DONE')">サインしました → 受付完了</button>
-  </div>`,
+  </div>`;},
   after:()=>initSign()},
 
 DONE:{n:'完了', p:23, html:()=>`
@@ -357,6 +390,19 @@ function togglePart(t){
   render();
 }
 let padBuf='';
+let pinBuf='';
+function pinKey(k){
+  const err=document.getElementById('pinErr');
+  if(k==='←'){pinBuf=pinBuf.slice(0,-1);}
+  else if(k==='OK'){
+    if(pinBuf==='0632'){pinBuf=''; go('STAFF'); return;}
+    if(err) err.style.display='block';
+    pinBuf='';
+  }
+  else if(pinBuf.length<4){pinBuf+=k; if(err) err.style.display='none';}
+  const v=document.getElementById('padView');
+  if(v) v.textContent=(pinBuf.replace(/./g,'●')+'－－－－').slice(0,4).split('').join(' ');
+}
 function padKey(k){
   if(k==='←'){padBuf=padBuf.slice(0,-1);}
   else if(k==='OK'){ if(padBuf.length===4){A.tel4=padBuf; A.custName='(候補: 山田太郎 様 ― デモ)'; go('Q3');} return; }
