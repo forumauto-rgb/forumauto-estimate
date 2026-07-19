@@ -154,7 +154,11 @@ function pick(key, val, next){ A[key]=val; go(routeAfter(key, val, next)); }
 
 // 分岐ロジック
 function routeAfter(key, val, next){
-  if(key==='cause'){ return (val==='相手のいる事故'||val.startsWith('駐車中')) ? 'Q7' : 'Q10'; }
+  if(key==='cause'){
+    if(val==='相手のいる事故') return 'QK';
+    return val.startsWith('駐車中') ? 'Q7' : 'Q10';
+  }
+  if(key==='injury'){ return val==='けがはなかった' ? 'Q7' : 'QKNOTE'; }
   if(key==='police'){ return val==='まだ' ? 'Q9NOTE' : 'Q9b'; }
   if(key==='payment'){
     if(val==='自分で支払う(実費)') return 'Q11a';
@@ -245,17 +249,32 @@ Q6:{n:'原因', p:6, html:()=>`
   <div class="choices">${choiceBtns(['自分でぶつけた・こすった','相手のいる事故','駐車中にぶつけられた(当て逃げ含む)','台風・ひょうなどの自然災害','その他・わからない'],'cause','Q10')}</div>`},
 
 Q7:{n:'事故の日', p:7, html:()=>`
-  <div class="qnum">事故のこと 1/3</div>
+  <div class="qnum">事故のこと</div>
   <h1 class="qtext">事故はいつ起きましたか?</h1>
   <div class="choices">${choiceBtns(['今日','昨日','1週間以内','それより前'],'accDate','Q8')}</div>`},
 
+QK:{n:'お体の確認', p:7, html:()=>`
+  <div class="qnum">まず、お体のこと</div>
+  <h1 class="qtext">事故の際、お体は大丈夫でしたか?</h1>
+  <p class="qnote">お車のことの前に、いちばん大切なことからおうかがいします。</p>
+  <div class="choices">${choiceBtns(['けがはなかった','少し痛み・違和感がある','けがをした(通院中・治療予定)'],'injury','Q7')}</div>`},
+
+QKNOTE:{n:'お体のご案内', p:7, html:()=>`
+  <div class="qnum">どうぞお大事になさってください</div>
+  <h1 class="qtext">お体がいちばん大切です。</h1>
+  <div class="alertbox" style="background:#fdf6e8; border-color:var(--gold); color:var(--ink)">
+    むちうちなどは、あとから痛みが出ることがよくあります。<b>早めに病院で診てもらうこと</b>をおすすめします。<br><br>
+    治療が必要な場合の<b>人身事故への切り替え</b>や保険のお手続きも、スタッフが分かりやすくご案内いたしますので、ご安心ください。
+  </div>
+  <button class="primary" style="width:100%" onclick="go('Q7')">わかりました →</button>`},
+
 Q8:{n:'過失割合', p:8, html:()=>`
-  <div class="qnum">事故のこと 2/3</div>
+  <div class="qnum">事故のこと</div>
   <h1 class="qtext">過失割合(どちらがどれだけ悪いか)は決まっていますか?</h1>
   <div class="choices">${choiceBtns(['相手が全部悪い(もらい事故・100対0)','自分にも過失がある','まだ決まっていない','わからない'],'fault','Q9')}</div>`},
 
 Q9:{n:'警察届出', p:9, html:()=>`
-  <div class="qnum">事故のこと 3/3</div>
+  <div class="qnum">事故のこと</div>
   <h1 class="qtext">警察への届け出はお済みですか?</h1>
   <div class="choices">${choiceBtns(['届け出済み','まだ','わからない'],'police','Q10')}</div>`},
 
@@ -354,22 +373,25 @@ PIN:{n:'スタッフ解錠', p:21, html:()=>`
   <div class="pad">${[1,2,3,4,5,6,7,8,9,'←',0,'OK'].map(k=>`<button onclick="pinKey('${k}')">${k}</button>`).join('')}</div>`},
 
 STAFF:{n:'スタッフ確認', p:21, html:()=>{
-  const rows=[['ご利用','first'],['損傷部位','partsView'],['程度','level'],['走行','drivable'],['原因','cause'],['事故日','accDate'],['過失割合','fault'],['警察届出','police'],['お支払い','payment'],['実費のご希望','wishSelf'],['相手の保険','oppIns'],['保険会社','insCo'],['車両保険','vehicleIns'],['レンタカー特約','rentalRider'],['弁護士特約','lawyerRider'],['修理のお気持ち','intent'],['一番のご希望','goal'],['代車','courtesy'],['コーティング','coating'],['仕上がり','delivery'],['連絡方法','contact']];
+  const rows=[['ご利用','first'],['お体(けが)','injury'],['損傷部位','partsView'],['程度','level'],['走行','drivable'],['原因','cause'],['事故日','accDate'],['過失割合','fault'],['警察届出','police'],['お支払い','payment'],['実費のご希望','wishSelf'],['相手の保険','oppIns'],['保険会社','insCo'],['車両保険','vehicleIns'],['レンタカー特約','rentalRider'],['弁護士特約','lawyerRider'],['修理のお気持ち','intent'],['一番のご希望','goal'],['代車','courtesy'],['コーティング','coating'],['仕上がり','delivery'],['連絡方法','contact']];
   A.partsView=(A.parts||[]).join('・');
   const t=decideType();
   const oppCase=(A.cause==='相手のいる事故'||(A.cause&&A.cause.startsWith('駐車中')));
+  const injured=(A.injury&&A.injury!=='けがはなかった');
+  const injuryNote=injured?`<div class="alertbox" style="margin-top:14px; background:#fdf0ee; border-color:#c0392b; color:#7a1d12"><b>人身対応メモ(最優先)</b>: お体を気づかう声かけを最初に。むちうちは後から出るため早めの受診を勧める。治療する場合は人身事故への切り替え(警察届出)をご案内。人身傷害・搭乗者傷害特約と自賠責の確認。弁護士特約は治療費・慰謝料の請求にも使える。</div>`:'';
   const lawyerNote=oppCase?`<p style="color:var(--gold-soft); font-size:16px">先手メモ: 弁護士特約=${esc(A.lawyerRider||'未確認')}。相手(または相手損保)の対応が悪い場合に備え、特約があればいつでも先手が打てる。</p>`:'';
   return `<div class="qnum">スタッフ確認画面(お客様には見せない画面)</div>
   <h1 class="qtext">回答の確認と軌道修正</h1>
   <p class="qnote">行をタップするとその質問に戻って修正できます。</p>
   <div class="staffList">${rows.filter(r=>A[r[1]]).map(r=>`<div class="srow" onclick="jump('${r[1]}')"><span class="k">${r[0]}</span><span class="v">${esc(String(A[r[1]]))}</span></div>`).join('')}</div>
+  ${injuryNote}
   ${t?`<div class="typebox"><h3>類型 ${t[0]}: ${t[1]}</h3><p style="color:var(--gold-soft); font-size:16px">判定根拠: ${t[3]}</p>${lawyerNote}<p>${t[2]}</p>
   ${t[4]?`<div style="background:rgba(255,255,255,.12); border-left:4px solid var(--gold-soft); border-radius:8px; padding:12px 14px; margin-top:10px"><p style="margin:0 0 4px; color:var(--gold-soft); font-size:15px; font-weight:700">こんな感じでお話しください(説明例)</p><p style="margin:0; font-size:18px; line-height:1.8">${t[4]}</p></div>`:''}
   <p class="ban">禁止事項: 交渉の指南はしない/金額の吊り上げに協力しない/保険会社の批判はしない。怒らず主張せず、質問で語らせ、根拠を静かに置く。</p></div>`:''}
   <button class="primary" style="width:100%" onclick="go('PROMISE')">確認しました → お客様のサインへ</button>`;}},
 
 PROMISE:{n:'お約束とサイン', p:22, html:()=>{
-  const rows=[['ご利用','first'],['損傷部位','partsView'],['程度','level'],['走行','drivable'],['原因','cause'],['事故日','accDate'],['過失割合','fault'],['警察届出','police'],['お支払い','payment'],['実費のご希望','wishSelf'],['相手の保険','oppIns'],['保険会社','insCo'],['車両保険','vehicleIns'],['レンタカー特約','rentalRider'],['弁護士特約','lawyerRider'],['修理のお気持ち','intent'],['一番のご希望','goal'],['代車','courtesy'],['コーティング','coating'],['仕上がり','delivery'],['連絡方法','contact']];
+  const rows=[['ご利用','first'],['お体(けが)','injury'],['損傷部位','partsView'],['程度','level'],['走行','drivable'],['原因','cause'],['事故日','accDate'],['過失割合','fault'],['警察届出','police'],['お支払い','payment'],['実費のご希望','wishSelf'],['相手の保険','oppIns'],['保険会社','insCo'],['車両保険','vehicleIns'],['レンタカー特約','rentalRider'],['弁護士特約','lawyerRider'],['修理のお気持ち','intent'],['一番のご希望','goal'],['代車','courtesy'],['コーティング','coating'],['仕上がり','delivery'],['連絡方法','contact']];
   A.partsView=(A.parts||[]).join('・');
   return `
   <div class="qnum">最終確認</div>
@@ -451,7 +473,7 @@ function initSign(){
 function clearSign(){const c=document.getElementById('signPad'); c.getContext('2d').clearRect(0,0,c.width,c.height);}
 
 // ===== 画面制御 =====
-const KEY2Q={first:'Q1',partsView:'Q3',level:'Q4',drivable:'Q5',cause:'Q6',accDate:'Q7',fault:'Q8',police:'Q9',oppIns:'Q9b',lawyerRider:'Q9c',payment:'Q10',wishSelf:'Q11a',insCo:'Q12',vehicleIns:'Q13',rentalRider:'Q14',intent:'Q15',goal:'Q16',courtesy:'Q17',coating:'Q18',delivery:'Q19',contact:'Q20'};
+const KEY2Q={first:'Q1',partsView:'Q3',level:'Q4',drivable:'Q5',cause:'Q6',injury:'QK',accDate:'Q7',fault:'Q8',police:'Q9',oppIns:'Q9b',lawyerRider:'Q9c',payment:'Q10',wishSelf:'Q11a',insCo:'Q12',vehicleIns:'Q13',rentalRider:'Q14',intent:'Q15',goal:'Q16',courtesy:'Q17',coating:'Q18',delivery:'Q19',contact:'Q20'};
 function jump(key){ if(KEY2Q[key]) go(KEY2Q[key]); }
 function go(id){ history.push(current); current=id; render(); window.scrollTo(0,0); }
 function goBack(){ if(history.length){ current=history.pop(); render(); } }
