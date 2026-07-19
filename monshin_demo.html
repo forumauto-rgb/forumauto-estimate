@@ -155,12 +155,11 @@ function pick(key, val, next){ A[key]=val; go(routeAfter(key, val, next)); }
 // 分岐ロジック
 function routeAfter(key, val, next){
   if(key==='cause'){ return (val==='相手のいる事故'||val.startsWith('駐車中')) ? 'Q7' : 'Q10'; }
-  if(key==='police'){ return val==='まだ' ? 'Q9NOTE' : 'Q10'; }
+  if(key==='police'){ return val==='まだ' ? 'Q9NOTE' : 'Q9b'; }
   if(key==='payment'){
     if(val==='自分で支払う(実費)') return 'Q11a';
-    return (A.cause==='相手のいる事故'||(A.cause&&A.cause.startsWith('駐車中'))) ? 'Q11b' : 'Q12';
+    return 'Q12';
   }
-  if(key==='rentalRider'){ return (A.cause==='相手のいる事故'||(A.cause&&A.cause.startsWith('駐車中'))) ? 'Q14b' : 'Q15'; }
   if(key==='intent'){ return (A.fault && A.fault.startsWith('相手が全部悪い')) ? 'Q16' : 'Q17'; }
   if(key==='wishSelf'){ return 'Q17'; }
   return next;
@@ -173,8 +172,11 @@ function decideType(){
   if(A.oppIns==='入っていない(無保険)'){
     if(vi==='入っている') return ['I','無保険車対応型(車両保険あり)','相手が無保険。お客様は車両保険加入済みなので、車両保険先行で修理を進め、相手への請求(求償)は損保に任せる。お客様が相手とやり取りする必要はない。',R(['相手=無保険','車両保険=入っている']),
     '「相手の方が保険に入っていなくても、ご安心ください。○○様は車両保険にご加入ですので、まずご自分の車両保険で先に修理を進められます。そのあと相手の方への請求は保険会社が行いますので、○○様が相手とやり取りする必要はありません。悩まれることは何もありませんよ。」'];
-    return ['I','無保険車対応型(車両保険なし)','相手が無保険で車両保険もなし。最悪、全額自己負担の可能性。弁護士費用特約の有無を確認し、あれば相手への請求を弁護士に任せる先手を打つ。',R(['相手=無保険','車両保険='+(vi||'なし・不明')]),
-    '「正直に申し上げますと、相手の方が無保険の場合、最悪はご自身のお支払いになる可能性があります。ですので先に確認させてください。弁護士費用特約は付いていらっしゃいますか?付いていれば、相手への請求を費用の心配なく弁護士さんに任せられます。先に手を打っておけば、あとで慌てることはありません。当店はどちらの場合でも、損害をきちんと証明するお見積りとお写真をご用意します。」'];
+    const hasLawyer=(A.lawyerRider==='付いている');
+    return ['I','無保険車対応型(車両保険なし)','相手が無保険で車両保険もなし。最悪、全額自己負担の可能性。弁護士費用特約があれば相手への請求を弁護士に任せる先手を打つ。無ければ証券を一緒に確認。',R(['相手=無保険','車両保険='+(vi||'なし・不明'),'弁護士特約='+(A.lawyerRider||'未確認')]),
+    hasLawyer?
+    '「正直に申し上げますと、相手の方が無保険の場合、最悪はご自身のお支払いになる可能性があります。ただ、○○様は弁護士費用特約が付いていますので、相手への請求を費用の心配なく弁護士さんに任せられます。先に手を打っておけば、あとで慌てることはありません。当店は損害をきちんと証明するお見積りとお写真をご用意します。」':
+    '「正直に申し上げますと、相手の方が無保険の場合、最悪はご自身のお支払いになる可能性があります。まず保険証券を一緒に確認させてください。弁護士費用特約が付いていれば、相手への請求を費用の心配なく弁護士さんに任せられます。特約が無い場合でも、当店で損害をきちんと証明するお見積りとお写真をご用意して、打てる備えはすべて先に打っておきましょう。」'];
   }
   if(f.startsWith('相手が全部悪い')){
     if(it.startsWith('修理せず')) return ['C','実損害見積型','修理しなくても実損害の賠償は正当な権利。実損害見積を作成して渡す。上乗せ査定は不可の線引きを明確に。',R(['過失=100対0','お気持ち=修理せず賠償のみ']),
@@ -261,22 +263,28 @@ Q9NOTE:{n:'届出のご案内', p:9, html:()=>`
   <div class="qnum">ご案内</div>
   <h1 class="qtext">警察への届け出について</h1>
   <div class="alertbox">保険のご利用には「交通事故証明書」が必要です。届け出がまだの場合は、スタッフが手順をご案内いたしますので、ご安心ください。</div>
-  <button class="primary" style="width:100%" onclick="go('Q10')">わかりました →</button>`},
+  <button class="primary" style="width:100%" onclick="go('Q9b')">わかりました →</button>`},
+
+Q9b:{n:'相手の保険', p:9, html:()=>`
+  <div class="qnum">事故のこと</div>
+  <h1 class="qtext">相手の方は、保険に入っていますか?</h1>
+  <div class="choices">${choiceBtns(['入っている','入っていない(無保険)','わからない(当て逃げ・相手不明を含む)'],'oppIns','Q9c')}</div>`},
+
+Q9c:{n:'弁護士特約', p:9, html:()=>`
+  <div class="qnum">事故のこと</div>
+  <h1 class="qtext">ご自分の保険に、弁護士費用特約は付いていますか?</h1>
+  <p class="qnote">相手の方とのやり取りを、費用の心配なく弁護士に任せられる特約です。</p>
+  <div class="choices">${choiceBtns(['付いている','付いていない','わからない'],'lawyerRider','Q10')}</div>`},
 
 Q10:{n:'お支払い', p:10, html:()=>`
   <div class="qnum">お支払いについて</div>
   <h1 class="qtext">修理代のお支払いは、どのようにお考えですか?</h1>
-  <div class="choices">${choiceBtns(['自分で支払う(実費)','保険を使いたい','保険を使うか迷っている'],'payment','Q11b')}</div>`},
+  <div class="choices">${choiceBtns(['自分で支払う(実費)','保険を使いたい','保険を使うか迷っている'],'payment','Q12')}</div>`},
 
 Q11a:{n:'ご希望(実費)', p:11, html:()=>`
   <div class="qnum">ご希望</div>
   <h1 class="qtext">お直しについて、ご希望に一番近いものはどれですか?</h1>
   <div class="choices">${choiceBtns(['できるだけ安く直したい','きれいにしっかり直したい','まずは見積金額を見て決めたい'],'wishSelf','Q17')}</div>`},
-
-Q11b:{n:'相手の保険', p:11, html:()=>`
-  <div class="qnum">保険のこと</div>
-  <h1 class="qtext">相手の方は、保険に入っていますか?</h1>
-  <div class="choices">${choiceBtns(['入っている','入っていない(無保険)','わからない'],'oppIns','Q12')}</div>`},
 
 Q12:{n:'保険会社', p:12, html:()=>`
   <div class="qnum">保険のこと</div>
@@ -293,15 +301,9 @@ Q14:{n:'レンタカー特約', p:14, html:()=>`
   <h1 class="qtext">レンタカー(代車)特約は付いていますか?</h1>
   <div class="choices">${choiceBtns(['付いている','付いていない','わからない'],'rentalRider','Q15')}</div>`},
 
-Q14b:{n:'弁護士特約', p:14, html:()=>`
-  <div class="qnum">保険のこと</div>
-  <h1 class="qtext">弁護士費用特約は付いていますか?</h1>
-  <p class="qnote">相手の方とのやり取りを、費用の心配なく弁護士に任せられる特約です。</p>
-  <div class="choices">${choiceBtns(['付いている','付いていない','わからない'],'lawyerRider','Q15')}</div>`},
-
 Q15:{n:'修理のお気持ち', p:15, html:()=>{
   const opts=['修理したい','金額を見てから決めたい'];
-  if(A.cause==='相手のいる事故') opts.push('修理せず賠償金だけ受け取りたい');
+  if(A.cause==='相手のいる事故'||(A.cause&&A.cause.startsWith('駐車中'))) opts.push('修理せず賠償金だけ受け取りたい');
   return `<div class="qnum">保険のこと</div>
   <h1 class="qtext">お車の修理について、お気持ちに一番近いものはどれですか?</h1>
   <div class="choices">${choiceBtns(opts,'intent','Q17')}</div>`;}},
@@ -449,7 +451,7 @@ function initSign(){
 function clearSign(){const c=document.getElementById('signPad'); c.getContext('2d').clearRect(0,0,c.width,c.height);}
 
 // ===== 画面制御 =====
-const KEY2Q={first:'Q1',partsView:'Q3',level:'Q4',drivable:'Q5',cause:'Q6',accDate:'Q7',fault:'Q8',police:'Q9',payment:'Q10',wishSelf:'Q11a',oppIns:'Q11b',insCo:'Q12',vehicleIns:'Q13',rentalRider:'Q14',lawyerRider:'Q14b',intent:'Q15',goal:'Q16',courtesy:'Q17',coating:'Q18',delivery:'Q19',contact:'Q20'};
+const KEY2Q={first:'Q1',partsView:'Q3',level:'Q4',drivable:'Q5',cause:'Q6',accDate:'Q7',fault:'Q8',police:'Q9',oppIns:'Q9b',lawyerRider:'Q9c',payment:'Q10',wishSelf:'Q11a',insCo:'Q12',vehicleIns:'Q13',rentalRider:'Q14',intent:'Q15',goal:'Q16',courtesy:'Q17',coating:'Q18',delivery:'Q19',contact:'Q20'};
 function jump(key){ if(KEY2Q[key]) go(KEY2Q[key]); }
 function go(id){ history.push(current); current=id; render(); window.scrollTo(0,0); }
 function goBack(){ if(history.length){ current=history.pop(); render(); } }
