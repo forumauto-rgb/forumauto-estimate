@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="apple-touch-icon-dashboard.png">
+<title>点検チェック｜フォーラムオート</title>
+<style>
+:root{
+  --navy:#1a3a6b; --navy2:#12274a;
+  --red:#c8251b; --red2:#fbe9e7; --red3:#f6d4d0;
+  --green:#157a47; --green2:#e6f4ec;
+  --orange:#c05c08; --orange2:#fdefe0;
+  --border:#e5e7eb; --border2:#d1d5db;
+  --txt:#111827; --txt2:#4b5563; --txt3:#9ca3af;
+  --bg:#eef0f4;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html{-webkit-text-size-adjust:100%;}
+body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;}
+#appWrap{max-width:480px;margin:0 auto;background:#fff;min-height:100vh;box-shadow:0 0 24px rgba(0,0,0,0.06);}
+
+/* ── 案件選択画面 ── */
+.cs-header{background:var(--navy);color:#fff;padding:16px;font-size:16px;font-weight:800;}
+.case-list{padding:12px;}
+.case-row{background:#fff;border:2px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;cursor:pointer;}
+.case-row:active{background:#f3f6fb;}
+.case-row-name{font-size:16px;font-weight:800;color:var(--navy);}
+.case-row-sub{font-size:13px;color:var(--txt2);margin-top:3px;}
+.case-row-no{font-size:12px;color:var(--txt3);margin-top:4px;}
+.loading-msg,.error-msg{text-align:center;padding:30px;color:var(--txt3);font-size:13px;}
+.error-msg{color:var(--red);}
+
+/* ── メイン画面ヘッダー ── */
+.top-header{position:sticky;top:0;z-index:20;background:var(--navy);color:#fff;padding:12px 16px;}
+.top-header .case-name{font-size:15px;font-weight:800;}
+.top-header .case-sub{font-size:12px;opacity:.85;margin-top:2px;}
+.overall-progress{display:inline-block;margin-top:8px;padding:5px 14px;border-radius:20px;background:var(--red);color:#fff;font-size:14px;font-weight:800;}
+.overall-progress.all-done{background:var(--green);}
+.role-indicator{margin-top:6px;font-size:12px;font-weight:700;opacity:.9;}
+.role-indicator.role-indicator-warn{color:#ffd54f;opacity:1;}
+
+.role-bar{background:#fff;padding:12px 16px;border-bottom:1px solid var(--border);}
+.role-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.role-row:last-of-type{margin-bottom:0;}
+.role-row label{font-size:13px;font-weight:700;color:var(--txt2);flex:0 0 96px;}
+.role-row select{flex:1;min-height:46px;font-size:15px;padding:8px 10px;border:2px solid var(--border2);border-radius:8px;background:#fff;}
+.role-warning{margin-top:8px;padding:8px 10px;background:var(--orange2);color:var(--orange);border-radius:8px;font-size:12px;font-weight:700;line-height:1.5;}
+
+.add-bar{padding:12px 16px;background:#fff;border-bottom:8px solid var(--bg);}
+.add-btn{width:100%;min-height:56px;border:2px dashed var(--navy);border-radius:12px;background:#fff;color:var(--navy);font-size:16px;font-weight:800;cursor:pointer;}
+.add-btn:active{background:#eef2fa;}
+
+.empty-msg{text-align:center;padding:40px 20px;color:var(--txt3);font-size:14px;line-height:1.7;}
+.fatal-error{margin:16px;padding:16px;background:var(--red2);border:2px solid var(--red3);border-radius:10px;color:var(--red);font-size:13px;text-align:center;}
+.fatal-error button{margin-top:10px;min-height:44px;padding:0 16px;border:none;border-radius:8px;background:var(--red);color:#fff;font-weight:700;font-size:13px;}
+
+/* ── アコーディオン ── */
+.accordion{border-bottom:8px solid var(--bg);}
+.accordion-head{display:flex;align-items:center;gap:8px;padding:14px 16px;background:#fff;cursor:pointer;}
+.acc-title{flex:1;font-size:16px;font-weight:800;color:var(--txt);}
+.acc-progress{font-size:13px;font-weight:800;padding:4px 12px;border-radius:14px;background:var(--red2);color:var(--red);white-space:nowrap;}
+.accordion-done .acc-progress{background:var(--green2);color:var(--green);}
+.acc-del{background:none;border:none;font-size:16px;cursor:pointer;padding:6px;color:var(--txt3);}
+.acc-arrow{font-size:12px;color:var(--txt3);width:16px;text-align:center;}
+
+/* ── 項目行 ── */
+.item-row{display:flex;gap:10px;padding:14px 16px;border-top:1px solid var(--border);border-left:5px solid var(--red3);background:var(--red2);}
+.item-row-done{border-left-color:var(--green);background:var(--green2);}
+.item-info{flex:1 1 54%;min-width:0;}
+.item-name{font-size:18px;font-weight:700;line-height:1.4;color:var(--txt);}
+.req-badge{display:inline-block;background:var(--orange2);color:var(--orange);font-size:12px;font-weight:800;padding:2px 8px;border-radius:10px;margin-left:6px;white-space:nowrap;}
+.thumb-row{display:flex;flex-wrap:wrap;margin-top:8px;}
+.thumb{width:56px;height:56px;object-fit:cover;border-radius:8px;border:2px solid var(--border2);margin:0 6px 6px 0;cursor:pointer;background:#fff;}
+.thumb-error{width:56px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;color:var(--red);border:2px dashed var(--red);border-radius:8px;font-size:10px;font-weight:800;cursor:pointer;margin:0 6px 6px 0;line-height:1.3;}
+.item-pending{margin-top:8px;font-size:12px;font-weight:700;color:var(--txt2);}
+.item-error{margin-top:8px;padding:8px;background:#fff;border:2px solid var(--red);border-radius:8px;font-size:12px;font-weight:700;color:var(--red);line-height:1.6;}
+.retry-btn{display:block;margin-top:6px;min-height:36px;padding:0 14px;border:none;border-radius:6px;background:var(--red);color:#fff;font-weight:800;font-size:12px;}
+
+.item-actions{flex:0 0 40%;display:flex;flex-direction:column;gap:10px;}
+.chk-btn{min-height:60px;width:100%;border-radius:10px;border:2px solid var(--border2);background:#fff;color:var(--txt);font-size:14px;font-weight:800;line-height:1.35;cursor:pointer;padding:6px 4px;}
+.chk-btn:active{opacity:.8;}
+.chk-btn-done{background:var(--green2);border-color:var(--green);color:var(--green);}
+.chk-btn-locked{background:var(--orange2);border-color:var(--orange);color:var(--orange);}
+.chk-btn-time{display:block;font-size:11px;font-weight:600;margin-top:2px;}
+.chk-btn-photo{background:#fff;border-color:var(--navy);color:var(--navy);}
+
+/* ── モーダル ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:flex-end;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:#fff;border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;}
+.modal h3{font-size:17px;font-weight:800;margin-bottom:14px;color:var(--navy);}
+.modal select{width:100%;min-height:48px;font-size:15px;padding:8px 10px;border:2px solid var(--border2);border-radius:8px;margin-bottom:16px;}
+.modal-btns{display:flex;gap:10px;}
+.modal-btns button{flex:1;min-height:52px;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer;}
+.mb-cancel{background:#f1f3f5;color:var(--txt2);}
+.mb-confirm{background:var(--navy);color:#fff;}
+.mb-confirm:disabled{opacity:.5;}
+
+/* ── ライトボックス ── */
+.lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:200;align-items:center;justify-content:center;padding:16px;}
+.lightbox.open{display:flex;}
+.lightbox img{max-width:100%;max-height:100%;border-radius:8px;}
+
+.notify{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.25);opacity:0;transition:opacity .3s;z-index:300;pointer-events:none;max-width:90vw;text-align:center;}
+.notify.show{opacity:1;}
+.notify.err{background:var(--red);}
+</style>
+</head>
+<body>
+
+<div id="appWrap">
+
+  <!-- 画面1: 案件選択（IDパラメータなしのとき） -->
+  <div id="caseSelectScreen" style="display:none;">
+    <div class="cs-header">🔧 点検チェック - 案件を選択</div>
+    <div id="caseListArea" class="case-list"><div class="loading-msg">読み込み中...</div></div>
+  </div>
+
+  <!-- 画面2: メイン点検チェック画面 -->
+  <div id="mainScreen" style="display:none;">
+    <div class="top-header">
+      <div class="case-name" id="hdrCaseName">---</div>
+      <div class="case-sub" id="hdrCaseSub">---</div>
+      <div class="overall-progress" id="overallProgress">全体 0/0完了</div>
+      <div class="role-indicator" id="roleIndicator">👷 未設定 ／ 🔍 未設定</div>
+    </div>
+
+    <div class="role-bar">
+      <div class="role-row">
+        <label>作業者として</label>
+        <select id="workerRoleSelect" onchange="onRoleChange()"><option value="">読み込み中...</option></select>
+      </div>
+      <div class="role-row">
+        <label>検査者として</label>
+        <select id="inspectorRoleSelect" onchange="onRoleChange()"><option value="">読み込み中...</option></select>
+      </div>
+      <div class="role-warning" id="roleWarning" style="display:none;">⚠ 作業者と検査者が同じ人になっています。項目ごとの検査✓は本人以外が押してください（同一人物の場合は保存時に拒否されます）。</div>
+    </div>
+
+    <div class="add-bar">
+      <button class="add-btn" onclick="openAddWorkTypeModal()">＋ 作業種類を追加</button>
+    </div>
+
+    <div id="fatalError"></div>
+    <div id="accordionList"></div>
+  </div>
+
+</div>
+
+<!-- 作業種類追加モーダル -->
+<div class="modal-bg" id="addWorkTypeModal">
+  <div class="modal">
+    <h3>作業種類を追加</h3>
+    <select id="addWorkTypeSelect"><option value="">読み込み中...</option></select>
+    <div class="modal-btns">
+      <button class="mb-cancel" onclick="closeAddWorkTypeModal()">キャンセル</button>
+      <button class="mb-confirm" id="addWorkTypeConfirmBtn" onclick="confirmAddWorkType()">追加する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 写真拡大ライトボックス -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <img id="lightboxImg" src="">
+</div>
+
+<!-- 撮影用の隠しinput（openPhotoInputで対象項目を切り替えてから起動） -->
+<input type="file" id="photoInput" accept="image/*" capture="environment" multiple style="display:none" onchange="handlePhotoFiles(this.files)">
+
+<div class="notify" id="notify"></div>
+
+<script>
+var SB_URL = 'https://uhppgdwbyrijnqpvusxw.supabase.co';
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVocHBnZHdieXJpam5xcHZ1c3h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NDEyMDksImV4cCI6MjA4OTExNzIwOX0.mJ2GXQUsRZAZ-VL6XTVTz3gfG3MTNtfnWxsIPU_DK60';
+var SB_H = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
+
+var params = new URLSearchParams(location.search);
+var estimateId = params.get('id') || '';
+var estimateNo = params.get('no') || '';
+var custParam  = params.get('cus') || '';
+var carParam   = params.get('car') || '';
+
+var checks = [];        // work_checks（各要素に .photos, _pendingPhotos, _error, _pending, _uploading を付与）
+var staffList = [];
+var recipeList = [];
+var expandedTypes = {};
+var typeOrder = [];
+var currentPhotoTargetId = null;
+
+function esc(s) {
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function fmtTime(iso) {
+  if (!iso) return '';
+  var d = new Date(iso);
+  return (d.getMonth()+1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+function isDone(c) { return !!(c.worker_name && c.inspector_name); }
+function showNotify(msg, isErr) {
+  var el = document.getElementById('notify');
+  el.textContent = msg;
+  el.className = 'notify show' + (isErr ? ' err' : '');
+  clearTimeout(el._t);
+  el._t = setTimeout(function(){ el.classList.remove('show'); }, 3200);
+}
+
+// =========================================================
+// 起動
+// =========================================================
+function init() {
+  if (estimateId) {
+    showMainScreen();
+    loadStaff();
+    loadRecipes();
+    loadChecksAndPhotos();
+  } else {
+    showCaseSelectScreen();
+    loadCaseList();
+  }
+}
+
+function showCaseSelectScreen() {
+  document.getElementById('caseSelectScreen').style.display = 'block';
+  document.getElementById('mainScreen').style.display = 'none';
+}
+function showMainScreen() {
+  document.getElementById('caseSelectScreen').style.display = 'none';
+  document.getElementById('mainScreen').style.display = 'block';
+  document.getElementById('hdrCaseName').textContent = (custParam ? custParam + ' 様' : '---');
+  document.getElementById('hdrCaseSub').textContent = [carParam, estimateNo].filter(Boolean).join('　');
+}
+
+// =========================================================
+// 画面1: 案件選択
+// =========================================================
+async function loadCaseList() {
+  var area = document.getElementById('caseListArea');
+  area.innerHTML = '<div class="loading-msg">🔄 案件を読み込み中...</div>';
+  try {
+    var res = await fetch(SB_URL + '/rest/v1/estimates?select=id,estimate_no,customer_name,car_name,plate,repair_status&repair_status=not.in.(納車済,キャンセル,削除済)&order=estimate_date.desc&limit=50', { headers: SB_H });
+    if (!res.ok) throw new Error(await res.text());
+    var list = await res.json();
+    if (!list.length) { area.innerHTML = '<div class="loading-msg">対象の案件がありません</div>'; return; }
+    area.innerHTML = list.map(function(c) {
+      var id = String(c.id||'').replace(/'/g,"\\'");
+      var no = String(c.estimate_no||'').replace(/'/g,"\\'");
+      var cus = String(c.customer_name||'').replace(/'/g,"\\'");
+      var car = String(c.car_name||'').replace(/'/g,"\\'");
+      return '<div class="case-row" onclick="selectCase(\'' + id + '\',\'' + no + '\',\'' + cus + '\',\'' + car + '\')">'
+        + '<div class="case-row-name">' + esc(c.customer_name||'---') + ' 様</div>'
+        + '<div class="case-row-sub">' + esc(c.car_name||'') + '　' + esc(c.plate||'') + '</div>'
+        + '<div class="case-row-no">' + esc(c.estimate_no||'') + '　' + esc(c.repair_status||'') + '</div>'
+        + '</div>';
+    }).join('');
+  } catch(e) {
+    area.innerHTML = '<div class="error-msg">読み込み失敗: ' + esc(e.message) + '</div>';
+  }
+}
+
+function selectCase(id, no, cus, car) {
+  estimateId = id; estimateNo = no; custParam = cus; carParam = car;
+  try {
+    var url = new URL(location.href);
+    url.searchParams.set('id', id);
+    url.searchParams.set('no', no);
+    history.replaceState(null, '', url.toString());
+  } catch(e) {}
+  showMainScreen();
+  loadStaff();
+  loadRecipes();
+  loadChecksAndPhotos();
+}
+
+// =========================================================
+// 担当者・レシピの読み込み
+// =========================================================
+async function loadStaff() {
+  try {
+    var res = await fetch(SB_URL + '/rest/v1/staff?select=name,dept,status&status=eq.在籍&order=name.asc', { headers: SB_H });
+    if (!res.ok) throw new Error(await res.text());
+    staffList = await res.json();
+    var opts = '<option value="">— 選択してください —</option>' + staffList.map(function(s) {
+      return '<option value="' + esc(s.name) + '">' + esc(s.name) + (s.dept ? '（' + esc(s.dept) + '）' : '') + '</option>';
+    }).join('');
+    document.getElementById('workerRoleSelect').innerHTML = opts;
+    document.getElementById('inspectorRoleSelect').innerHTML = opts;
+    var savedW = localStorage.getItem('fa_wc_worker_name') || '';
+    var savedI = localStorage.getItem('fa_wc_inspector_name') || '';
+    if (savedW) document.getElementById('workerRoleSelect').value = savedW;
+    if (savedI) document.getElementById('inspectorRoleSelect').value = savedI;
+    onRoleChange();
+  } catch(e) {
+    showNotify('担当者一覧の取得に失敗しました: ' + e.message, true);
+  }
+}
+
+function onRoleChange() {
+  var w = document.getElementById('workerRoleSelect').value || '';
+  var i = document.getElementById('inspectorRoleSelect').value || '';
+  localStorage.setItem('fa_wc_worker_name', w);
+  localStorage.setItem('fa_wc_inspector_name', i);
+  var sameName = !!(w && i && w === i);
+  document.getElementById('roleWarning').style.display = sameName ? 'block' : 'none';
+  var ind = document.getElementById('roleIndicator');
+  ind.textContent = '👷 ' + (w || '未設定') + ' ／ 🔍 ' + (i || '未設定');
+  ind.className = 'role-indicator' + (sameName ? ' role-indicator-warn' : '');
+}
+function getWorkerRoleName() { return document.getElementById('workerRoleSelect').value || ''; }
+function getInspectorRoleName() { return document.getElementById('inspectorRoleSelect').value || ''; }
+
+async function loadRecipes() {
+  try {
+    var res = await fetch(SB_URL + '/rest/v1/check_recipes?order=work_type.asc,sort_order.asc', { headers: SB_H });
+    if (!res.ok) throw new Error(await res.text());
+    recipeList = await res.json();
+  } catch(e) {
+    showNotify('点検レシピ一覧の取得に失敗しました: ' + e.message, true);
+  }
+}
+
+// =========================================================
+// 点検データの読み込み
+// =========================================================
+async function loadChecksAndPhotos() {
+  document.getElementById('fatalError').innerHTML = '';
+  document.getElementById('accordionList').innerHTML = '<div class="loading-msg">読み込み中...</div>';
+  try {
+    var res = await fetch(SB_URL + '/rest/v1/work_checks?estimate_id=eq.' + encodeURIComponent(estimateId) + '&order=work_type.asc,sort_order.asc,id.asc', { headers: SB_H });
+    if (!res.ok) throw new Error(await res.text());
+    checks = await res.json();
+    checks.forEach(function(c) { c.photos = []; c._pendingPhotos = []; c._error = null; c._pending = false; c._uploading = false; });
+    await loadAllPhotos();
+    uniqueWorkTypes().forEach(function(t) {
+      var items = checks.filter(function(c) { return c.work_type === t; });
+      expandedTypes[t] = !items.every(isDone);
+    });
+    renderAll();
+  } catch(e) {
+    document.getElementById('accordionList').innerHTML = '';
+    document.getElementById('fatalError').innerHTML = '<div class="fatal-error">点検データの読み込みに失敗しました<br>' + esc(e.message) + '<br><button onclick="loadChecksAndPhotos()">🔁 再読み込み</button></div>';
+  }
+}
+
+async function loadAllPhotos() {
+  if (!checks.length) return;
+  var ids = checks.map(function(c){ return c.id; }).join(',');
+  try {
+    var res = await fetch(SB_URL + '/rest/v1/work_check_photos?work_check_id=in.(' + ids + ')&order=sort_order.asc,id.asc', { headers: SB_H });
+    if (!res.ok) throw new Error(await res.text());
+    var rows = await res.json();
+    var byCheck = {};
+    rows.forEach(function(p) { (byCheck[p.work_check_id] = byCheck[p.work_check_id] || []).push(p); });
+    checks.forEach(function(c) { c.photos = byCheck[c.id] || []; });
+  } catch(e) {
+    showNotify('写真の読み込みに失敗しました: ' + e.message, true);
+  }
+}
+
+function uniqueWorkTypes() {
+  var seen = {}, order = [];
+  checks.slice().sort(function(a,b){ return a.id - b.id; }).forEach(function(c) {
+    if (!seen[c.work_type]) { seen[c.work_type] = true; order.push(c.work_type); }
+  });
+  return order;
+}
+function overallProgress() {
+  return { total: checks.length, done: checks.filter(isDone).length };
+}
+
+// =========================================================
+// 描画（構造が変わる時だけ全体を再描画。✓や写真は部分更新でスクロール維持）
+// =========================================================
+function renderAll() {
+  typeOrder = uniqueWorkTypes();
+  var overall = overallProgress();
+  var oEl = document.getElementById('overallProgress');
+  oEl.textContent = '全体 ' + overall.done + '/' + overall.total + '完了';
+  oEl.className = 'overall-progress' + (overall.total > 0 && overall.done === overall.total ? ' all-done' : '');
+
+  if (!typeOrder.length) {
+    document.getElementById('accordionList').innerHTML = '<div class="empty-msg">まだ作業種類が追加されていません。<br>「＋ 作業種類を追加」から始めてください。</div>';
+    return;
+  }
+
+  var html = typeOrder.map(function(t, idx) {
+    var items = checks.filter(function(c) { return c.work_type === t; });
+    var doneCount = items.filter(isDone).length;
+    var allDone = doneCount === items.length;
+    var open = !!expandedTypes[t];
+    return '<div class="accordion' + (allDone ? ' accordion-done' : '') + '">'
+      + '<div class="accordion-head" id="wc-head-' + idx + '" onclick="toggleAccordion(' + idx + ')">'
+      +   '<span class="acc-title">' + esc(t) + '</span>'
+      +   '<span class="acc-progress" id="wc-progress-' + idx + '">' + doneCount + '/' + items.length + '完了</span>'
+      +   '<button class="acc-del" onclick="event.stopPropagation();deleteWorkType(\'' + t.replace(/'/g,"\\'") + '\')" title="この作業種類を削除">🗑</button>'
+      +   '<span class="acc-arrow">' + (open ? '▲' : '▼') + '</span>'
+      + '</div>'
+      + '<div class="accordion-body" id="wc-body-' + idx + '" style="display:' + (open ? 'block' : 'none') + ';">'
+      +   items.map(itemRowHTML).join('')
+      + '</div>'
+      + '</div>';
+  }).join('');
+  document.getElementById('accordionList').innerHTML = html;
+}
+
+function toggleAccordion(idx) {
+  var t = typeOrder[idx];
+  expandedTypes[t] = !expandedTypes[t];
+  var body = document.getElementById('wc-body-' + idx);
+  var head = document.getElementById('wc-head-' + idx);
+  if (body) body.style.display = expandedTypes[t] ? 'block' : 'none';
+  if (head) {
+    var arrow = head.querySelector('.acc-arrow');
+    if (arrow) arrow.textContent = expandedTypes[t] ? '▲' : '▼';
+  }
+}
+
+function itemRowHTML(c) {
+  var done = isDone(c);
+  var photoBlocked = !!c.photo_required && !(c.photos && c.photos.length);
+
+  var photoLabel = c._uploading ? '📷 送信中…' : ('📷 写真' + (c.photos && c.photos.length ? '（' + c.photos.length + '）' : ''));
+  var photoBtn = '<button class="chk-btn chk-btn-photo" onclick="openPhotoInput(' + c.id + ')" ' + (c._uploading ? 'disabled' : '') + '>' + photoLabel + '</button>';
+
+  var workerBtn = c.worker_name
+    ? '<button class="chk-btn chk-btn-done" onclick="toggleWorkerCheck(' + c.id + ')">👷 ' + esc(c.worker_name) + '<span class="chk-btn-time">' + fmtTime(c.worker_at) + '</span></button>'
+    : '<button class="chk-btn" onclick="toggleWorkerCheck(' + c.id + ')" ' + (c._pending ? 'disabled' : '') + '>👷 作業✓</button>';
+
+  var inspectorBtn = c.inspector_name
+    ? '<button class="chk-btn chk-btn-done" onclick="toggleInspectorCheck(' + c.id + ')">🔍 ' + esc(c.inspector_name) + '<span class="chk-btn-time">' + fmtTime(c.inspector_at) + '</span></button>'
+    : '<button class="chk-btn' + (photoBlocked ? ' chk-btn-locked' : '') + '" onclick="toggleInspectorCheck(' + c.id + ')" ' + (c._pending ? 'disabled' : '') + '>🔍 検査✓' + (photoBlocked ? '<span class="chk-btn-time">📷写真が必要です</span>' : '') + '</button>';
+
+  var thumbs = (c.photos || []).map(function(p) {
+    return '<img class="thumb" src="' + p.data_url + '" onclick="event.stopPropagation();openLightbox(\'' + String(p.data_url).replace(/'/g,"\\'") + '\')">';
+  }).join('');
+  var pendingThumbs = (c._pendingPhotos || []).map(function(pp, i) {
+    return '<div class="thumb-error" onclick="event.stopPropagation();retryPhoto(' + c.id + ',' + i + ')">⚠<br>再送信</div>';
+  }).join('');
+
+  var pendingNote = c._pending ? '<div class="item-pending">処理中…</div>' : '';
+  var errorNote = c._error ? '<div class="item-error">⚠ ' + esc(c._error) + '<button class="retry-btn" onclick="retryCheck(' + c.id + ')">🔁再試行</button></div>' : '';
+
+  return '<div class="item-row' + (done ? ' item-row-done' : '') + '" id="wc-row-' + c.id + '">'
+    + '<div class="item-info">'
+    +   '<div class="item-name">' + esc(c.item_name) + (c.photo_required ? ' <span class="req-badge">📷必須</span>' : '') + '</div>'
+    +   '<div class="thumb-row">' + thumbs + pendingThumbs + '</div>'
+    +   pendingNote + errorNote
+    + '</div>'
+    + '<div class="item-actions">' + photoBtn + workerBtn + inspectorBtn + '</div>'
+    + '</div>';
+}
+
+function updateRowUI(id) {
+  var c = checks.find(function(x) { return x.id === id; });
+  var el = document.getElementById('wc-row-' + id);
+  if (!c || !el) { renderAll(); return; }
+  var wrapper = document.createElement('div');
+  wrapper.innerHTML = itemRowHTML(c);
+  el.replaceWith(wrapper.firstElementChild);
+}
+
+function updateHeaderCounts() {
+  var overall = overallProgress();
+  var oEl = document.getElementById('overallProgress');
+  oEl.textContent = '全体 ' + overall.done + '/' + overall.total + '完了';
+  oEl.className = 'overall-progress' + (overall.total > 0 && overall.done === overall.total ? ' all-done' : '');
+  typeOrder.forEach(function(t, idx) {
+    var items = checks.filter(function(c) { return c.work_type === t; });
+    var doneCount = items.filter(isDone).length;
+    var pEl = document.getElementById('wc-progress-' + idx);
+    if (pEl) pEl.textContent = doneCount + '/' + items.length + '完了';
+    var headEl = document.getElementById('wc-head-' + idx);
+    var accEl = headEl ? headEl.closest('.accordion') : null;
+    if (accEl) accEl.classList.toggle('accordion-done', doneCount === items.length);
+  });
+}
+
+// =========================================================
+// ✓トグル（作業者・検査者）
+// =========================================================
+function toggleWorkerCheck(id) {
+  var c = checks.find(function(x) { return x.id === id; });
+  if (!c || c._pending) return;
+  if (c.worker_name) {
+    if (!confirm('作業者チェックを取り消しますか？\n（' + c.worker_name + ' / ' + fmtTime(c.worker_at) + '）')) return;
+    patchCheck(c, { worker_name: null, worker_at: null }, false);
+    return;
+  }
+  var name = getWorkerRoleName();
+  if (!name) { showNotify('先に「作業者として」の担当者を選んでください', true); return; }
+  if (c.inspector_name && c.inspector_name === name) {
+    showNotify('検査者と別の人が作業してください', true);
+    return;
+  }
+  c._retryAction = 'worker';
+  patchCheck(c, { worker_name: name, worker_at: new Date().toISOString() }, false);
+}
+
+function toggleInspectorCheck(id) {
+  var c = checks.find(function(x) { return x.id === id; });
+  if (!c || c._pending) return;
+  if (c.inspector_name) {
+    if (!confirm('検査者チェックを取り消しますか？\n（' + c.inspector_name + ' / ' + fmtTime(c.inspector_at) + '）')) return;
+    patchCheck(c, { inspector_name: null, inspector_at: null }, false);
+    return;
+  }
+  var name = getInspectorRoleName();
+  if (!name) { showNotify('先に「検査者として」の担当者を選んでください', true); return; }
+  if (c.photo_required && !(c.photos && c.photos.length)) {
+    showNotify('この項目は写真が必要です。📷で撮影してから検査してください', true);
+    return;
+  }
+  if (c.worker_name && c.worker_name === name) {
+    showNotify('作業者と別の人が検査してください', true);
+    return;
+  }
+  c._retryAction = 'inspector';
+  patchCheck(c, { inspector_name: name, inspector_at: new Date().toISOString() }, true);
+}
+
+function retryCheck(id) {
+  var c = checks.find(function(x) { return x.id === id; });
+  if (!c) return;
+  if (c._retryAction === 'inspector') toggleInspectorCheck(id);
+  else toggleWorkerCheck(id);
+}
+
+async function patchCheck(c, payload, isInspectorCheck) {
+  c._error = null;
+  c._pending = true;
+  updateRowUI(c.id);
+  try {
+    var res = await fetch(SB_URL + '/rest/v1/work_checks?id=eq.' + c.id, {
+      method: 'PATCH',
+      headers: Object.assign({}, SB_H, { 'Content-Type': 'application/json', 'Prefer': 'return=representation' }),
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      var errText = await res.text();
+      if (/chk_worker_inspector_different/.test(errText)) {
+        throw new Error(isInspectorCheck ? '作業者と別の人が検査してください' : '検査者と別の人が作業してください');
+      }
+      throw new Error('通信エラーが発生しました。電波状況を確認してください');
+    }
+    var rows = await res.json();
+    Object.assign(c, rows[0]);
+    c._pending = false;
+    updateRowUI(c.id);
+    updateHeaderCounts();
+  } catch(e) {
+    c._pending = false;
+    c._error = e.message || '保存に失敗しました';
+    updateRowUI(c.id);
+  }
+}
+
+// =========================================================
+// 写真撮影・保存
+// =========================================================
+function compressImage(file) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onerror = function() { reject(new Error('読み込み失敗')); };
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onerror = function() { reject(new Error('画像変換失敗')); };
+      img.onload = function() {
+        try {
+          var canvas = document.createElement('canvas');
+          var maxW = 1280, maxH = 960;
+          var w = img.width, h = img.height;
+          if (w > maxW || h > maxH) {
+            var ratio = Math.min(maxW / w, maxH / h);
+            w = Math.round(w * ratio);
+            h = Math.round(h * ratio);
+          }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.75));
+        } catch(err) { reject(err); }
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function openPhotoInput(id) {
+  currentPhotoTargetId = id;
+  var input = document.getElementById('photoInput');
+  input.value = '';
+  input.click();
+}
+
+async function handlePhotoFiles(files) {
+  if (!files || !files.length || !currentPhotoTargetId) return;
+  var id = currentPhotoTargetId;
+  var fileArray = Array.from(files);
+  for (var i = 0; i < fileArray.length; i++) {
+    try {
+      var dataUrl = await compressImage(fileArray[i]);
+      await uploadPhoto(id, dataUrl);
+    } catch(e) {
+      showNotify('写真の処理に失敗しました: ' + e.message, true);
+    }
+  }
+  document.getElementById('photoInput').value = '';
+}
+
+async function uploadPhoto(checkId, dataUrl) {
+  var c = checks.find(function(x) { return x.id === checkId; });
+  if (!c) return;
+  c._uploading = true;
+  updateRowUI(checkId);
+  try {
+    var res = await fetch(SB_URL + '/rest/v1/work_check_photos', {
+      method: 'POST',
+      headers: Object.assign({}, SB_H, { 'Content-Type': 'application/json', 'Prefer': 'return=representation' }),
+      body: JSON.stringify({ work_check_id: checkId, data_url: dataUrl, sort_order: (c.photos ? c.photos.length : 0) })
+    });
+    if (!res.ok) throw new Error('通信エラーが発生しました');
+    var rows = await res.json();
+    c.photos = c.photos || [];
+    c.photos.push(rows[0]);
+    c._uploading = false;
+    updateRowUI(checkId);
+  } catch(e) {
+    c._uploading = false;
+    c._pendingPhotos = c._pendingPhotos || [];
+    c._pendingPhotos.push({ dataUrl: dataUrl });
+    updateRowUI(checkId);
+    showNotify('写真の保存に失敗しました。サムネイルの⚠から再送信してください', true);
+  }
+}
+
+function retryPhoto(checkId, idx) {
+  var c = checks.find(function(x) { return x.id === checkId; });
+  if (!c || !c._pendingPhotos || !c._pendingPhotos[idx]) return;
+  var item = c._pendingPhotos[idx];
+  c._pendingPhotos.splice(idx, 1);
+  updateRowUI(checkId);
+  uploadPhoto(checkId, item.dataUrl);
+}
+
+function openLightbox(src) {
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+}
+
+// =========================================================
+// 作業種類の追加・削除
+// =========================================================
+function openAddWorkTypeModal() {
+  var existing = uniqueWorkTypes();
+  var options = [...new Set(recipeList.map(function(r){ return r.work_type; }))].filter(function(t){ return existing.indexOf(t) === -1; });
+  var sel = document.getElementById('addWorkTypeSelect');
+  if (!recipeList.length) {
+    sel.innerHTML = '<option value="">レシピの読み込みに失敗しています</option>';
+  } else if (!options.length) {
+    sel.innerHTML = '<option value="">追加できる作業種類がありません（すべて追加済み）</option>';
+  } else {
+    sel.innerHTML = options.map(function(t) {
+      var cnt = recipeList.filter(function(r){ return r.work_type === t; }).length;
+      return '<option value="' + esc(t) + '">' + esc(t) + '（' + cnt + '項目）</option>';
+    }).join('');
+  }
+  document.getElementById('addWorkTypeModal').classList.add('open');
+}
+function closeAddWorkTypeModal() {
+  document.getElementById('addWorkTypeModal').classList.remove('open');
+}
+
+async function confirmAddWorkType() {
+  var t = document.getElementById('addWorkTypeSelect').value;
+  if (!t) return;
+  var items = recipeList.filter(function(r){ return r.work_type === t; }).sort(function(a,b){ return (a.sort_order||0)-(b.sort_order||0); });
+  var payload = items.map(function(r) {
+    return { estimate_id: estimateId, estimate_no: estimateNo, work_type: r.work_type, item_name: r.item_name, sort_order: r.sort_order, photo_required: !!r.photo_required, recipe_id: r.id };
+  });
+  var btn = document.getElementById('addWorkTypeConfirmBtn');
+  btn.disabled = true; btn.textContent = '追加中...';
+  try {
+    var res = await fetch(SB_URL + '/rest/v1/work_checks', {
+      method: 'POST',
+      headers: Object.assign({}, SB_H, { 'Content-Type': 'application/json', 'Prefer': 'return=representation' }),
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    var rows = await res.json();
+    rows.forEach(function(r) { r.photos = []; r._pendingPhotos = []; r._error = null; r._pending = false; r._uploading = false; checks.push(r); });
+    expandedTypes[t] = true;
+    closeAddWorkTypeModal();
+    renderAll();
+    showNotify('✅ 「' + t + '」を追加しました');
+  } catch(e) {
+    showNotify('❌ 追加に失敗しました: ' + e.message, true);
+  } finally {
+    btn.disabled = false; btn.textContent = '追加する';
+  }
+}
+
+async function deleteWorkType(t) {
+  var items = checks.filter(function(c) { return c.work_type === t; });
+  var anyDone = items.some(function(c) { return c.worker_name || c.inspector_name; });
+  if (anyDone) { showNotify('既にチェック済みの項目があるため削除できません', true); return; }
+  if (!confirm('「' + t + '」を案件から削除しますか？')) return;
+  try {
+    var ids = items.map(function(c){ return c.id; }).join(',');
+    var res = await fetch(SB_URL + '/rest/v1/work_checks?id=in.(' + ids + ')', { method: 'DELETE', headers: SB_H });
+    if (!res.ok) throw new Error(await res.text());
+    checks = checks.filter(function(c) { return c.work_type !== t; });
+    renderAll();
+    showNotify('🗑 「' + t + '」を削除しました');
+  } catch(e) {
+    showNotify('❌ 削除に失敗しました: ' + e.message, true);
+  }
+}
+
+document.getElementById('addWorkTypeModal').addEventListener('click', function(e) {
+  if (e.target === this) closeAddWorkTypeModal();
+});
+
+init();
+</script>
+</body>
+</html>
