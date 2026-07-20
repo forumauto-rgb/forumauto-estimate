@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>点検レシピマスター管理 - フォーラムオート</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Hiragino Sans','Meiryo',sans-serif;background:#f0f2f5;color:#333;font-size:14px}
+header{background:#1a3a5c;color:#fff;padding:14px 20px;display:flex;align-items:center;gap:16px}
+header h1{font-size:18px;font-weight:700;letter-spacing:1px}
+header .badge{background:#e67e22;color:#fff;padding:3px 10px;border-radius:12px;font-size:12px}
+.toolbar{background:#fff;border-bottom:1px solid #ddd;padding:10px 16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.toolbar input[type=text]{border:1px solid #ccc;border-radius:6px;padding:6px 10px;font-size:13px;width:220px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:opacity .15s}
+.btn:hover{opacity:.85}
+.btn:disabled{opacity:.5;cursor:default}
+.btn-blue{background:#1a3a5c;color:#fff}
+.btn-green{background:#27ae60;color:#fff}
+.btn-orange{background:#e67e22;color:#fff}
+.btn-red{background:#e74c3c;color:#fff}
+.btn-gray{background:#95a5a6;color:#fff}
+.stats{margin-left:auto;font-size:12px;color:#666;background:#f8f9fa;padding:5px 12px;border-radius:12px}
+.main{display:flex;height:calc(100vh - 110px)}
+.sidebar{width:260px;background:#fff;border-right:1px solid #ddd;overflow-y:auto;flex-shrink:0}
+.sidebar-title{padding:10px 12px;font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #eee;background:#fafafa}
+.part-item{padding:8px 12px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:12px;display:flex;align-items:center;justify-content:space-between;transition:background .1s}
+.part-item:hover{background:#eaf2fb}
+.part-item.active{background:#1a3a5c;color:#fff}
+.part-item.active .part-count{background:rgba(255,255,255,.3);color:#fff}
+.part-count{background:#ecf0f1;color:#7f8c8d;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:6px}
+.content{flex:1;overflow:auto;padding:16px}
+.table-wrap{background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.08);overflow:hidden}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{background:#1a3a5c;color:#fff;padding:9px 10px;text-align:left;font-size:12px;font-weight:600;position:sticky;top:0;z-index:1}
+.tbl td{padding:7px 10px;border-bottom:1px solid #f0f0f0;font-size:13px;vertical-align:middle}
+.tbl tr:hover td{background:#f8fbff}
+.tag-chip{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.tag-photo{background:#fdebd0;color:#a04000}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:10px;padding:24px;min-width:420px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+.modal h3{font-size:16px;margin-bottom:16px;color:#1a3a5c;padding-bottom:10px;border-bottom:1px solid #eee}
+.form-row{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.form-row label{font-size:12px;font-weight:600;color:#555}
+.form-row input,.form-row select,.form-row textarea{border:1px solid #ccc;border-radius:6px;padding:7px 10px;font-size:13px}
+.form-row input:focus,.form-row select:focus{outline:none;border-color:#1a3a5c}
+.form-row-check{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.form-row-check input{width:18px;height:18px}
+.form-hint{font-size:11px;color:#888;margin-top:2px}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid #eee}
+.notify{position:fixed;bottom:20px;right:20px;background:#27ae60;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.2);opacity:0;transition:opacity .3s;z-index:200;pointer-events:none}
+.notify.show{opacity:1}
+.notify.err{background:#e74c3c}
+.empty-state{text-align:center;padding:60px 20px;color:#aaa}
+#syncStatus{font-size:11px;color:#888;margin-left:8px}
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <h1>🔧 点検レシピマスター管理</h1>
+    <a href="ダッシュボード.html" style="display:flex;align-items:center;gap:5px;padding:7px 16px;background:#1a2744;color:white;border-radius:8px;text-decoration:none;font-size:13px;font-weight:700;">🏠 ホームに戻る</a>
+  </div>
+  <span class="badge">フォーラムオート</span>
+  <span id="syncStatus">読込中...</span>
+</header>
+
+<div class="toolbar">
+  <input type="text" id="searchBox" placeholder="🔍 作業種類・項目名で検索..." oninput="renderTable()">
+  <button class="btn btn-green" onclick="openAddModal()">＋ 項目を追加</button>
+  <span class="stats" id="statsBar">0件</span>
+</div>
+
+<div class="main">
+  <div class="sidebar">
+    <div class="sidebar-title">作業種類</div>
+    <div id="sidebarList"></div>
+  </div>
+  <div class="content">
+    <div class="table-wrap">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th style="width:180px">作業種類</th>
+            <th>点検項目</th>
+            <th style="width:90px">写真</th>
+            <th style="width:90px">並び順</th>
+            <th style="width:110px">操作</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div id="emptyState" class="empty-state" style="display:none">
+        <div style="font-size:40px">📋</div>
+        <div style="margin-top:8px">項目がありません</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 追加/編集モーダル -->
+<div class="modal-bg" id="editModal">
+  <div class="modal">
+    <h3 id="modalTitle">項目を追加</h3>
+    <div class="form-row">
+      <label>作業種類</label>
+      <input type="text" id="fWorkType" list="workTypeList" placeholder="例: オイル交換">
+      <datalist id="workTypeList"></datalist>
+      <div class="form-hint">既存の作業種類を選ぶか、新しい名前を入力するとその場で新設されます</div>
+    </div>
+    <div class="form-row">
+      <label>点検項目</label>
+      <input type="text" id="fItemName" placeholder="例: ドレンボルト規定トルク締付">
+    </div>
+    <div class="form-row-check">
+      <input type="checkbox" id="fPhotoRequired">
+      <label for="fPhotoRequired">この項目は写真がないと検査者✓を押せないようにする（写真必須）</label>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-gray" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-green" id="modalSaveBtn" onclick="saveRow()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="notify" id="notify"></div>
+
+<script>
+const SUPABASE_URL = 'https://uhppgdwbyrijnqpvusxw.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVocHBnZHdieXJpam5xcHZ1c3h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NDEyMDksImV4cCI6MjA4OTExNzIwOX0.mJ2GXQUsRZAZ-VL6XTVTz3gfG3MTNtfnWxsIPU_DK60';
+
+let allData = []; // {id, work_type, item_name, sort_order, photo_required}
+let editId = null;
+let selectedWorkType = '';
+
+// ★ Supabase fetch（res.ok確認・失敗時は例外を投げる。偽の成功表示はしない）
+async function sbFetch(path, opts={}) {
+  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+    headers: {'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation', ...opts.headers},
+    ...opts
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.status === 204 ? null : res.json();
+}
+
+async function loadData() {
+  document.getElementById('syncStatus').textContent = '読込中...';
+  try {
+    const rows = await sbFetch('check_recipes?order=work_type.asc,sort_order.asc,id.asc');
+    allData = rows;
+    document.getElementById('syncStatus').textContent = '✅ ' + allData.length + '件読込済';
+    renderSidebar();
+    renderTable();
+  } catch(e) {
+    document.getElementById('syncStatus').textContent = '⚠ 読込失敗';
+    showNotify('Supabase接続エラー: ' + e.message, true);
+  }
+}
+
+function renderSidebar() {
+  const types = [...new Set(allData.map(r=>r.work_type))].sort();
+  document.getElementById('workTypeList').innerHTML = types.map(t=>'<option value="'+esc(t)+'">').join('');
+  const list = document.getElementById('sidebarList');
+  let h = '<div class="part-item' + (selectedWorkType===''?' active':'') + '" onclick="selectType(\'\')"><span>すべて</span><span class="part-count">' + allData.length + '</span></div>';
+  types.forEach(t => {
+    const cnt = allData.filter(r=>r.work_type===t).length;
+    const safe = t.replace(/'/g,"\\'");
+    h += '<div class="part-item' + (selectedWorkType===t?' active':'') + '">'
+      + '<span onclick="selectType(\'' + safe + '\')" style="flex:1;cursor:pointer;">' + esc(t) + '</span>'
+      + '<span class="part-count">' + cnt + '</span>'
+      + '<button onclick="event.stopPropagation();delCategory(\'' + safe + '\')" title="この作業種類をまとめて削除" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:13px;margin-left:8px;">🗑</button>'
+      + '</div>';
+  });
+  list.innerHTML = h;
+}
+
+function selectType(t) {
+  selectedWorkType = t;
+  renderSidebar();
+  renderTable();
+}
+
+function renderTable() {
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  let rows = allData.slice();
+  if (selectedWorkType) rows = rows.filter(r => r.work_type === selectedWorkType);
+  if (q) rows = rows.filter(r => (r.work_type||'').toLowerCase().includes(q) || (r.item_name||'').toLowerCase().includes(q));
+  rows.sort((a,b) => (a.work_type||'').localeCompare(b.work_type||'','ja') || (a.sort_order||0)-(b.sort_order||0));
+
+  document.getElementById('statsBar').textContent = rows.length + '件表示 / 全' + allData.length + '件';
+  document.getElementById('emptyState').style.display = rows.length ? 'none' : 'block';
+
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = rows.map(r => {
+    return '<tr>' +
+      '<td>' + esc(r.work_type) + '</td>' +
+      '<td style="font-size:14px;">' + esc(r.item_name) + '</td>' +
+      '<td style="text-align:center;">' + (r.photo_required ? '<span class="tag-chip tag-photo">📷必須</span>' : '<span style="color:#bbb;">—</span>') + '</td>' +
+      '<td style="text-align:center;white-space:nowrap;">' +
+        '<button class="btn btn-gray" style="padding:3px 7px;font-size:11px" onclick="moveOrder(' + r.id + ',-1)">▲</button> ' +
+        '<button class="btn btn-gray" style="padding:3px 7px;font-size:11px" onclick="moveOrder(' + r.id + ',1)">▼</button>' +
+      '</td>' +
+      '<td style="white-space:nowrap;">' +
+        '<button class="btn btn-orange" style="padding:4px 8px;font-size:11px" onclick="openEdit(' + r.id + ')">編集</button> ' +
+        '<button class="btn btn-red" style="padding:4px 8px;font-size:11px" onclick="delRow(' + r.id + ')">削除</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function openAddModal() {
+  editId = null;
+  document.getElementById('modalTitle').textContent = '項目を追加';
+  document.getElementById('fWorkType').value = selectedWorkType || '';
+  document.getElementById('fItemName').value = '';
+  document.getElementById('fPhotoRequired').checked = false;
+  document.getElementById('editModal').classList.add('open');
+}
+
+function openEdit(id) {
+  const r = allData.find(x => x.id === id);
+  if (!r) return;
+  editId = id;
+  document.getElementById('modalTitle').textContent = '項目を編集';
+  document.getElementById('fWorkType').value = r.work_type || '';
+  document.getElementById('fItemName').value = r.item_name || '';
+  document.getElementById('fPhotoRequired').checked = !!r.photo_required;
+  document.getElementById('editModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('editModal').classList.remove('open');
+}
+
+// ★ 保存は即時にSupabaseへ送信し、res.okを確認してからローカル表示を更新する（偽の保存成功表示はしない）
+async function saveRow() {
+  const wt = document.getElementById('fWorkType').value.trim();
+  const nm = document.getElementById('fItemName').value.trim();
+  const pr = document.getElementById('fPhotoRequired').checked;
+  if (!wt || !nm) { showNotify('作業種類と点検項目は必須です', true); return; }
+
+  const btn = document.getElementById('modalSaveBtn');
+  btn.disabled = true; btn.textContent = '保存中...';
+  try {
+    if (editId !== null) {
+      const rows = await sbFetch('check_recipes?id=eq.' + editId, {
+        method: 'PATCH',
+        body: JSON.stringify({ work_type: wt, item_name: nm, photo_required: pr, updated_at: new Date().toISOString() })
+      });
+      const idx = allData.findIndex(r => r.id === editId);
+      if (idx >= 0) allData[idx] = rows[0];
+    } else {
+      const maxSort = allData.filter(r => r.work_type === wt).reduce((m,r) => Math.max(m, r.sort_order||0), 0);
+      const rows = await sbFetch('check_recipes', {
+        method: 'POST',
+        body: JSON.stringify([{ work_type: wt, item_name: nm, sort_order: maxSort + 1, photo_required: pr }])
+      });
+      allData.push(rows[0]);
+    }
+    closeModal();
+    renderSidebar();
+    renderTable();
+    showNotify('✅ 保存しました');
+  } catch(e) {
+    showNotify('❌ 保存失敗: ' + e.message, true);
+  } finally {
+    btn.disabled = false; btn.textContent = '保存';
+  }
+}
+
+async function delRow(id) {
+  if (!confirm('この点検項目を削除しますか？\nこの操作は元に戻せません。')) return;
+  try {
+    await sbFetch('check_recipes?id=eq.' + id, { method: 'DELETE' });
+    allData = allData.filter(r => r.id !== id);
+    renderSidebar();
+    renderTable();
+    showNotify('🗑 削除しました');
+  } catch(e) {
+    showNotify('❌ 削除失敗: ' + e.message, true);
+  }
+}
+
+async function delCategory(wt) {
+  const cnt = allData.filter(r => r.work_type === wt).length;
+  if (!confirm('「' + wt + '」の点検項目 ' + cnt + '件をすべて削除しますか？\nこの操作は元に戻せません。')) return;
+  try {
+    await sbFetch('check_recipes?work_type=eq.' + encodeURIComponent(wt), { method: 'DELETE' });
+    allData = allData.filter(r => r.work_type !== wt);
+    if (selectedWorkType === wt) selectedWorkType = '';
+    renderSidebar();
+    renderTable();
+    showNotify('🗑 「' + wt + '」を削除しました');
+  } catch(e) {
+    showNotify('❌ 削除失敗: ' + e.message, true);
+  }
+}
+
+// ★ 並び替え：隣接する2件のsort_orderを入れ替える。両方成功して初めてローカル表示を更新する
+async function moveOrder(id, dir) {
+  const item = allData.find(r => r.id === id);
+  if (!item) return;
+  const siblings = allData.filter(r => r.work_type === item.work_type).sort((a,b) => (a.sort_order||0)-(b.sort_order||0));
+  const idx = siblings.findIndex(r => r.id === id);
+  const swapIdx = idx + dir;
+  if (swapIdx < 0 || swapIdx >= siblings.length) return;
+  const other = siblings[swapIdx];
+  try {
+    await sbFetch('check_recipes?id=eq.' + item.id, { method: 'PATCH', body: JSON.stringify({ sort_order: other.sort_order }) });
+    await sbFetch('check_recipes?id=eq.' + other.id, { method: 'PATCH', body: JSON.stringify({ sort_order: item.sort_order }) });
+    const tmp = item.sort_order; item.sort_order = other.sort_order; other.sort_order = tmp;
+    renderTable();
+  } catch(e) {
+    showNotify('❌ 並び替え失敗: ' + e.message, true);
+    await loadData(); // 片方だけ更新された不整合を防ぐためサーバーの最新状態で再同期
+  }
+}
+
+function showNotify(msg, isErr=false) {
+  const el = document.getElementById('notify');
+  el.textContent = msg;
+  el.className = 'notify show' + (isErr ? ' err' : '');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+document.getElementById('editModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+loadData();
+</script>
+</body>
+</html>
