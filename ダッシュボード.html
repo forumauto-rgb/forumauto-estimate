@@ -876,9 +876,6 @@ async function loadStats() {
 }
 
 var _casesData = [], _casesRecMap = {}, _casesDcMap = {};
-// ★ 点検チェック対象の業務種別（受付フォームの「車検・点検・部品」＝type:'車検点検'、旧データの単独'車検'も含む）
-var INSPECTION_CHECK_TYPES = ['車検点検', '車検'];
-function isInspectionCheckType(type) { return INSPECTION_CHECK_TYPES.indexOf(type) >= 0; }
 
 async function loadCases() {
   var tb = document.getElementById('cases-tbody');
@@ -899,7 +896,7 @@ async function loadCases() {
     var recMapPromise = (async function(){
       var recMap = {};
       try {
-        var recUrl = SB_URL + '/rest/v1/receptions?select=id,type,rental_needed,rental_type,rental_fee,rental_start_date,rental_end_date&limit=500';
+        var recUrl = SB_URL + '/rest/v1/receptions?select=id,rental_needed,rental_type,rental_fee,rental_start_date,rental_end_date&rental_needed=eq.true&limit=200';
         var recRes = await fetch(recUrl, { headers: SB_H });
         var recData = await recRes.json();
         if (Array.isArray(recData)) {
@@ -973,21 +970,13 @@ function renderCasesRows() {
       h += '<td>' + esc((r.estimate_date||'').slice(0,10)) + '</td>';
       h += '<td>' + rentalCell + '</td>';
       h += '<td style="white-space:nowrap;">';
-      // ★ 点検チェック（業務種別が車検・点検・部品の案件のみ表示。鈑金・塗装は作業指示書があるため対象外）
-      var recType = rec ? rec.type : '';
-      var showInspectionCheck = isInspectionCheckType(recType);
-      if (showInspectionCheck) {
-        var wcHref = 'work_check.html?id=' + encodeURIComponent(r.id||r.estimate_no||'') + '&no=' + encodeURIComponent(r.estimate_no||'') + '&cus=' + encodeURIComponent(r.customer_name||'') + '&car=' + encodeURIComponent(r.car_name||'');
-        h += '<a class="act-btn" href="' + wcHref + '" target="_blank" style="color:#00695c;border-color:rgba(0,105,92,0.3);background:rgba(0,105,92,0.06);font-weight:700;">🔧 点検チェック</a>';
-      }
       // ★ 完成案件：品質チェックボタン（data属性で文字列エスケープ問題を回避）
       if (isComplete) {
         var qcId  = (r.id||no).replace(/'/g,'&apos;');
         var qcNo  = no.replace(/'/g,'&apos;');
         var qcCus = (r.customer_name||'').replace(/'/g,'&apos;').replace(/"/g,'&quot;');
         var qcCar = (r.car_name||'').replace(/'/g,'&apos;').replace(/"/g,'&quot;');
-        var qcInsp = showInspectionCheck ? '1' : '0';
-        h += '<button class="act-btn qc-btn" data-id="'+qcId+'" data-no="'+qcNo+'" data-cus="'+qcCus+'" data-car="'+qcCar+'" data-insp="'+qcInsp+'" style="color:#fff;border-color:#e65100;background:#e65100;font-weight:700;">✅ 品質チェック</button>';
+        h += '<button class="act-btn qc-btn" data-id="'+qcId+'" data-no="'+qcNo+'" data-cus="'+qcCus+'" data-car="'+qcCar+'" style="color:#fff;border-color:#e65100;background:#e65100;font-weight:700;">✅ 品質チェック</button>';
       }
       if (rid) {
         h += '<button class="act-btn" style="color:#1a5fa8;border-color:rgba(26,95,168,0.3);background:rgba(26,95,168,0.06);" onclick="openEditModal(\'' + rid + '\',\'' + no + '\',\'' + cus + '\')">✏️ 受付</button>';
@@ -1286,7 +1275,6 @@ async function cancelCase(estimateNo, customerName) {
 // ★ 品質チェック関数群
 var _qcEstimateId = null;
 var _qcEstimateNo = null;
-var _qcInspectionApplicable = true;
 
 var QC_PROCESS_ITEMS = [
   '板金修正仕上がり確認','パテ工程確認','下地処理確認','塗装仕上がり確認',
@@ -1297,10 +1285,9 @@ var QC_PHOTO_ITEMS = [
   '受付時写真','作業前写真','板金工程写真','塗装工程写真','完成写真','納車前最終写真'
 ];
 
-async function openQualityCheck(estimateId, estimateNo, customerName, carName, inspectionApplicable) {
+async function openQualityCheck(estimateId, estimateNo, customerName, carName) {
   _qcEstimateId = estimateId;
   _qcEstimateNo = estimateNo;
-  _qcInspectionApplicable = (inspectionApplicable !== false);
   document.getElementById('qc_subtitle').textContent = estimateNo + ' — ' + customerName + ' 様（' + carName + '）';
   // 今日の日付をセット
   document.getElementById('qc_date').value = new Date().toISOString().slice(0,10);
@@ -1354,35 +1341,10 @@ function closeQualityCheck() {
   document.getElementById('qualityOverlay').style.display = 'none';
   _qcEstimateId = null;
   _qcEstimateNo = null;
-  _qcInspectionApplicable = true;
 }
 
 async function saveQualityCheck() {
   if (!_qcEstimateId) return;
-
-  // ★ 点検チェック（ダブルチェック）が未完了の場合は「納車準備完了」への進行をロック
-  // 対象は業務種別が車検・点検・部品の案件のみ。鈑金・塗装は作業指示書があるためロック対象外（警告も出さない）
-  if (_qcInspectionApplicable) try {
-    var wcRes = await fetch(SB_URL + '/rest/v1/work_checks?estimate_id=eq.' + encodeURIComponent(_qcEstimateId) + '&select=work_type,item_name,worker_name,inspector_name', { headers: SB_H });
-    if (wcRes.ok) {
-      var wcRows = await wcRes.json();
-      if (Array.isArray(wcRows) && wcRows.length > 0) {
-        var incomplete = wcRows.filter(function(w){ return !w.worker_name || !w.inspector_name; });
-        if (incomplete.length > 0) {
-          var list = incomplete.slice(0, 15).map(function(w){ return '・' + w.work_type + '／' + w.item_name; }).join('\n');
-          var more = incomplete.length > 15 ? '\n…他' + (incomplete.length - 15) + '件' : '';
-          alert('⚠ 点検チェックが未完了のため「納車準備完了」にできません。\n\n未完了項目（' + incomplete.length + '件）:\n' + list + more + '\n\n🔧点検チェックから完了させてください。');
-          return;
-        }
-      } else {
-        if (!confirm('この案件には点検チェックが1件も追加されていません。\nこのまま「納車準備完了」に進めてよろしいですか？')) return;
-      }
-    } else {
-      showToast('⚠ 点検チェック状況を確認できませんでした（未確認のまま進めます）');
-    }
-  } catch(e) {
-    showToast('⚠ 点検チェック状況を確認できませんでした（未確認のまま進めます）');
-  }
 
   // 工程チェック結果を収集
   var processResults = {};
@@ -1445,8 +1407,7 @@ document.addEventListener('click', function(e){
     btn.dataset.id,
     btn.dataset.no,
     btn.dataset.cus,
-    btn.dataset.car,
-    btn.dataset.insp === '1'
+    btn.dataset.car
   );
 });
 

@@ -218,6 +218,29 @@ function showNotify(msg, isErr) {
   clearTimeout(el._t);
   el._t = setTimeout(function(){ el.classList.remove('show'); }, 3200);
 }
+function fmtDate(iso) { return iso ? String(iso).slice(0,10) : ''; }
+
+// Supabaseの1,000行制限を回避してRangeヘッダーでページングしながら全件取得
+async function supabaseFetchAll(url) {
+  var allRows = [];
+  var pageSize = 1000;
+  var offset = 0;
+  while (true) {
+    var res = await fetch(url, {
+      headers: Object.assign({}, SB_H, {
+        'Range-Unit': 'items',
+        'Range': offset + '-' + (offset + pageSize - 1)
+      })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    var batch = await res.json();
+    if (!Array.isArray(batch) || !batch.length) break;
+    allRows = allRows.concat(batch);
+    if (batch.length < pageSize) break;
+    offset += pageSize;
+  }
+  return allRows;
+}
 
 // =========================================================
 // 起動
@@ -246,25 +269,33 @@ function showMainScreen() {
 }
 
 // =========================================================
-// 画面1: 案件選択
+// 画面1: 案件選択（受付(receptions)から直接取得。見積(estimates)は作成されないため経由しない）
 // =========================================================
+var INSPECTION_RECEPTION_TYPES = ['車検点検', '車検'];
+
+// 案件を識別するラベル（見積番号相当）。受付メモに案件番号があればそれを使用、なければ受付日で代用
+function receptionCaseLabel(c) {
+  var note = c.note ? String(c.note).trim() : '';
+  return note || (fmtDate(c.reception_datetime) + '受付');
+}
+
 async function loadCaseList() {
   var area = document.getElementById('caseListArea');
   area.innerHTML = '<div class="loading-msg">🔄 案件を読み込み中...</div>';
   try {
-    var res = await fetch(SB_URL + '/rest/v1/estimates?select=id,estimate_no,customer_name,car_name,plate,repair_status&repair_status=not.in.(納車済,キャンセル,削除済)&order=estimate_date.desc&limit=50', { headers: SB_H });
-    if (!res.ok) throw new Error(await res.text());
-    var list = await res.json();
-    if (!list.length) { area.innerHTML = '<div class="loading-msg">対象の案件がありません</div>'; return; }
+    var typeFilter = INSPECTION_RECEPTION_TYPES.join(',');
+    var url = SB_URL + '/rest/v1/receptions?type=in.(' + typeFilter + ')&select=id,type,customer_name,car_model,plate,reception_datetime,note&order=reception_datetime.desc';
+    var list = await supabaseFetchAll(url);
+    if (!list.length) { area.innerHTML = '<div class="loading-msg">対象の案件がありません（車検・点検・部品の受付なし）</div>'; return; }
     area.innerHTML = list.map(function(c) {
       var id = String(c.id||'').replace(/'/g,"\\'");
-      var no = String(c.estimate_no||'').replace(/'/g,"\\'");
+      var no = receptionCaseLabel(c).replace(/'/g,"\\'");
       var cus = String(c.customer_name||'').replace(/'/g,"\\'");
-      var car = String(c.car_name||'').replace(/'/g,"\\'");
+      var car = String(c.car_model||'').replace(/'/g,"\\'");
       return '<div class="case-row" onclick="selectCase(\'' + id + '\',\'' + no + '\',\'' + cus + '\',\'' + car + '\')">'
         + '<div class="case-row-name">' + esc(c.customer_name||'---') + ' 様</div>'
-        + '<div class="case-row-sub">' + esc(c.car_name||'') + '　' + esc(c.plate||'') + '</div>'
-        + '<div class="case-row-no">' + esc(c.estimate_no||'') + '　' + esc(c.repair_status||'') + '</div>'
+        + '<div class="case-row-sub">' + esc(c.car_model||'') + '　' + esc(c.plate||'') + '</div>'
+        + '<div class="case-row-no">' + esc(fmtDate(c.reception_datetime)) + ' 受付　' + esc(c.type||'') + '</div>'
         + '</div>';
     }).join('');
   } catch(e) {
