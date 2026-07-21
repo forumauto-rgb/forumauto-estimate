@@ -4106,7 +4106,7 @@ function renderMaster(){
     h+='<div style="overflow-x:auto"><table class="mst-tbl">';
     h+='<thead><tr>';
     h+='<th style="width:60px">顧客ID</th><th>顧客名</th><th style="width:42px">敬称</th><th style="width:110px">電話</th>';
-    h+='<th style="width:70px">郵便番号</th><th>住所</th><th>保険会社</th><th>AJ担当者</th><th>メモ</th><th style="width:36px"></th>';
+    h+='<th style="width:70px">郵便番号</th><th>住所</th><th>保険会社</th><th>支払担当者</th><th>メモ</th><th style="width:36px"></th>';
     h+='</tr></thead><tbody>';
     cMaster.forEach(function(c,i){
       h+='<tr>';
@@ -4865,7 +4865,7 @@ function renderPreview(){
     +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-top:8px;gap:16px;">'
     +'<div style="flex:1">'
     +'<div style="font-size:9px;color:#666;line-height:2.1;">'
-    +(customer.insCompany?'<div style="font-size:9.5px;color:#444;margin-bottom:2px;">修理：'+(customer.repairType==='own'?'自費':'保険')+(customer.insCompany?'　保険会社：'+customer.insCompany:'')+(customer.ajCompany?'　AJ：'+customer.ajCompany:'')+(customer.ajStaff?'　担当：'+customer.ajStaff:'')+(customer.deductible?'　免責：¥'+parseInt(customer.deductible).toLocaleString():'')+'</div>':'')
+    +(customer.insCompany?'<div style="font-size:9.5px;color:#444;margin-bottom:2px;">修理：'+(customer.repairType==='own'?'自費':'保険')+(customer.insCompany?'　保険会社：'+customer.insCompany:'')+(customer.ajCompany?'　AJ・鑑定会社：'+customer.ajCompany:'')+(customer.ajStaff?'　支払担当者：'+customer.ajStaff:'')+(customer.deductible?'　免責：¥'+parseInt(customer.deductible).toLocaleString():'')+'</div>':'')
     +(customer.paymentDue?'<div style="font-size:9.5px;color:#444;margin-bottom:2px;">入金予定：'+customer.paymentDue+(customer.paymentDate?'　✓入金確認：'+customer.paymentDate:'')+'</div>':'')
     +'※ 上記金額は損傷部位修復前の概算です。<br>※ 追加作業が発生する場合は事前にご連絡いたします。<br>※ 表示金額は消費税（10%）を含みます。</div>'
     +makeFooterHTML()
@@ -5042,7 +5042,7 @@ function renderPreview(){
     +'</td>'
     +'<td class="print-only" style="padding:3px 5px;">'+(customer.trim||'')+' / '+(customer.paintType||'')+'</td></tr>'
     +(customer.repairType!=='own' && customer.ajCompany
-      ?'<tr><td style="padding:3px 5px;color:#666;">AJ鑑定会社</td>'
+      ?'<tr><td style="padding:3px 5px;color:#666;">AJ・鑑定会社</td>'
       +'<td style="padding:3px 5px;border-bottom:1px solid #ddd;font-weight:bold;color:#1a3a6b;" class="no-print"><input type="text" value="'+(customer.ajCompany||'')+'" style="width:100%;font-size:11pt;border:none;font-weight:bold;color:#1a3a6b;" oninput="customer.ajCompany=this.value;"></td>'
       +'<td class="print-only" style="padding:3px 5px;font-weight:bold;color:#1a3a6b;">'+(customer.ajCompany||'')+'</td></tr>'
       :'')
@@ -6269,7 +6269,7 @@ function importData(){
 function exportCSV(){
   var d=new Date().toISOString().split('T')[0];
   function q(v){ return '"'+(v||'').toString().replace(/"/g,'""')+'"'; }
-  var cH='\u9867\u5ba2ID,\u9867\u5ba2\u540d,\u6562\u79f0,\u96fb\u8a71,\u90f5\u4fbf\u756a\u53f7,\u4f4f\u6240,\u4fdd\u967a\u4f1a\u793e,AJ\u62c5\u5f53,\u30e1\u30e2';
+  var cH='\u9867\u5ba2ID,\u9867\u5ba2\u540d,\u6562\u79f0,\u96fb\u8a71,\u90f5\u4fbf\u756a\u53f7,\u4f4f\u6240,\u4fdd\u967a\u4f1a\u793e,\u652f\u6255\u62c5\u5f53\u8005,\u30e1\u30e2';
   var cR=cMaster.map(function(c){
     return [c.id,c.name,c.honorific,c.tel,c.postal,c.address,c.insurance,c.aj,c.memo].map(q).join(',');
   });
