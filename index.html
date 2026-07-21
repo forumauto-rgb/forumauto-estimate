@@ -3692,6 +3692,8 @@ function renderCustomerPanel(){
       </div>
     </div>
 
+    ${customer.receptionId && customer.remarks ? '<div class="no-print" style="margin-bottom:8px;padding:6px 10px;background:#fffde7;border:1px solid #fbc02d;border-radius:6px;font-size:12px;color:#555;"><strong style="color:#e65100;">📋 受付備考：</strong>'+escHtml(customer.remarks)+'</div>' : ''}
+
     <div style="display:flex;gap:8px;align-items:center">
       <div class="fg"><label>見積日</label><input type="date" value="${customer.date}" oninput="customer.date=this.value" style="width:140px"></div>
       <div style="margin-top:12px;background:#f8faff;border:1px solid #c5cae9;border-radius:10px;padding:10px 12px;">
@@ -5406,6 +5408,8 @@ function applyReception(idx) {
     customer.plate       = rec.plate         || '';
     customer.car         = rec.car_model     || '';
     customer.receptionId = rec.id            || '';
+    customer.remarks     = rec.remarks       || '';
+    customer.destAddr    = rec.dest_address  || '';
     if (rec.note)  customer.diagnosis = rec.note;
     if (rec.staff) customer.staff     = rec.staff;
 
@@ -5449,6 +5453,8 @@ async function loadReceptionData(name, tel) {
     if (rec.color_name && !customer.color)     customer.color     = rec.color_name;
     // 受付IDを紐付け
     customer.receptionId = rec.id;
+    if (rec.remarks)      customer.remarks  = rec.remarks;
+    if (rec.dest_address) customer.destAddr = rec.dest_address;
 
     render();
     showNotify('📋 受付データを引き込みました\n' + (rec.type||'') + ' / ' + (rec.plate||'') + ' / ' + (rec.car_model||''));
@@ -6646,7 +6652,7 @@ async function saveDraft(){
     customer.no=estNo;
     customer._draftNo=estNo;
     var tots=calcTotals();
-    var estData={estimate_no:estNo,customer_name:customer.name||'（未入力）',customer_id:customer.cid||null,car_name:customer.car||'',plate:customer.plate||'',color_name:customer.color||'',color_code:customer.colorCode||'',estimate_date:customer.date||new Date().toISOString().split('T')[0],grade:customer.grade||'中型',grade_coef:getGradeCoef(),film_type:pc4.film,paint_type:pc4.paint,clear_type:pc4.clear,special:pc4.special,labor_total:tots.labor,parts_total:Math.round(tots.pt),mat_total:Math.round(tots.mt),subtotal:Math.round(tots.sub),tax_total:tots.tax,grand_total:Math.round(tots.sub)+tots.tax,repair_type:customer.repairType||'insurance',ins_company:customer.insCompany||'',aj_company:customer.ajCompany||'',aj_staff:customer.ajStaff||'',deductible:parseInt(customer.deductible)||0,status:'draft',repair_status:customer.repairStatus||'受付',staff_name:customer.staffName||'',delivery_date:customer.deliveryDate||'',memo:customer.estNote||'',payment_memo:customer.paymentMemo||'',chk1:customer.chk1||'',chk2:customer.chk2||'',chk3:customer.chk3||'',chk4:customer.chk4||'',chk5:customer.chk5||'',chk6:customer.chk6||'',reception_id:customer.receptionId||null,coating:customer.coating||null};
+    var estData={estimate_no:estNo,customer_name:customer.name||'（未入力）',customer_id:customer.cid||null,car_name:customer.car||'',plate:customer.plate||'',color_name:customer.color||'',color_code:customer.colorCode||'',estimate_date:customer.date||new Date().toISOString().split('T')[0],grade:customer.grade||'中型',grade_coef:getGradeCoef(),film_type:pc4.film,paint_type:pc4.paint,clear_type:pc4.clear,special:pc4.special,labor_total:tots.labor,parts_total:Math.round(tots.pt),mat_total:Math.round(tots.mt),subtotal:Math.round(tots.sub),tax_total:tots.tax,grand_total:Math.round(tots.sub)+tots.tax,repair_type:customer.repairType||'insurance',ins_company:customer.insCompany||'',aj_company:customer.ajCompany||'',aj_staff:customer.ajStaff||'',deductible:parseInt(customer.deductible)||0,status:'draft',repair_status:customer.repairStatus||'受付',staff_name:customer.staffName||'',delivery_date:customer.deliveryDate||'',memo:customer.estNote||'',payment_memo:customer.paymentMemo||'',chk1:customer.chk1||'',chk2:customer.chk2||'',chk3:customer.chk3||'',chk4:customer.chk4||'',chk5:customer.chk5||'',chk6:customer.chk6||'',reception_id:customer.receptionId||null,coating:customer.coating||null,transport_destination:customer.destAddr||null};
     var estId=customer._estId||null;
     if(estId){
       // 既存IDで上書き（重複しない）
@@ -6820,7 +6826,8 @@ async function saveEstimate(){
       delivery_date:customer.deliveryDate||'',
       memo:customer.estNote||'',
       reception_id:customer.receptionId||null,
-      coating:customer.coating||null
+      coating:customer.coating||null,
+      transport_destination:customer.destAddr||null
     };
     // 既存見積を検索
     var rCheck=await fetch(SUPABASE_URL+'/rest/v1/estimates?estimate_no=eq.'+encodeURIComponent(estNo)+'&select=id',{
@@ -7218,6 +7225,16 @@ async function loadEstimate(estId,estNo){
       customer.paymentMemo=h.payment_memo||'';customer.chk1=h.chk1||'';customer.chk2=h.chk2||'';customer.chk3=h.chk3||'';customer.chk4=h.chk4||'';customer.chk5=h.chk5||'';customer.chk6=h.chk6||'';
       customer.coating=h.coating||'';
       customer.repairStatus=h.repair_status||customer.repairStatus||'受付';
+      customer.receptionId=h.reception_id||'';
+      customer.remarks='';
+      customer.destAddr=h.transport_destination||'';
+      if(customer.receptionId){
+        var recInfo1 = await fetchReceptionInfo(customer.receptionId);
+        if(recInfo1){
+          customer.remarks  = recInfo1.remarks || '';
+          customer.destAddr = recInfo1.dest_address || customer.destAddr || '';
+        }
+      }
     }
     var r1=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId+'&order=sort_order.asc',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
     var items=await r1.json();
@@ -7325,6 +7342,17 @@ function filterEstList(kw){
   if(rows) rows.innerHTML=buildEstRows(filtered);
 }
 
+// ★ 受付(receptions)の備考・搬送先をSupabaseから取得（見積ヘッダー表示・搬送先の見積保存用）
+async function fetchReceptionInfo(receptionId){
+  if(!receptionId) return null;
+  try{
+    var res = await fetch(SUPABASE_URL+'/rest/v1/receptions?id=eq.'+encodeURIComponent(receptionId)+'&select=remarks,dest_address',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+    if(!res.ok) return null;
+    var rows = await res.json();
+    return (rows && rows[0]) ? rows[0] : null;
+  }catch(e){ return null; }
+}
+
 // ===== 受付システムからのURLパラメータを受け取り顧客情報を自動入力 =====
 async function applyReceptionParams() {
   // ★ 受付からの引き継ぎ（写真・色番号・マスター登録）※nameがなくても実行
@@ -7344,6 +7372,15 @@ async function applyReceptionParams() {
       if(td.car_category)  customer.carCategory  = td.car_category;
       if(td.dest_address)  customer.destAddr     = td.dest_address;
       if(td.remarks)       customer.remarks      = td.remarks;
+
+      // ★ 備考・搬送先はSupabaseの最新値で確認・上書き
+      if(customer.receptionId){
+        var recInfo0 = await fetchReceptionInfo(customer.receptionId);
+        if(recInfo0){
+          customer.remarks  = recInfo0.remarks || '';
+          customer.destAddr = recInfo0.dest_address || customer.destAddr || '';
+        }
+      }
 
       // 入庫時写真を引き継ぎ
       if(td.photos && td.photos.length > 0){
