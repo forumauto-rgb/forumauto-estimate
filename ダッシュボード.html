@@ -1846,7 +1846,7 @@ async function checkUnprocessedReceptions(){
         +'<div style="font-size:13px;font-weight:700;">'+(r.customer_name||'氏名なし')+'　'+(r.car_model||'')+'</div>'
         +'<div style="font-size:11px;color:#888;">'+(r.type||'')+'　'+elapsedStr+'</div>'
         +'</div>'
-        +'<span style="font-size:11px;color:#e65100;font-weight:700;">見積作成 →</span>'
+        +'<button onclick="event.stopPropagation();goToEstimateWithReceptionId(\''+rid+'\')" style="flex-shrink:0;min-height:44px;padding:0 14px;background:#1976d2;border:1.5px solid #0d47a1;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">📋 見積作成</button>'
         +'</div>';
     }).join('');
 
@@ -1882,6 +1882,22 @@ function startEstimateFromReception(id){
   };
   localStorage.setItem('fa_reception_transfer', JSON.stringify(td));
   window.location.href = 'index.html?from=reception';
+}
+
+// ★ 見積作成ボタン：reception_idをURLパラメータで渡し、index.html側のapplyReceptionParams()に自動入力させる
+function goToEstimateWithReceptionId(id){
+  var r = window._unprocessedMap && window._unprocessedMap[id];
+  if(!r) return;
+  var qs = new URLSearchParams({
+    reception_id: r.id || '',
+    name: r.customer_name || '',
+    phone: r.phone || '',
+    plate: r.plate || '',
+    car: r.car_model || '',
+    type: r.type || '',
+    note: r.note || ''
+  });
+  window.location.href = 'index.html?' + qs.toString();
 }
 
 // ページ読み込み時に未処理受付チェック
