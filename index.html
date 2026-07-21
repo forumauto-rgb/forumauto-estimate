@@ -4450,7 +4450,7 @@ async function runInsuranceAI(){
       method: 'POST',
       headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6',
         max_tokens: 1000,
         system: 'あなたは自動車板金塗装修理業者の顧問として、保険会社との交渉を支援します。'
           + '以下の法律知識をベースに、保険会社の言い分に対して正当な回答を提示してください。\n'
@@ -4961,23 +4961,23 @@ function renderPreview(){
     var row = pc[key] || {};
     var chk = row.check ? '■' : '□';
     return '<tr style="border-bottom:0.5px solid #ddd;">'
-      +'<td style="padding:6px 7px;font-size:10px;font-weight:bold;white-space:nowrap;">'+label+'</td>'
-      +'<td style="padding:6px 7px;font-size:10px;">'+checkLabel+'</td>'
-      +'<td style="padding:6px 7px;font-size:10px;text-align:center;" class="no-print">'
+      +'<td style="padding:6px 7px;font-size:11pt;font-weight:bold;white-space:nowrap;">'+label+'</td>'
+      +'<td style="padding:6px 7px;font-size:11pt;">'+checkLabel+'</td>'
+      +'<td style="padding:6px 7px;font-size:11pt;text-align:center;" class="no-print">'
       +'<input type="checkbox"'+(row.check?' checked':'')
       +' onchange="if(!customer.processCheck)customer.processCheck={};if(!customer.processCheck.'+key+')customer.processCheck.'+key+'={};customer.processCheck.'+key+'.check=this.checked;render();">'
       +'</td>'
-      +'<td style="padding:6px 7px;font-size:10px;text-align:center;" class="print-only">'+chk+'</td>'
-      +'<td style="padding:6px 7px;font-size:10px;border-bottom:1px solid #999;min-width:90px;" class="no-print">'
-      +'<input type="text" value="'+(row.staff||'')+'" placeholder="署名" style="width:100%;font-size:10px;border:none;border-bottom:1px solid #ccc;"'
+      +'<td style="padding:6px 7px;font-size:11pt;text-align:center;" class="print-only">'+chk+'</td>'
+      +'<td style="padding:6px 7px;font-size:11pt;border-bottom:1px solid #999;min-width:90px;" class="no-print">'
+      +'<input type="text" value="'+(row.staff||'')+'" placeholder="署名" style="width:100%;font-size:11pt;border:none;border-bottom:1px solid #ccc;"'
       +' oninput="if(!customer.processCheck)customer.processCheck={};if(!customer.processCheck.'+key+')customer.processCheck.'+key+'={};customer.processCheck.'+key+'.staff=this.value;">'
       +'</td>'
-      +'<td style="padding:6px 7px;font-size:10px;" class="print-only">'+(row.staff||'')+'</td>'
-      +'<td style="padding:6px 7px;font-size:10px;border-bottom:1px solid #999;min-width:80px;" class="no-print">'
-      +'<input type="date" value="'+(row.date||'')+'" style="width:100%;font-size:10px;border:none;border-bottom:1px solid #ccc;"'
+      +'<td style="padding:6px 7px;font-size:11pt;" class="print-only">'+(row.staff||'')+'</td>'
+      +'<td style="padding:6px 7px;font-size:11pt;border-bottom:1px solid #999;min-width:80px;" class="no-print">'
+      +'<input type="date" value="'+(row.date||'')+'" style="width:100%;font-size:11pt;border:none;border-bottom:1px solid #ccc;"'
       +' oninput="if(!customer.processCheck)customer.processCheck={};if(!customer.processCheck.'+key+')customer.processCheck.'+key+'={};customer.processCheck.'+key+'.date=this.value;">'
       +'</td>'
-      +'<td style="padding:6px 7px;font-size:10px;" class="print-only">'+(row.date||'')+'</td>'
+      +'<td style="padding:6px 7px;font-size:11pt;" class="print-only">'+(row.date||'')+'</td>'
       +'</tr>';
   }
 
@@ -4990,20 +4990,20 @@ function renderPreview(){
     // ドア区切り
     +'<line x1="170" y1="20" x2="170" y2="180" stroke="#bbb" stroke-width="0.5" stroke-dasharray="3,2"/>'
     // 部位ラベル
-    +'<text x="170" y="15" text-anchor="middle" style="font-size:9px;fill:#666;">フロント</text>'
-    +'<text x="170" y="192" text-anchor="middle" style="font-size:9px;fill:#666;">リア</text>'
-    +'<text x="85" y="100" text-anchor="middle" style="font-size:9px;fill:#555;">左</text>'
-    +'<text x="255" y="100" text-anchor="middle" style="font-size:9px;fill:#555;">右</text>'
+    +'<text x="170" y="15" text-anchor="middle" style="font-size:11pt;fill:#666;">フロント</text>'
+    +'<text x="170" y="192" text-anchor="middle" style="font-size:11pt;fill:#666;">リア</text>'
+    +'<text x="85" y="100" text-anchor="middle" style="font-size:11pt;fill:#555;">左</text>'
+    +'<text x="255" y="100" text-anchor="middle" style="font-size:11pt;fill:#555;">右</text>'
     // フロントバンパー(4)
     +'<rect x="120" y="8" width="100" height="12" rx="3" fill="#eee" stroke="#aaa" stroke-width="1"/>'
-    +'<text x="170" y="17" text-anchor="middle" style="font-size:9px;fill:#555;">④バンパーF</text>'
+    +'<text x="170" y="17" text-anchor="middle" style="font-size:11pt;fill:#555;">④バンパーF</text>'
     // リアバンパー(5)
     +'<rect x="120" y="180" width="100" height="12" rx="3" fill="#eee" stroke="#aaa" stroke-width="1"/>'
-    +'<text x="170" y="189" text-anchor="middle" style="font-size:9px;fill:#555;">⑤バンパーR</text>'
+    +'<text x="170" y="189" text-anchor="middle" style="font-size:11pt;fill:#555;">⑤バンパーR</text>'
     // 損傷ポイント表示
     + dp.map(function(p){
         return '<circle cx="'+p.x+'" cy="'+p.y+'" r="6" fill="rgba(220,50,50,0.7)" stroke="#c00" stroke-width="1.5"/>'
-          +'<text x="'+p.x+'" y="'+(p.y+3)+'" text-anchor="middle" style="font-size:9px;fill:white;font-weight:bold;">'+(p.no||'')+'</text>';
+          +'<text x="'+p.x+'" y="'+(p.y+3)+'" text-anchor="middle" style="font-size:11pt;fill:white;font-weight:bold;">'+(p.no||'')+'</text>';
       }).join('')
     +'</svg>';
 
@@ -5011,52 +5011,52 @@ function renderPreview(){
 
     // タイトル
     +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;padding-bottom:5px;border-bottom:2px solid #1a3a6b;">'
-    +'<div style="font-size:16px;font-weight:bold;letter-spacing:2px;color:#1a3a6b;">総合修理管理表</div>'
-    +'<div style="font-size:10px;text-align:right;color:#666;line-height:1.7;">有限会社フォーラムオート<br>静岡県袋井市下山梨545　TEL: 0538-49-0632</div>'
+    +'<div style="font-size:11pt;font-weight:bold;letter-spacing:2px;color:#1a3a6b;">総合修理管理表</div>'
+    +'<div style="font-size:11pt;text-align:right;color:#666;line-height:1.7;">有限会社フォーラムオート<br>静岡県袋井市下山梨545　TEL: 0538-49-0632</div>'
     +'</div>'
 
     // 車両情報行
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">'
     +'<div style="background:#f8f9ff;border:1px solid #c5cae9;border-radius:6px;padding:10px;">'
-    +'<div style="font-size:11px;font-weight:bold;color:#1a3a6b;margin-bottom:7px;border-bottom:1px solid #c5cae9;padding-bottom:4px;">【お客様・車両情報】</div>'
-    +'<table style="width:100%;font-size:10px;border-collapse:collapse;">'
+    +'<div style="font-size:11pt;font-weight:bold;color:#1a3a6b;margin-bottom:7px;border-bottom:1px solid #c5cae9;padding-bottom:4px;">【お客様・車両情報】</div>'
+    +'<table style="width:100%;font-size:11pt;border-collapse:collapse;">'
     +'<tr><td style="padding:3px 5px;color:#666;white-space:nowrap;width:90px;">お客様氏名</td>'
-    +'<td style="padding:3px 5px;font-weight:bold;border-bottom:1px solid #ddd;" class="no-print"><input type="text" value="'+(customer.name||'')+'" style="width:100%;font-size:10px;border:none;" oninput="customer.name=this.value;"></td>'
+    +'<td style="padding:3px 5px;font-weight:bold;border-bottom:1px solid #ddd;" class="no-print"><input type="text" value="'+(customer.name||'')+'" style="width:100%;font-size:11pt;border:none;" oninput="customer.name=this.value;"></td>'
     +'<td style="padding:3px 5px;font-weight:bold;" class="print-only">'+(customer.name||'')+'</td></tr>'
     +'<tr><td style="padding:3px 5px;color:#666;">連絡先</td>'
-    +'<td style="padding:3px 5px;border-bottom:1px solid #ddd;" class="no-print"><input type="text" value="'+(customer.tel||'')+'" placeholder="電話番号" style="width:100%;font-size:10px;border:none;" oninput="customer.tel=this.value;"></td>'
+    +'<td style="padding:3px 5px;border-bottom:1px solid #ddd;" class="no-print"><input type="text" value="'+(customer.tel||'')+'" placeholder="電話番号" style="width:100%;font-size:11pt;border:none;" oninput="customer.tel=this.value;"></td>'
     +'<td class="print-only" style="padding:3px 5px;">'+(customer.tel||'')+'</td></tr>'
     +'<tr><td style="padding:3px 5px;color:#666;">車名</td>'
-    +'<td style="padding:3px 5px;border-bottom:1px solid #ddd;" class="no-print"><input type="text" value="'+(customer.car||'')+'" style="width:100%;font-size:10px;border:none;" oninput="customer.car=this.value;"></td>'
+    +'<td style="padding:3px 5px;border-bottom:1px solid #ddd;" class="no-print"><input type="text" value="'+(customer.car||'')+'" style="width:100%;font-size:11pt;border:none;" oninput="customer.car=this.value;"></td>'
     +'<td class="print-only" style="padding:3px 5px;">'+(customer.car||'')+'</td></tr>'
     +'<tr><td style="padding:3px 5px;color:#666;">登録番号</td>'
-    +'<td style="padding:3px 5px;border-bottom:1px solid #ddd;" class="no-print"><input type="text" value="'+(customer.plate||'')+'" style="width:100%;font-size:10px;border:none;" oninput="customer.plate=this.value;"></td>'
+    +'<td style="padding:3px 5px;border-bottom:1px solid #ddd;" class="no-print"><input type="text" value="'+(customer.plate||'')+'" style="width:100%;font-size:11pt;border:none;" oninput="customer.plate=this.value;"></td>'
     +'<td class="print-only" style="padding:3px 5px;">'+(customer.plate||'')+'</td></tr>'
     +'<tr><td style="padding:3px 5px;color:#666;">カラーコード</td>'
-    +'<td style="padding:3px 5px;border-bottom:1px solid #ddd;" class="no-print"><input type="text" value="'+(customer.colorCode||'')+'" placeholder="例: 040" style="width:100%;font-size:10px;border:none;" oninput="customer.colorCode=this.value;"></td>'
+    +'<td style="padding:3px 5px;border-bottom:1px solid #ddd;" class="no-print"><input type="text" value="'+(customer.colorCode||'')+'" placeholder="例: 040" style="width:100%;font-size:11pt;border:none;" oninput="customer.colorCode=this.value;"></td>'
     +'<td class="print-only" style="padding:3px 5px;">'+(customer.colorCode||'')+'</td></tr>'
     +'<tr><td style="padding:3px 5px;color:#666;">トリム / 塗装種別</td>'
     +'<td style="padding:3px 5px;border-bottom:1px solid #ddd;" class="no-print">'
-    +'<input type="text" value="'+(customer.trim||'')+'" placeholder="トリム" style="width:45%;font-size:10px;border:none;" oninput="customer.trim=this.value;">'
-    +' / <input type="text" value="'+(customer.paintType||'')+'" placeholder="種別" style="width:40%;font-size:10px;border:none;" oninput="customer.paintType=this.value;">'
+    +'<input type="text" value="'+(customer.trim||'')+'" placeholder="トリム" style="width:45%;font-size:11pt;border:none;" oninput="customer.trim=this.value;">'
+    +' / <input type="text" value="'+(customer.paintType||'')+'" placeholder="種別" style="width:40%;font-size:11pt;border:none;" oninput="customer.paintType=this.value;">'
     +'</td>'
     +'<td class="print-only" style="padding:3px 5px;">'+(customer.trim||'')+' / '+(customer.paintType||'')+'</td></tr>'
     +(customer.repairType!=='own' && customer.ajCompany
       ?'<tr><td style="padding:3px 5px;color:#666;">AJ鑑定会社</td>'
-      +'<td style="padding:3px 5px;border-bottom:1px solid #ddd;font-weight:bold;color:#1a3a6b;" class="no-print"><input type="text" value="'+(customer.ajCompany||'')+'" style="width:100%;font-size:10px;border:none;font-weight:bold;color:#1a3a6b;" oninput="customer.ajCompany=this.value;"></td>'
+      +'<td style="padding:3px 5px;border-bottom:1px solid #ddd;font-weight:bold;color:#1a3a6b;" class="no-print"><input type="text" value="'+(customer.ajCompany||'')+'" style="width:100%;font-size:11pt;border:none;font-weight:bold;color:#1a3a6b;" oninput="customer.ajCompany=this.value;"></td>'
       +'<td class="print-only" style="padding:3px 5px;font-weight:bold;color:#1a3a6b;">'+(customer.ajCompany||'')+'</td></tr>'
       :'')
     +(customer.repairType!=='own' && customer.ajStaff
       ?'<tr><td style="padding:3px 5px;color:#666;">支払担当者</td>'
-      +'<td style="padding:3px 5px;border-bottom:1px solid #ddd;font-weight:bold;color:#1a3a6b;" class="no-print"><input type="text" value="'+(customer.ajStaff||'')+'" style="width:100%;font-size:10px;border:none;font-weight:bold;color:#1a3a6b;" oninput="customer.ajStaff=this.value;"></td>'
+      +'<td style="padding:3px 5px;border-bottom:1px solid #ddd;font-weight:bold;color:#1a3a6b;" class="no-print"><input type="text" value="'+(customer.ajStaff||'')+'" style="width:100%;font-size:11pt;border:none;font-weight:bold;color:#1a3a6b;" oninput="customer.ajStaff=this.value;"></td>'
       +'<td class="print-only" style="padding:3px 5px;font-weight:bold;color:#1a3a6b;">'+(customer.ajStaff||'')+'</td></tr>'
       :'')
     +'</table></div>'
 
     // 写真チェックリスト
     +'<div style="background:#f8f9ff;border:1px solid #c5cae9;border-radius:6px;padding:10px;">'
-    +'<div style="font-size:11px;font-weight:bold;color:#1a3a6b;margin-bottom:7px;border-bottom:1px solid #c5cae9;padding-bottom:4px;">【写真チェックリスト】</div>'
-    +'<table style="width:100%;font-size:10px;border-collapse:collapse;">'
+    +'<div style="font-size:11pt;font-weight:bold;color:#1a3a6b;margin-bottom:7px;border-bottom:1px solid #c5cae9;padding-bottom:4px;">【写真チェックリスト】</div>'
+    +'<table style="width:100%;font-size:11pt;border-collapse:collapse;">'
     +[
       ['zenkai','□ 全景（車全体）　写真No.'],
       ['kinsetsu','□ 近接（傷アップ）　写真No.'],
@@ -5067,7 +5067,7 @@ function renderPreview(){
       var key=item[0], label=item[1];
       return '<tr><td style="padding:4px 5px;color:#333;">' + label + '</td>'
         +'<td style="padding:4px 5px;" class="no-print">'
-        +'<input type="text" value="'+(pcl[key]||'')+'" style="width:60px;font-size:10px;border:none;border-bottom:1px solid #ccc;"'
+        +'<input type="text" value="'+(pcl[key]||'')+'" style="width:60px;font-size:11pt;border:none;border-bottom:1px solid #ccc;"'
         +' oninput="if(!customer.photoCheckList)customer.photoCheckList={};customer.photoCheckList.'+key+'=this.value;">'
         +'</td>'
         +'<td class="print-only" style="padding:4px 5px;border-bottom:1px solid #eee;">'+(pcl[key]||'')+'</td></tr>';
@@ -5076,25 +5076,25 @@ function renderPreview(){
 
     // 展開図
     +'<div style="margin-bottom:10px;">'
-    +'<div style="font-size:11px;font-weight:bold;color:#1a3a6b;margin-bottom:5px;border-bottom:1px solid #c5cae9;padding-bottom:4px;">【展開図】<span style="font-size:9px;font-weight:normal;color:#888;" class="no-print">　タップで損傷箇所をマーク</span></div>'
+    +'<div style="font-size:11pt;font-weight:bold;color:#1a3a6b;margin-bottom:5px;border-bottom:1px solid #c5cae9;padding-bottom:4px;">【展開図】<span style="font-size:11pt;font-weight:normal;color:#888;" class="no-print">　タップで損傷箇所をマーク</span></div>'
     +'<div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">'
     + diagramSVG
     +'<div style="flex:1;min-width:120px;">'
-    +'<div style="font-size:10px;color:#555;margin-bottom:5px;">損傷箇所リスト</div>'
-    +'<div id="damageList" style="font-size:10px;">'
-    +(dp.length===0?'<span style="font-size:10px;color:#aaa;">クリックでマーク追加</span>':dp.map(function(p,i){
+    +'<div style="font-size:11pt;color:#555;margin-bottom:5px;">損傷箇所リスト</div>'
+    +'<div id="damageList" style="font-size:11pt;">'
+    +(dp.length===0?'<span style="font-size:11pt;color:#aaa;">クリックでマーク追加</span>':dp.map(function(p,i){
       return '<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;">'
-        +'<span style="background:#dc3232;color:white;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;">'+(i+1)+'</span>'
-        +'<input type="text" value="'+(p.label||'')+'" placeholder="部位・状態" style="font-size:10px;border:none;border-bottom:1px solid #ccc;flex:1;" oninput="customer.damagePoints['+i+'].label=this.value;">'
-        +'<button onclick="customer.damagePoints.splice('+i+',1);render();" style="font-size:10px;border:none;background:none;color:#e53935;cursor:pointer;">✕</button>'
+        +'<span style="background:#dc3232;color:white;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:11pt;font-weight:bold;">'+(i+1)+'</span>'
+        +'<input type="text" value="'+(p.label||'')+'" placeholder="部位・状態" style="font-size:11pt;border:none;border-bottom:1px solid #ccc;flex:1;" oninput="customer.damagePoints['+i+'].label=this.value;">'
+        +'<button onclick="customer.damagePoints.splice('+i+',1);render();" style="font-size:11pt;border:none;background:none;color:#e53935;cursor:pointer;">✕</button>'
         +'</div>';
     }).join(''))
     +'</div></div></div></div>'
 
     // 工程品質管理チェック
     +'<div style="margin-bottom:10px;">'
-    +'<div style="font-size:11px;font-weight:bold;color:#1a3a6b;margin-bottom:5px;border-bottom:1px solid #c5cae9;padding-bottom:4px;">【工程ごとの品質管理チェック】</div>'
-    +'<table style="width:100%;font-size:10px;border-collapse:collapse;border:1px solid #ddd;">'
+    +'<div style="font-size:11pt;font-weight:bold;color:#1a3a6b;margin-bottom:5px;border-bottom:1px solid #c5cae9;padding-bottom:4px;">【工程ごとの品質管理チェック】</div>'
+    +'<table style="width:100%;font-size:11pt;border-collapse:collapse;border:1px solid #ddd;">'
     +'<thead><tr style="background:#1a3a6b;color:white;">'
     +'<th style="padding:5px 7px;text-align:left;width:70px;">工程</th>'
     +'<th style="padding:5px 7px;text-align:left;">チェック項目</th>'
@@ -5111,16 +5111,16 @@ function renderPreview(){
 
     // 最終署名（大きめ）
     +'<div style="background:#f8f9ff;border:1px solid #c5cae9;border-radius:6px;padding:10px;">'
-    +'<div style="font-size:11px;font-weight:bold;color:#1a3a6b;margin-bottom:8px;border-bottom:1px solid #c5cae9;padding-bottom:4px;">【最終署名】</div>'
+    +'<div style="font-size:11pt;font-weight:bold;color:#1a3a6b;margin-bottom:8px;border-bottom:1px solid #c5cae9;padding-bottom:4px;">【最終署名】</div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'
     +[['uketsuke','受付担当'],['bankin','板金担当'],['toso','塗装担当'],['nosha','納車確認']].map(function(item){
       var key=item[0], label=item[1];
       return '<div style="display:flex;align-items:center;gap:8px;">'
-        +'<span style="font-size:10px;color:#666;white-space:nowrap;width:65px;">'+label+'：</span>'
+        +'<span style="font-size:11pt;color:#666;white-space:nowrap;width:65px;">'+label+'：</span>'
         +'<div class="no-print" style="flex:1;border-bottom:1.5px solid #999;min-height:22px;">'
-        +'<input type="text" value="'+(fs[key]||'')+'" style="width:100%;font-size:10px;border:none;" oninput="if(!customer.finalSign)customer.finalSign={};customer.finalSign.'+key+'=this.value;">'
+        +'<input type="text" value="'+(fs[key]||'')+'" style="width:100%;font-size:11pt;border:none;" oninput="if(!customer.finalSign)customer.finalSign={};customer.finalSign.'+key+'=this.value;">'
         +'</div>'
-        +'<div class="print-only" style="flex:1;border-bottom:1.5px solid #999;font-size:10px;min-height:22px;">'+(fs[key]||'')+'</div>'
+        +'<div class="print-only" style="flex:1;border-bottom:1.5px solid #999;font-size:11pt;min-height:22px;">'+(fs[key]||'')+'</div>'
         +'</div>';
     }).join('')
     +'</div></div>'
@@ -5913,7 +5913,37 @@ function showReasonList(){
   document.body.appendChild(bd);
 }
 
+// ★ 部品名・材料名の入力候補（datalist用）。表示候補の追加のみで既存の保存動作は変更しない
+var PARTS_NAME_HISTORY = [];
+var MAT_NAME_HISTORY = [];
+(function(){
+  try{ PARTS_NAME_HISTORY = JSON.parse(localStorage.getItem('fa_parts_name_history')||'[]'); }catch(e){ PARTS_NAME_HISTORY = []; }
+  try{ MAT_NAME_HISTORY = JSON.parse(localStorage.getItem('fa_mat_name_history')||'[]'); }catch(e){ MAT_NAME_HISTORY = []; }
+})();
+function recordNameHistory(historyArr, storageKey, value){
+  var v = (value||'').trim();
+  if(!v) return;
+  var idx = historyArr.indexOf(v);
+  if(idx>=0) historyArr.splice(idx,1);
+  historyArr.unshift(v);
+  if(historyArr.length>200) historyArr.length=200;
+  try{ localStorage.setItem(storageKey, JSON.stringify(historyArr)); }catch(e){}
+}
+function seedNameHistory(historyArr, storageKey, items){
+  var changed=false;
+  items.forEach(function(it){
+    var v=(it.name||'').trim();
+    if(v && historyArr.indexOf(v)===-1){ historyArr.unshift(v); changed=true; }
+  });
+  if(changed){
+    if(historyArr.length>200) historyArr.length=200;
+    try{ localStorage.setItem(storageKey, JSON.stringify(historyArr)); }catch(e){}
+  }
+}
+
 function partsMaterialHTML(){
+  seedNameHistory(PARTS_NAME_HISTORY, 'fa_parts_name_history', partsItems);
+  seedNameHistory(MAT_NAME_HISTORY, 'fa_mat_name_history', matItems);
   var h='<div style="display:grid;grid-template-columns:3fr 2fr;gap:10px;margin-top:8px;padding:8px">';
   h+='<div>';
   h+='<div style="font-size:11px;font-weight:bold;color:#888;margin-bottom:5px">\u90e8\u54c1\u4ee3</div>';
@@ -5929,7 +5959,7 @@ function partsMaterialHTML(){
     var sell = Math.round(cost * qty * (100 + profit) / 100);
     var sellStr = cost > 0 ? '&yen;'+sell.toLocaleString() : '&yen;0';
     h+='<tr>';
-    h+='<td style="overflow:hidden"><input value="'+escHtml(p.name||'')+'" oninput="partsItems['+i+'].name=this.value" placeholder="部品名" style="font-size:11px;width:100%"></td>';
+    h+='<td style="overflow:hidden"><input value="'+escHtml(p.name||'')+'" list="parts-name-dl" oninput="partsItems['+i+'].name=this.value" onblur="recordNameHistory(PARTS_NAME_HISTORY,\'fa_parts_name_history\',this.value)" placeholder="部品名" style="font-size:11px;width:100%"></td>';
     h+='<td><input value="'+escHtml(p.partNo||'')+'" oninput="partsItems['+i+'].partNo=this.value" placeholder="品番" style="font-size:10px"></td>';
     h+='<td><input type="number" value="'+qty+'" min="1" step="1"';
     h+=' style="text-align:center;width:100%;font-size:12px"';
@@ -5944,6 +5974,7 @@ function partsMaterialHTML(){
   });
   h+='</tbody></table>';
   h+='<button class="btn btn-xs" style="margin-top:4px" onclick="partsItems.push({name:\'\',partNo:\'\',cost:\'\',profit:0,qty:1});render()">&plus;追加</button>';
+  h+='<datalist id="parts-name-dl">'+PARTS_NAME_HISTORY.map(function(n){return '<option value="'+escHtml(n)+'">';}).join('')+'</datalist>';
 
   h+='<button class="btn btn-xs" style="margin-top:4px;margin-left:6px;background:#1565c0;color:#fff;border:none" onclick="importPartsFromText()">📋 テキスト貼付取込</button>';
   h+='<div id="parts-paste-area" style="display:none;margin-top:8px">';
@@ -5959,7 +5990,7 @@ function partsMaterialHTML(){
   h+='<th style="width:60px">\u58f2\u4fa1</th><th style="width:20px"></th></tr></thead><tbody>';
   matItems.forEach(function(m,i){
     var sell=Math.round((parseFloat(m.cost)||0)*((100+(parseFloat(m.profit)||0))/100));
-    h+='<tr><td><input value="'+(m.name||'')+'" oninput="matItems['+i+'].name=this.value" placeholder="\u6750\u6599\u540d"></td>';
+    h+='<tr><td><input value="'+(m.name||'')+'" list="mat-name-dl" oninput="matItems['+i+'].name=this.value" onblur="recordNameHistory(MAT_NAME_HISTORY,\'fa_mat_name_history\',this.value)" placeholder="\u6750\u6599\u540d"></td>';
     h+='<td><input type="number" value="'+(m.cost||'')+'" oninput="matItems['+i+'].cost=this.value;uS()" style="text-align:right"></td>';
     h+='<td><input type="number" value="'+(m.profit||'')+'" oninput="matItems['+i+'].profit=this.value;uS()" style="text-align:right"></td>';
     h+='<td style="text-align:right;font-weight:bold;font-size:11px;color:#1a3a6b">&yen;'+sell.toLocaleString()+'</td>';
@@ -5967,6 +5998,7 @@ function partsMaterialHTML(){
   });
   h+='</tbody></table>';
   h+='<button class="btn btn-xs" style="margin-top:4px" onclick="matItems.push({name:\'\',cost:\'\',profit:Math.round((customer.matProfit||0.40)*100)});render()">&plus;\u8ffd\u52a0</button>';
+  h+='<datalist id="mat-name-dl">'+MAT_NAME_HISTORY.map(function(n){return '<option value="'+escHtml(n)+'">';}).join('')+'</datalist>';
   h+='</div></div>';
   return h;
 }
@@ -9357,7 +9389,7 @@ async function aiReadPdf(input){
         'Authorization':'Bearer '+SUPABASE_KEY
       },
       body: JSON.stringify({
-        model:'claude-sonnet-4-20250514',
+        model:'claude-sonnet-4-6',
         max_tokens:4000,
         system: systemPrompt,
         messages:[{
