@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="apple-touch-icon-dashboard.png">
+<title>過去見積検索｜フォーラムオート</title>
+<style>
+:root{
+  --navy:#1a3a6b; --navy2:#12274a;
+  --gold:#ffd54f; --gold2:#fff8e1;
+  --border:#e5e7eb; --border2:#d1d5db;
+  --txt:#111827; --txt2:#4b5563; --txt3:#9ca3af;
+  --bg:#eef0f4;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html{-webkit-text-size-adjust:100%;}
+body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;}
+#appWrap{max-width:600px;margin:0 auto;background:#fff;min-height:100vh;box-shadow:0 0 24px rgba(0,0,0,0.06);}
+
+.top-header{position:sticky;top:0;z-index:20;background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:14px 16px;}
+.back-link{display:inline-block;min-height:40px;line-height:40px;padding:0 16px;background:rgba(255,213,79,0.1);border:2px solid var(--gold);border-radius:20px;color:var(--gold);font-size:13px;font-weight:800;text-decoration:none;margin-bottom:8px;}
+.back-link:active{background:rgba(255,213,79,0.25);}
+.top-title{font-size:17px;font-weight:800;}
+.top-sub{font-size:12px;opacity:.85;margin-top:2px;}
+
+.search-bar{padding:14px 16px;background:#fff;border-bottom:8px solid var(--bg);display:flex;gap:8px;}
+.search-input{flex:1;min-height:48px;font-size:15px;padding:8px 12px;border:2px solid var(--border2);border-radius:10px;}
+.search-input:focus{outline:none;border-color:var(--navy);}
+.search-btn{min-width:88px;min-height:48px;padding:0 16px;background:var(--gold);border:2px solid #f5b400;border-radius:10px;color:var(--navy2);font-size:14px;font-weight:800;cursor:pointer;}
+.search-btn:active{background:#ffca28;}
+.search-hint{padding:0 16px 12px;font-size:11px;color:var(--txt3);line-height:1.6;background:#fff;}
+
+.status-msg{padding:14px 16px;font-size:13px;color:var(--txt2);text-align:center;}
+.status-msg.err{color:#c8251b;font-weight:700;}
+
+.result-list{padding:12px;}
+.result-card{background:#fff;border:2px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;}
+.rc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.rc-no{font-size:13px;font-weight:800;color:var(--navy);}
+.rc-total{font-size:16px;font-weight:800;color:#c8251b;}
+.rc-name{font-size:15px;font-weight:700;color:var(--txt);margin-bottom:3px;}
+.rc-sub{font-size:12px;color:var(--txt2);margin-bottom:4px;line-height:1.6;}
+.rc-memo{font-size:12px;color:var(--txt3);background:var(--gold2);border-radius:6px;padding:6px 8px;margin-bottom:10px;line-height:1.5;}
+.rc-btn{display:block;text-align:center;min-height:44px;line-height:44px;background:var(--navy);color:#fff;border-radius:8px;font-size:14px;font-weight:800;text-decoration:none;}
+.rc-btn:active{background:var(--navy2);}
+
+.empty-msg{text-align:center;padding:40px 20px;color:var(--txt3);font-size:14px;line-height:1.7;}
+</style>
+</head>
+<body>
+
+<div id="appWrap">
+  <div class="top-header">
+    <a href="ダッシュボード.html" class="back-link">← ダッシュボードへ戻る</a>
+    <div class="top-title">🔍 過去見積検索</div>
+    <div class="top-sub">顧客名・車名・ナンバー・メモ・作業項目から横断検索</div>
+  </div>
+
+  <div class="search-bar">
+    <input id="kwInput" class="search-input" type="text" placeholder="例：山田太郎／プリウス／浜松500／バンパー交換" autocomplete="off">
+    <button class="search-btn" onclick="doSearch()">🔍 検索</button>
+  </div>
+  <div class="search-hint">顧客名・車名・ナンバー・見積メモ・作業項目名のいずれかに一致する過去見積を表示します。</div>
+
+  <div id="statusMsg" class="status-msg"></div>
+  <div id="resultList" class="result-list"></div>
+</div>
+
+<script>
+var SUPABASE_URL = 'https://uhppgdwbyrijnqpvusxw.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVocHBnZHdieXJpam5xcHZ1c3h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NDEyMDksImV4cCI6MjA4OTExNzIwOX0.mJ2GXQUsRZAZ-VL6XTVTz3gfG3MTNtfnWxsIPU_DK60';
+var SB_H = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY };
+
+function esc(s) {
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Supabaseの1,000行制限を回避してRangeヘッダーでページングしながら全件取得
+async function supabaseFetchAll(url) {
+  var allRows = [];
+  var pageSize = 1000;
+  var offset = 0;
+  while (true) {
+    var res = await fetch(url, {
+      headers: Object.assign({}, SB_H, {
+        'Range-Unit': 'items',
+        'Range': offset + '-' + (offset + pageSize - 1)
+      })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    var batch = await res.json();
+    if (!Array.isArray(batch) || !batch.length) break;
+    allRows = allRows.concat(batch);
+    if (batch.length < pageSize) break;
+    offset += pageSize;
+  }
+  return allRows;
+}
+
+var SELECT_FIELDS = 'id,estimate_no,customer_name,car_name,plate,estimate_date,grand_total,memo,repair_status';
+
+async function doSearch() {
+  var kw = document.getElementById('kwInput').value.trim();
+  var statusEl = document.getElementById('statusMsg');
+  var listEl = document.getElementById('resultList');
+  listEl.innerHTML = '';
+  if (!kw) {
+    statusEl.className = 'status-msg err';
+    statusEl.textContent = 'キーワードを入力してください';
+    return;
+  }
+  statusEl.className = 'status-msg';
+  statusEl.textContent = '🔄 検索中...';
+
+  try {
+    var enc = encodeURIComponent(kw);
+
+    // ① 顧客名・車名・ナンバー・見積メモを横断検索（estimatesは顧客名・車名等を自身の列に保持しているためcustomers/vehiclesの結合は不要）
+    var estUrl = SUPABASE_URL + '/rest/v1/estimates'
+      + '?or=(customer_name.ilike.*' + enc + '*,car_name.ilike.*' + enc + '*,plate.ilike.*' + enc + '*,memo.ilike.*' + enc + '*)'
+      + '&select=' + SELECT_FIELDS
+      + '&order=estimate_date.desc';
+    var estRows = await supabaseFetchAll(estUrl);
+
+    // ② 作業項目名(estimate_items.item_name)から一致する見積IDを取得
+    var itemsUrl = SUPABASE_URL + '/rest/v1/estimate_items'
+      + '?item_name=ilike.*' + enc + '*'
+      + '&select=estimate_id';
+    var itemRows = await supabaseFetchAll(itemsUrl);
+    var itemEstIds = Array.from(new Set(itemRows.map(function(r){ return r.estimate_id; }).filter(Boolean)));
+
+    var mergedMap = {};
+    estRows.forEach(function(e){ mergedMap[e.id] = e; });
+
+    var missingIds = itemEstIds.filter(function(id){ return !mergedMap[id]; });
+    if (missingIds.length) {
+      // in()フィルタのURL長制限を考慮し100件ずつチャンク分割して取得
+      var chunkSize = 100;
+      for (var i = 0; i < missingIds.length; i += chunkSize) {
+        var chunk = missingIds.slice(i, i + chunkSize);
+        var idsUrl = SUPABASE_URL + '/rest/v1/estimates?id=in.(' + chunk.join(',') + ')&select=' + SELECT_FIELDS;
+        var extraRows = await supabaseFetchAll(idsUrl);
+        extraRows.forEach(function(e){ mergedMap[e.id] = e; });
+      }
+    }
+
+    var results = Object.keys(mergedMap).map(function(id){ return mergedMap[id]; })
+      .filter(function(e){ return e.repair_status !== '削除済'; })
+      .sort(function(a, b){ return (b.estimate_date || '').localeCompare(a.estimate_date || ''); });
+
+    if (!results.length) {
+      statusEl.textContent = '該当する見積が見つかりませんでした';
+      listEl.innerHTML = '<div class="empty-msg">条件を変えて再度検索してください</div>';
+      return;
+    }
+    statusEl.textContent = results.length + '件見つかりました';
+    listEl.innerHTML = results.map(renderResultCard).join('');
+  } catch (err) {
+    statusEl.className = 'status-msg err';
+    statusEl.textContent = '⚠ 検索エラー：' + err.message;
+  }
+}
+
+function renderResultCard(e) {
+  var total = (e.grand_total || 0).toLocaleString();
+  var memo = (e.memo || '').trim();
+  var memoSnippet = memo.slice(0, 30) + (memo.length > 30 ? '…' : '');
+  var date = (e.estimate_date || '').slice(0, 10);
+  return '<div class="result-card">'
+    + '<div class="rc-top"><span class="rc-no">' + esc(e.estimate_no || '') + '</span><span class="rc-total">¥' + total + '</span></div>'
+    + '<div class="rc-name">' + esc(e.customer_name || '氏名なし') + ' 様　' + esc(e.car_name || '') + '</div>'
+    + '<div class="rc-sub">📅 ' + esc(date) + (e.plate ? '　🚗 ' + esc(e.plate) : '') + '</div>'
+    + (memoSnippet ? '<div class="rc-memo">💬 ' + esc(memoSnippet) + '</div>' : '')
+    + '<a class="rc-btn" href="index.html?est_id=' + encodeURIComponent(e.id) + '">この見積を見る →</a>'
+    + '</div>';
+}
+
+document.getElementById('kwInput').addEventListener('keydown', function(e){
+  if (e.key === 'Enter') doSearch();
+});
+</script>
+</body>
+</html>

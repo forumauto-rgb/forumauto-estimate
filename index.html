@@ -7375,6 +7375,19 @@ async function fetchReceptionInfo(receptionId){
 
 // ===== 受付システムからのURLパラメータを受け取り顧客情報を自動入力 =====
 async function applyReceptionParams() {
+  // ★ estimate_search.html等からest_id指定で開かれた場合はその見積を読み込んで終了
+  try {
+    var estIdParam = new URLSearchParams(window.location.search).get('est_id');
+    if(estIdParam){
+      await loadEstimate(estIdParam, '');
+      curTab='estimate';
+      render();
+      if(window.history && window.history.replaceState){
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+      return;
+    }
+  } catch(eid){ console.warn('est_id読込エラー:', eid); }
   // ★ 受付からの引き継ぎ（写真・色番号・マスター登録）※nameがなくても実行
   try {
     var transferRaw = localStorage.getItem('fa_reception_transfer');
