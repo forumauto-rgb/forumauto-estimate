@@ -145,7 +145,7 @@ input[type=file]{display:none;}
       <input type="number" id="materialAdjustInput" placeholder="例: 8000 または -3000" style="width:100%;padding:10px;border-radius:8px;border:1px solid #2e7d32;background:#10204a;color:white;font-size:14px;">
     </div>
     <button class="shoot-btn camera" onclick="document.getElementById('cameraInput').click()">📷 カメラで今すぐ撮影</button>
-    <button class="shoot-btn gallery" onclick="document.getElementById('galleryInput').click()">🖼 スマホのアルバムから選択<br><span style="font-size:11px;font-weight:normal;opacity:0.85">保存済み写真も送れます</span></button>
+    <button class="shoot-btn gallery" onclick="document.getElementById('galleryInput').click()">🖼 このデバイスの写真を選択<br><span style="font-size:11px;font-weight:normal;opacity:0.85">保存済み写真も送れます</span></button>
     <input type="file" id="cameraInput" accept="image/*" capture="environment" multiple onchange="handleFiles(this.files)">
     <input type="file" id="galleryInput" accept="image/*" multiple onchange="handleFiles(this.files)">
     <div class="photo-count" id="photoCount"></div>
