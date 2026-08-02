@@ -3735,7 +3735,7 @@ function renderEstimate(){
   if(kw.length>=1){Object.entries(PARTS_DATA).forEach(([part,tasks])=>{tasks.forEach((t,i)=>{if(part.includes(kw)||t.name.includes(kw)||t.process.includes(kw))sr.push({part,task:t,idx:i});});});}
   const _allParts=(curParts&&curParts.length?curParts:[curPart]).filter(function(p){return p&&PARTS_DATA[p];});
   const curTasks=_allParts.reduce(function(acc,p){
-    return acc.concat((PARTS_DATA[p]||[]).map(function(t){return Object.assign({},t,{_partKey:p});}));
+    return acc.concat((PARTS_DATA[p]||[]).map(function(t,ti){return Object.assign({},t,{_partKey:p,_idx:ti});}));
   },[]);
   const{labor,pt,mt,sub,tax}=calcTotals();
 
@@ -3779,7 +3779,7 @@ function renderEstimate(){
             const lr=effectiveLR(isP);
             const dis=isConflictDisabled(t,t._partKey||curPart);
             return`<div class="task-item${chk?' checked':''}"${dis?' style="opacity:0.4;pointer-events:none;"':''}>
-              <input type="checkbox" ${chk?'checked':''} ${dis?'disabled':''} onchange="tT('${curPart.replace(/'/g,"\\'")}',${i},this)">
+              <input type="checkbox" ${chk?'checked':''} ${dis?'disabled':''} onchange="tT('${(t._partKey||curPart).replace(/'/g,"\\'")}',${t._idx!=null?t._idx:i},this)">
               <span style="flex:1;font-size:12px">${t.name}</span>
               <span class="tag ${TC4[t.tag]||'tag-remove'}">${t.process}</span>
               <span style="font-size:10px;color:${isP?'#2e7d32':'#888'};width:72px;text-align:right">${lr.toLocaleString()}円/h</span>
