@@ -7371,6 +7371,39 @@ async function applyReceptionParams() {
     }
   } catch(te){ console.warn('受付引き継ぎエラー:', te); }
 
+  // ★ 見積保存前（_estIdなし）でreception_idがある場合、estimate_photosから入庫時写真を自動取得
+  // ※ 以降のURLパラメータ処理は`name`がなければ早期returnするため、その前に実行する
+  if (!customer._estId && customer.receptionId) {
+    try {
+      var recIdForPhotoLoad = (customer.receptionId || '').replace(/^REC-/i, '');
+      if (recIdForPhotoLoad) {
+        var rPhotoLoad = await fetch(
+          SUPABASE_URL + '/rest/v1/estimate_photos?reception_id=eq.' + encodeURIComponent(recIdForPhotoLoad)
+          + '&category=eq.photoIncoming&select=data_url&order=sort_order.asc',
+          { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
+        );
+        if (rPhotoLoad.ok) {
+          var photoRowsForLoad = await rPhotoLoad.json();
+          if (Array.isArray(photoRowsForLoad) && photoRowsForLoad.length) {
+            if (!customer.photoIncoming) customer.photoIncoming = [];
+            var existPhotoUrls = {};
+            customer.photoIncoming.forEach(function(u){ existPhotoUrls[u] = 1; });
+            photoRowsForLoad.forEach(function(row){
+              if (row.data_url && !existPhotoUrls[row.data_url]) {
+                existPhotoUrls[row.data_url] = 1;
+                customer.photoIncoming.push(row.data_url);
+              }
+            });
+            render();
+            showNotify('📷 入庫時写真 ' + photoRowsForLoad.length + '枚 を読み込みました');
+          }
+        }
+      }
+    } catch (ePhotoLoad) {
+      console.warn('入庫時写真自動取得エラー:', ePhotoLoad);
+    }
+  }
+
   const params = new URLSearchParams(window.location.search);
   const name  = params.get('name');
   const phone = params.get('phone');
