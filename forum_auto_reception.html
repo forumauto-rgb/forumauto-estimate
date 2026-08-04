@@ -628,6 +628,27 @@ textarea{resize:vertical;min-height:80px;}
             <div class="term-desc">運転者は有効な運転免許証をお持ちの方に限ります。免許の種類・有効期限を必ずご確認ください。</div>
           </div>
         </div>
+        <div class="term-item" onclick="toggleTerm(this)">
+          <input type="checkbox" onclick="event.stopPropagation();toggleTerm(this.parentElement)">
+          <div class="term-text">
+            <div class="term-title">⑧返却遅延について</div>
+            <div class="term-desc">返却予定日時を超える場合は事前にご連絡ください。無断延長の場合は延滞料金が発生します。</div>
+          </div>
+        </div>
+        <div class="term-item" onclick="toggleTerm(this)">
+          <input type="checkbox" onclick="event.stopPropagation();toggleTerm(this.parentElement)">
+          <div class="term-text">
+            <div class="term-title">⑨車両の管理責任</div>
+            <div class="term-desc">利用中の日常点検は借受人の責任で行ってください。鍵の管理・車内への貴重品放置によるトラブルは当社では責任を負いません。</div>
+          </div>
+        </div>
+        <div class="term-item" onclick="toggleTerm(this)">
+          <input type="checkbox" onclick="event.stopPropagation();toggleTerm(this.parentElement)">
+          <div class="term-text">
+            <div class="term-title">⑩車内での禁止行為</div>
+            <div class="term-desc">車内での違法薬物の使用・所持、飲酒運転、その他法令に違反する行為は固く禁じます。発覚した場合は直ちに契約を解除し、警察へ通報します。</div>
+          </div>
+        </div>
       </div>
       <div class="sign-area disabled" id="signArea">
         <canvas class="sign-canvas" id="signCanvas" width="800" height="180"></canvas>
