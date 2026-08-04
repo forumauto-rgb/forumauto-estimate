@@ -2054,8 +2054,8 @@ async function checkPaintDifficultyForEstimate(code){
       + 'background:linear-gradient(135deg,#b71c1c,#c62828);color:white;'
       + 'border-radius:12px;padding:14px 20px;min-width:320px;max-width:480px;'
       + 'box-shadow:0 4px 20px rgba(183,28,28,0.5);text-align:center;';
-    var surcharge = rec.surcharge_rate ? ('　割増率：×' + rec.surcharge_rate) : '';
-    var note = rec.note ? ('<div style="font-size:11px;margin-top:6px;opacity:0.9;">' + rec.note + '</div>') : '';
+    var surcharge = rec.extra_material_rate ? ('　割増率：×' + rec.extra_material_rate) : '';
+    var note = rec.customer_message ? ('<div style="font-size:11px;margin-top:6px;opacity:0.9;">' + rec.customer_message + '</div>') : '';
     banner.innerHTML = '<div style="font-size:15px;font-weight:bold;margin-bottom:4px;">⚠️ 超難易度塗料</div>'
       + '<div style="font-size:13px;">色番号：<strong>' + upper + '</strong>　' + (rec.color_name || '') + surcharge + '</div>'
       + note
