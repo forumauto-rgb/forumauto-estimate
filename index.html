@@ -1011,8 +1011,8 @@ function showAliasConflictDialog(conflict,onDone){
   ov.appendChild(box);
   document.body.appendChild(ov);
   function choose(action){
-    if(action==='both'){sel.push(nw);}
-    else if(action==='replace'){sel=sel.filter(function(s){return s!==ex;});sel.push(nw);}
+    if(action==='both'){sel.push(nw);ensureStandardHoursRegistered(nw);}
+    else if(action==='replace'){sel=sel.filter(function(s){return s!==ex;});sel.push(nw);ensureStandardHoursRegistered(nw);}
     document.body.removeChild(ov);
     render();
     onDone();
@@ -1030,7 +1030,7 @@ function addItemsWithDupCheck(items){
     } else {
       var conflict=findAliasConflict(item);
       if(conflict){aliasConflicts.push({newItem:item,existing:conflict});}
-      else{sel.push(item);}
+      else{sel.push(item);ensureStandardHoursRegistered(item);}
     }
   });
   if(skipped.length>0){
@@ -5247,6 +5247,55 @@ function eH(i,v){
 }
 function eC(i,v){sel[i].editC=parseFloat(v)||0;uS();}
 function rT(i){sel.splice(i,1);render();autoSave();}
+
+// ★「M登録」ボタン：作業行をkosu_master（standard_hours）に正式登録する
+async function mRegister(i){
+  var s = sel[i];
+  if(!s) return;
+  var partName = s.part || s._part || curPart || '';
+  var name = s.name || '';
+  var process = s.process || '';
+  var hours = (s.h!=null && s.h!=='') ? parseFloat(s.h) : (s.hours || 0);
+  if(!partName){ showNotify('⚠ 部位が特定できないため登録できません'); return; }
+  if(!name){ showNotify('⚠ 作業名が空のため登録できません'); return; }
+  try{
+    var checkUrl = SUPABASE_URL + '/rest/v1/standard_hours'
+      + '?part_name=eq.' + encodeURIComponent(partName)
+      + '&name=eq.' + encodeURIComponent(name)
+      + '&process=eq.' + encodeURIComponent(process)
+      + '&select=id,registration_type';
+    var checkRes = await fetch(checkUrl, {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+    var existing = checkRes.ok ? await checkRes.json() : [];
+    var key = shKey(partName, name, process);
+
+    if(existing && existing.length){
+      if(!confirm('既に同じマスターが存在します（'+partName+' / '+name+' / '+process+'）。\n上書きしますか？')) return;
+      var patchRes = await fetch(SUPABASE_URL + '/rest/v1/standard_hours?id=eq.' + existing[0].id, {
+        method: 'PATCH',
+        headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+        body: JSON.stringify({hours: hours || 0, tag: s.tag || 'other', registration_type: '正式'})
+      });
+      if(!patchRes.ok) throw new Error('更新失敗: ' + patchRes.status);
+      STANDARD_HOURS_KEYS.add(key);
+      showNotify('✅ マスターを上書き登録しました：' + name);
+    } else {
+      var postRes = await fetch(SUPABASE_URL + '/rest/v1/standard_hours', {
+        method: 'POST',
+        headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+        body: JSON.stringify({
+          part_name: partName, name: name, process: process,
+          tag: s.tag || 'other', hours: hours || 0,
+          vehicle_grade: '中型', memo: '', registration_type: '正式'
+        })
+      });
+      if(!postRes.ok) throw new Error('登録失敗: ' + postRes.status);
+      STANDARD_HOURS_KEYS.add(key);
+      showNotify('✅ マスターに正式登録しました：' + name);
+    }
+  } catch(e){
+    showNotify('⚠ マスター登録エラー: ' + e.message);
+  }
+}
 function rIP(){const sc=document.querySelector('.content').scrollTop;render();setTimeout(()=>document.querySelector('.content').scrollTop=sc,10);}
 function dS(e){dragSrc=+e.currentTarget.dataset.idx;}
 function dO(e){e.preventDefault();}
@@ -5685,7 +5734,7 @@ function renderSelectedTasks(fullMode){
   h+='<th style="padding:6px;width:55px;text-align:center">\u6a19\u6e96(h)</th>';
   h+='<th style="padding:6px;width:80px;text-align:center">\u5de5\u6570(h)</th>';
   h+='<th style="padding:6px;width:75px;text-align:right">\u5de5\u8cdb(\u5186)</th>';
-  h+='<th style="padding:6px;width:28px"></th>';
+  h+='<th style="padding:6px;width:68px"></th>';
   h+='</tr></thead><tbody>';
   // 整列はsel本体に1回だけ適用済み。render時には再ソートしない
   var dispSel = sel.slice();
@@ -5765,7 +5814,8 @@ function renderSelectedTasks(fullMode){
     h+='<td style="padding:4px 6px;text-align:right;font-size:12px;font-weight:bold;color:#1a3a6b">';
     h+=(dispCost>0?('&yen;'+dispCost.toLocaleString()):'&yen;0');
     h+='</td>';
-    h+='<td style="padding:4px;text-align:center">';
+    h+='<td style="padding:4px;text-align:center;white-space:nowrap;">';
+    h+='<button onclick="mRegister('+rowIdx+')" title="標準工数マスターに登録" style="background:#fff;border:1px solid #1a7a52;color:#1a7a52;border-radius:4px;padding:2px 5px;font-size:10px;font-weight:bold;cursor:pointer;margin-right:3px;">M登録</button>';
     h+='<button onclick="rT('+rowIdx+')" style="background:none;border:none;cursor:pointer;color:#e53935;font-size:14px">&times;</button>';
     h+='</td>';
     h+='</tr>';
@@ -9492,6 +9542,37 @@ render();
 // 受付システムからのURLパラメータを反映
 setTimeout(applyReceptionParams, 1200);
 
+// ===== kosu_master（standard_hours）自動仮登録 =====
+var STANDARD_HOURS_KEYS = new Set(); // 既存の part_name||name||process キー集合（重複判定用）
+function shKey(partName, name, process){
+  return (partName||'') + '||' + (name||'') + '||' + (process||'');
+}
+// AIまたは手動で見積に追加された作業がkosu_master（standard_hours）に存在しない場合、仮登録として自動登録する
+async function ensureStandardHoursRegistered(item){
+  try {
+    var partName = item.part || item._part || curPart || '';
+    var name = item.name || '';
+    var process = item.process || '';
+    if(!partName || !name) return; // 部位名・作業名が特定できない場合は登録しない
+    var key = shKey(partName, name, process);
+    if(STANDARD_HOURS_KEYS.has(key)) return; // 既に存在（正式・仮登録問わず）
+    STANDARD_HOURS_KEYS.add(key); // 二重送信防止のため先にマーク
+    var hours = (item.h!=null && item.h!=='') ? parseFloat(item.h) : (item.hours || 0);
+    var res = await fetch(SUPABASE_URL + '/rest/v1/standard_hours', {
+      method: 'POST',
+      headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body: JSON.stringify({
+        part_name: partName, name: name, process: process,
+        tag: item.tag || 'other', hours: hours || 0,
+        vehicle_grade: '中型', memo: '', registration_type: '仮登録'
+      })
+    });
+    if(!res.ok) STANDARD_HOURS_KEYS.delete(key); // 失敗時は次回また判定できるよう戻す
+  } catch(e){
+    console.warn('kosu_master仮登録エラー:', e);
+  }
+}
+
 // ===== Supabase standard_hours マージ（B案）=====
 async function mergeStandardHours() {
   try {
@@ -9513,6 +9594,7 @@ async function mergeStandardHours() {
         });
         merged++;
       }
+      STANDARD_HOURS_KEYS.add(shKey(part, r.name, r.process));
     });
     if (merged > 0) rIP();
   } catch(e) {

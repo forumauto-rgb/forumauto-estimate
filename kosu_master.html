@@ -59,6 +59,9 @@ header .badge{background:#e67e22;color:#fff;padding:3px 10px;border-radius:12px;
 .notify{position:fixed;bottom:20px;right:20px;background:#27ae60;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.2);opacity:0;transition:opacity .3s;z-index:200;pointer-events:none}
 .notify.show{opacity:1}
 .notify.err{background:#e74c3c}
+.row-provisional{background:#fff9c4}
+.row-provisional:hover td{background:#fff59d}
+.provisional-badge{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;background:#f9a825;color:#fff;vertical-align:middle}
 .empty-state{text-align:center;padding:60px 20px;color:#aaa}
 .empty-state svg{width:48px;height:48px;margin-bottom:12px;opacity:.4}
 #syncStatus{font-size:11px;color:#888;margin-left:8px}
@@ -188,10 +191,32 @@ async function sbFetch(path, opts={}) {
   return res.status === 204 ? null : res.json();
 }
 
+// standard_hoursは1000件超のため、Rangeでページングして全件取得する
+async function sbFetchAllPaged(path) {
+  var all = [];
+  var pageSize = 1000;
+  var offset = 0;
+  while (true) {
+    var res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+      headers: {
+        'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Range-Unit': 'items', 'Range': offset + '-' + (offset + pageSize - 1)
+      }
+    });
+    if (!res.ok) throw new Error(await res.text());
+    var batch = await res.json();
+    if (!Array.isArray(batch) || !batch.length) break;
+    all = all.concat(batch);
+    if (batch.length < pageSize) break;
+    offset += pageSize;
+  }
+  return all;
+}
+
 async function loadData() {
   document.getElementById('syncStatus').textContent = '読込中...';
   try {
-    const rows = await sbFetch('standard_hours?order=part_name.asc,id.asc');
+    const rows = await sbFetchAllPaged('standard_hours?order=part_name.asc,id.asc');
     allData = rows.map(r => ({...r, _dirty:false, _new:false, _del:false}));
     document.getElementById('syncStatus').textContent = '✅ ' + allData.length + '件読込済';
     renderSidebar();
@@ -234,9 +259,10 @@ function renderTable() {
   tbody.innerHTML = rows.map((r, i) => {
     const realIdx = allData.indexOf(r);
     const tagClass = 'tag-' + (r.tag||'other');
-    return '<tr>' +
+    const isProvisional = r.registration_type === '仮登録';
+    return '<tr' + (isProvisional ? ' class="row-provisional"' : '') + '>' +
       '<td>' + esc(r.part_name) + '</td>' +
-      '<td>' + esc(r.name) + '</td>' +
+      '<td>' + esc(r.name) + (isProvisional ? '<span class="provisional-badge">仮登録</span>' : '') + '</td>' +
       '<td>' + esc(r.process) + '</td>' +
       '<td><span class="tag-chip ' + tagClass + '">' + (TAG_LABELS[r.tag]||r.tag) + '</span></td>' +
       '<td style="text-align:right;font-weight:600">' + (r.hours||0) + '</td>' +
