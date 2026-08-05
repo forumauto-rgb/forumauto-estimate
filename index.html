@@ -4382,7 +4382,7 @@ async function runInsuranceAI(){
       })
     });
     var data = await resp.json();
-    var text = data.content && data.content[0] ? data.content[0].text : '回答を取得できませんでした';
+    var text = extractAiText(data);
 
     // マークダウン風に整形
     var html = text
@@ -8323,6 +8323,26 @@ function aiChatAddKeyword(kw){
   var i=document.getElementById('ai-chat-input');
   if(i){i.value=(i.value+' '+kw).trim();i.focus();}
 }
+
+// ★ ai-proxy Edge Functionの応答からテキストを取り出す共通処理
+// 正常時は {result:"..."} 形式で返る。将来的な形式変更に備え {content:[{type:'text',text:"..."}]} 形式も互換対応。
+// エラー応答（{error:"..."}）や空応答の場合は例外を投げ、呼び出し側でユーザー向けメッセージに変換させる。
+function extractAiText(data){
+  if(data && data.error){
+    throw new Error('AIサーバーエラー: ' + data.error);
+  }
+  var text = '';
+  if(data && typeof data.result === 'string'){
+    text = data.result;
+  } else if(data && data.content && data.content.length){
+    data.content.forEach(function(c){ if(c.type==='text') text += c.text; });
+  }
+  if(!text){
+    throw new Error('AIからの応答が空でした。もう一度お試しください。');
+  }
+  return text;
+}
+
 async function aiAnalyzePhotos(){
   // 写真必須チェック
   var photos = (customer.photoIncoming||[]).slice(0,3);
@@ -8396,12 +8416,7 @@ async function aiAnalyzePhotos(){
       })
     });
     var data = await resp.json();
-    var text = '';
-    if(data.result){
-      text = data.result;
-    } else if(data.content && data.content.length){
-      data.content.forEach(function(c){ if(c.type==='text') text += c.text; });
-    }
+    var text = extractAiText(data);
     // JSONフェンスがない場合でもJSONとして試みる
     if(text && !text.includes('```json')){
       try{
@@ -8744,13 +8759,7 @@ async function aiChatCallAPI(){
     });
     clearTimeout(aiTimer);
     var data = await resp.json();
-    var text = '';
-    // ★ ai-proxyはdata.resultで返す（正常パターンに合わせる）
-    if(data.result){
-      text = data.result;
-    } else if(data.content && data.content.length){
-      data.content.forEach(function(c){ if(c.type==='text') text += c.text; });
-    }
+    var text = extractAiText(data);
     // JSONフェンスがない場合もJSONとして試みる
     if(text && !text.includes('```json')){
       try{
@@ -9347,12 +9356,17 @@ async function aiAnalyze(){
       })
     });
     var data = await resp.json();
-    var text = '';
-    if(data.content && data.content.length){
-      data.content.forEach(function(c){ if(c.type === 'text') text += c.text; });
-    }
+    var text = extractAiText(data);
     text = text.replace(/```json|```/g, '').trim();
-    var parsed = JSON.parse(text);
+    if(!text){
+      throw new Error('AI応答が空でした。もう一度お試しください。');
+    }
+    var parsed;
+    try{
+      parsed = JSON.parse(text);
+    }catch(pe){
+      throw new Error('AI応答の解析に失敗しました（不正なJSON形式）。もう一度お試しください。');
+    }
     // checkedItemsを全チェック状態で初期化
     aiState.checkedItems = {};
     if(parsed.tasks){ parsed.tasks.forEach(function(t, i){ aiState.checkedItems[i] = true; }); }
@@ -9419,14 +9433,19 @@ async function aiReadPdf(input){
     });
 
     var data = await resp.json();
-    var text = '';
-    if(data.content && data.content.length){
-      data.content.forEach(function(c){ if(c.type==='text') text += c.text; });
-    }
+    var text = extractAiText(data);
 
     // JSONを抽出
     var jsonText = text.replace(/```json|```/g,'').trim();
-    var parsed = JSON.parse(jsonText);
+    if(!jsonText){
+      throw new Error('AI応答が空でした。もう一度お試しください。');
+    }
+    var parsed;
+    try{
+      parsed = JSON.parse(jsonText);
+    }catch(pe){
+      throw new Error('AI応答の解析に失敗しました（不正なJSON形式）。もう一度お試しください。');
+    }
 
     if(!parsed.parts || !parsed.parts.length){
       if(status) status.innerHTML = '⚠ 部品が見つかりませんでした';
