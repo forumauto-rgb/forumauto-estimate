@@ -1011,8 +1011,8 @@ function showAliasConflictDialog(conflict,onDone){
   ov.appendChild(box);
   document.body.appendChild(ov);
   function choose(action){
-    if(action==='both'){sel.push(nw);ensureStandardHoursRegistered(nw);}
-    else if(action==='replace'){sel=sel.filter(function(s){return s!==ex;});sel.push(nw);ensureStandardHoursRegistered(nw);}
+    if(action==='both'){ensureStandardHoursRegistered(nw);applyPanelMultiplier(nw);sel.push(nw);}
+    else if(action==='replace'){sel=sel.filter(function(s){return s!==ex;});ensureStandardHoursRegistered(nw);applyPanelMultiplier(nw);sel.push(nw);}
     document.body.removeChild(ov);
     render();
     onDone();
@@ -1020,6 +1020,44 @@ function showAliasConflictDialog(conflict,onDone){
   box.querySelector('#adlg-skip').onclick=function(){choose('skip');};
   box.querySelector('#adlg-both').onclick=function(){choose('both');};
   box.querySelector('#adlg-replace').onclick=function(){choose('replace');};
+}
+
+// ===== 車両カテゴリ別 工数割増（バンパー・ドア・リヤゲート） =====
+var PANEL_MULT_BUMPER = ['フロントバンパー','リヤーバンパー'];
+var PANEL_MULT_DOOR = ['フロントドア（右）','フロントドア（左）','リヤードア（右）','リヤードア（左）','スライドドア（右）','スライドドア（左）'];
+var PANEL_MULT_GATE = ['ゲート（バックドア）'];
+// リヤゲート割増率：軽量級
+var GATE_MULT_LIGHT = ['軽自動車','軽ワゴン','コンパクト'];
+// リヤゲート割増率：中量級
+var GATE_MULT_MID = ['中型','SUV（一般）','ワンボックス（中）','高級車','商用バン/トラック','コンパクト外車'];
+// リヤゲート割増率：重量級（コンパクト外車を除く外車系・大型・高級ワンボックスはGRADE_MASTERの車格係数がこの区分に近いため含める）
+var GATE_MULT_HEAVY = ['高級ワンボックス','本格大型4WD（ランクル級）','外車SUV','外車スポーツ','スポーツカー','中級外車','高級外車'];
+
+function getGateMultiplier(carCategory){
+  if(!carCategory) return 2.0;
+  if(GATE_MULT_LIGHT.indexOf(carCategory)>=0) return 2.0;
+  if(GATE_MULT_MID.indexOf(carCategory)>=0) return 2.5;
+  if(GATE_MULT_HEAVY.indexOf(carCategory)>=0) return 2.8;
+  return 2.0; // 未知のカテゴリ値は未設定と同様に扱う
+}
+
+// 対象パネル（バンパー・ドア・リヤゲート）に車両カテゴリ別の割増率を適用し、工数(h)・工賃(cost/price)を再計算する
+function applyPanelMultiplier(item){
+  var part = item.part || item._part || '';
+  if(!part) return;
+  var mult = null;
+  if(PANEL_MULT_BUMPER.indexOf(part)>=0) mult = 1.3;
+  else if(PANEL_MULT_DOOR.indexOf(part)>=0) mult = 1.5;
+  else if(PANEL_MULT_GATE.indexOf(part)>=0) mult = getGateMultiplier(customer.carCategory);
+  if(!mult || mult===1) return;
+  var baseH = (item.h!=null && item.h!=='') ? parseFloat(item.h) : (item.hours||0);
+  if(!baseH) return;
+  var newH = Math.round(baseH*mult*100)/100;
+  var lr = effectiveLR(item);
+  item.h = newH;
+  item.cost = Math.round(newH*lr);
+  item.price = item.cost;
+  item._panelMult = mult;
 }
 
 function addItemsWithDupCheck(items){
@@ -1030,7 +1068,7 @@ function addItemsWithDupCheck(items){
     } else {
       var conflict=findAliasConflict(item);
       if(conflict){aliasConflicts.push({newItem:item,existing:conflict});}
-      else{sel.push(item);ensureStandardHoursRegistered(item);}
+      else{ensureStandardHoursRegistered(item);applyPanelMultiplier(item);sel.push(item);}
     }
   });
   if(skipped.length>0){
@@ -2437,6 +2475,7 @@ function applyDamageSuggest(partKey, items){
             price: t.hours ? Math.round(lr * t.hours) : (t.cost || 0),
             h: t.hours || 0
           });
+          applyPanelMultiplier(newItem);
           toAdd.push(newItem);
           added++;
         }
@@ -3592,6 +3631,12 @@ function renderCustomerPanel(){
       <div class="fg" style="flex:none"><label>型式</label><input id="cModel" value="${customer.model||''}" oninput="customer.model=this.value;awResize(this,9,16)" placeholder="ZVW30" style="${awStyle(customer.model||'',9,16)}"></div>
       <div class="fg" style="flex:none"><label>車色名</label><input id="cCol" value="${customer.color||''}" oninput="customer.color=this.value;awResize(this,16,24)" placeholder="パールホワイト" style="${awStyle(customer.color||'',16,24)}"></div>
       <div class="fg" style="flex:none"><label>色番号</label><input id="cColCode" value="${customer.colorCode||''}" oninput="customer.colorCode=this.value;cAutoColorName(this.value);awResize(this,7,12)" placeholder="040" style="${awStyle(customer.colorCode||'',7,12,'font-family:monospace;')}"></div>
+      <div class="fg" style="flex:none;min-width:150px"><label>車両カテゴリ</label>
+        <select id="cCarCat" onchange="customer.carCategory=this.value;render()" style="width:100%">
+          <option value=""${!customer.carCategory?' selected':''}>未設定</option>
+          ${GRADE_MASTER.map(g=>`<option value="${g.name}"${customer.carCategory===g.name?' selected':''}>${g.name}</option>`).join('')}
+        </select>
+      </div>
       <div class="fg" style="flex:none;min-width:150px"><label>車格区分 <span style="font-size:10px;color:#999;font-weight:normal">${(GRADE_MASTER.find(x=>x.name===customer.grade)||{desc:''}).desc}</span></label>
         <select id="cG" onchange="customer.grade=this.value;render()" style="width:100%">
           ${GRADE_MASTER.map(g=>`<option value="${g.name}"${customer.grade===g.name?' selected':''}>${g.name}</option>`).join('')}
@@ -5797,6 +5842,9 @@ function renderSelectedTasks(fullMode){
     h+='<td style="padding:4px 6px;text-align:center;cursor:'+(canDrag?'move':'default')+';color:#bbb">'+(canDrag?'&#8286;':'')+'</td>';
     h+='<td style="padding:4px 8px;border-right:1px solid #e8e8e8">';
     h+='<div style="font-weight:bold;font-size:12px;display:flex;align-items:center;gap:6px;">'+dispName;
+    if(s._panelMult){
+      h+='<span title="車両カテゴリにより工数を'+s._panelMult+'倍に割増済み" style="flex-shrink:0;background:#ede7f6;color:#4527a0;border:1px solid #7e57c2;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:bold;">👥×'+s._panelMult+'</span>';
+    }
     if(s.ai_reason){
       h+='<button type="button" onclick="event.stopPropagation();showReasonPopup('+rowIdx+')" title="AI提案理由を見る" aria-label="AI提案理由を見る" style="flex-shrink:0;background:#fff3e0;border:2px solid #e65100;border-radius:7px;width:30px;height:30px;font-size:16px;line-height:1;cursor:pointer;">💬</button>';
     }
@@ -6784,6 +6832,7 @@ async function saveEstimate(){
       memo:customer.estNote||'',
       reception_id:customer.receptionId||null,
       coating:customer.coating||null,
+      car_category:customer.carCategory||null,
       transport_destination:customer.destAddr||null
     };
     // 既存見積を検索
@@ -7148,6 +7197,7 @@ async function loadEstimate(estId,estNo){
       customer.ajStaff=h.aj_staff||'';
       customer.paymentMemo=h.payment_memo||'';customer.chk1=h.chk1||'';customer.chk2=h.chk2||'';customer.chk3=h.chk3||'';customer.chk4=h.chk4||'';customer.chk5=h.chk5||'';customer.chk6=h.chk6||'';
       customer.coating=h.coating||'';
+      customer.carCategory=h.car_category||'';
       customer.repairStatus=h.repair_status||customer.repairStatus||'受付';
       customer.receptionId=h.reception_id||'';
       customer.remarks='';
