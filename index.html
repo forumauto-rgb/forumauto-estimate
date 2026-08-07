@@ -1045,6 +1045,8 @@ function getGateMultiplier(carCategory){
 function applyPanelMultiplier(item){
   var part = item.part || item._part || '';
   if(!part) return;
+  // 割増対象は取外し・取付工程のみ（塗装工程tag:paint等は対象外）
+  if(item.process !== '取外し' && item.process !== '取付') return;
   var mult = null;
   if(PANEL_MULT_BUMPER.indexOf(part)>=0) mult = 1.3;
   else if(PANEL_MULT_DOOR.indexOf(part)>=0) mult = 1.5;
@@ -1990,7 +1992,7 @@ var sortByProcess = true;
 var sortMode = 'process'; // 'select' | 'process' | 'work'
 var headerMode = 'both';
 var estMode='estimate'; // 'estimate'=見積書 'invoice'=請求書
-var matAutoMode = true; // 材料費自動計算モード（塗装工数×LR×30%）
+var matAutoMode = true; // 材料費自動計算モード（塗装工数×LR×40%）
 
 function toggleProcessSort(){
   sortByProcess = !sortByProcess;
@@ -3846,7 +3848,7 @@ function sumHTML(labor,pt,mt,sub,tax){
     <div class="sum-row" style="cursor:pointer;" onclick="matAutoMode=!matAutoMode;rIP()">
       <span>材料合計
         <span style="font-size:10px;color:#888;margin-left:4px;">
-          ${matAutoMode?'(塗装工数×'+(Math.round((customer.matProfit||0.30)*100))+'% 自動)':' (手入力)'}
+          ${matAutoMode?'(塗装工数×'+(Math.round((customer.matProfit||0.40)*100))+'% 自動)':' (手入力)'}
         </span>
       </span>
       <span style="display:flex;align-items:center;gap:6px;">
@@ -4262,7 +4264,7 @@ function renderManual(){
         <p style="margin:10px 0 6px;font-size:13px;"><b>材料費自動計算：</b></p>
         <ul style="margin:0;padding-left:18px;font-size:12px;line-height:1.8;">
           <li>材料合計欄をクリックで「自動 ⇔ 手動」切替</li>
-          <li>自動：塗装工数 × 塗装LR × 30% で自動計算</li>
+          <li>自動：塗装工数 × 塗装LR × 40% で自動計算</li>
           <li>手動：材料計算書タブの入力値を使用</li>
         </ul>
       `
@@ -4328,7 +4330,7 @@ function renderManual(){
             ['ガラス紐づけ','Fドアクリック→ドアガラス+フィックスガラスが同時表示'],
             ['作業検索','検索ボックスに部位名・作業名・工程名で絞り込み'],
             ['クラウド保存','「☁ クラウドに保存」でSupabase保存。「📋 過去見積」で再表示'],
-            ['材料費自動計算','塗装工数×LR×30%で材料費を自動計算（材料合計欄クリックで切替）'],
+            ['材料費自動計算','塗装工数×LR×40%で材料費を自動計算（材料合計欄クリックで切替）'],
             ['担当工程分類','各作業に脱着・鈑金・塗装・ガラス等の担当工程が自動付与'],
           ].map(([k,v])=>`<tr><td style="padding:5px 8px;background:#e8f0f8;font-weight:bold;width:150px;border-bottom:1px solid #ddd;">${k}</td><td style="padding:5px 8px;border-bottom:1px solid #ddd;">${v}</td></tr>`).join('')}
         </table>
@@ -5096,7 +5098,7 @@ function renderPreview(){
 
 // ====== 計算 ======
 function calcPaintMatAuto(){
-  // 塗装工数の合計（tag=paint）× 塗装LR × 30%（または35%：高機能クリヤー使用時）
+  // 塗装工数の合計（tag=paint）× 塗装LR × 40%（または35%：高機能クリヤー使用時）
   var paintH = sel.filter(function(t){return t.tag==='paint';})
                   .reduce(function(s,t){return s+(t.h||parseFloat(t.hours)||0);},0);
   var paintLR = Math.round(RATE * getTotalPaintCoef());
