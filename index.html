@@ -6719,10 +6719,13 @@ async function saveDraft(){
           var postR=await fetch(SUPABASE_URL+'/rest/v1/estimate_items',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(items)});
           if(!postR.ok){var errTxt=await postR.text(); throw new Error('明細登録失敗: '+errTxt);}
         }
+        // ★ 部品代はestimate_itemsではなくestimate_partsに保存する（loadEstimate()の読込先と統一）
+        var delPartsR=await fetch(SUPABASE_URL+'/rest/v1/estimate_parts?estimate_id=eq.'+estId,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+        if(!delPartsR.ok){var delPartsErrTxt=await delPartsR.text().catch(function(){return '';});showNotify('❌ 部品代の保存に失敗しました');throw new Error('部品削除失敗: '+delPartsErrTxt);}
         if(partsItems&&partsItems.filter(function(p){return p.name||p.cost;}).length>0){
-          var pItems=partsItems.filter(function(p){return p.name||p.cost;}).map(function(p,i){var qty=parseFloat(p.qty)||1;var sell=Math.round((parseFloat(p.cost)||0)*qty*((100+(parseFloat(p.profit)||0))/100));return{estimate_id:estId,part_name:'[部品]'+(p.partNo?'['+p.partNo+']':''),item_name:p.name||'',process:'部品',tag:'parts',hours:0,actual_hours:0,cost:sell,sort_order:1000+i};});
-          var postP=await fetch(SUPABASE_URL+'/rest/v1/estimate_items',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(pItems)});
-          if(!postP.ok){var errP=await postP.text(); throw new Error('部品保存失敗: '+errP);}
+          var pItems=partsItems.filter(function(p){return p.name||p.cost;}).map(function(p,i){return{estimate_id:estId,item_type:'parts',name:p.name||'',cost:parseInt(p.cost)||0,profit:parseInt(p.profit)||0,sort_order:i};});
+          var postP=await fetch(SUPABASE_URL+'/rest/v1/estimate_parts',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(pItems)});
+          if(!postP.ok){var errP=await postP.text().catch(function(){return '';});showNotify('❌ 部品代の保存に失敗しました');throw new Error('部品保存失敗: '+errP);}
       }
         customer._estId=estId;
         customer._draftNo=estNo;
@@ -6916,15 +6919,20 @@ async function saveEstimate(){
       method:'DELETE',
       headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
     });
-    var pm=(partsItems||[]).filter(function(p){return p.name||p.cost;}).map(function(p,i){return{estimate_id:estId,item_type:'parts',name:p.name||'',part_no:p.partNo||'',cost:parseInt(p.cost)||0,profit:parseInt(p.profit)||0,sort_order:i};});
+    var pm=(partsItems||[]).filter(function(p){return p.name||p.cost;}).map(function(p,i){return{estimate_id:estId,item_type:'parts',name:p.name||'',cost:parseInt(p.cost)||0,profit:parseInt(p.profit)||0,sort_order:i};});
     var mm=(matItems||[]).filter(function(m){return m.name||m.cost;}).map(function(m,i){return{estimate_id:estId,item_type:'material',name:m.name||'',cost:parseInt(m.cost)||0,profit:parseInt(m.profit)||30,sort_order:i};});
     var all=pm.concat(mm);
     if(all.length>0){
-      await fetch(SUPABASE_URL+'/rest/v1/estimate_parts',{
+      var partsRes=await fetch(SUPABASE_URL+'/rest/v1/estimate_parts',{
         method:'POST',
         headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
         body:JSON.stringify(all)
       });
+      if(!partsRes.ok){
+        var partsErrTxt=await partsRes.text().catch(function(){return '';});
+        console.error('部品・材料保存エラー:',partsRes.status,partsErrTxt);
+        showNotify('❌ 部品代の保存に失敗しました');
+      }
     }
     customer._estId = estId; // 写真自動保存用にIDを記憶
     showNotify('✅ 見積保存完了 '+estNo);
