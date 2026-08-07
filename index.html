@@ -1089,6 +1089,16 @@ function addItemsWithDupCheck(items){
 let dragSrc=null;
 let curTab='estimate';
 let kw='';
+// ★ 部位・作業名検索窓（.kw-input）はrender()のたびにDOMが作り直されるため、
+// documentへのイベント委譲でIME確定前（isComposing中）の検索実行を防ぐ
+document.addEventListener('input', function(e){
+  if(!e.target || !e.target.classList || !e.target.classList.contains('kw-input')) return;
+  if(e.isComposing) return;
+  kw = e.target.value;
+  rIP();
+  var inp = document.querySelector('.kw-input');
+  if(inp){ inp.value = kw; inp.focus(); }
+});
 let mTab='customer';
 let cMaster=[];
 let vMaster=[];
@@ -3797,7 +3807,7 @@ function renderEstimate(){
           <span style="margin-left:auto;font-size:10px;color:#888;font-weight:normal;">左＝助手席　右＝運転席</span>
         </div>
         <div class="kw-wrap">
-          <input class="kw-input" autocomplete="off" placeholder="🔍 部位・作業名・工程名で検索..." value="${kw}" oninput="kw=this.value;var el=this;rIP();var inp=document.querySelector('.kw-input');if(inp){inp.value=kw;inp.focus();}">
+          <input class="kw-input" autocomplete="off" placeholder="🔍 部位・作業名・工程名で検索..." value="${kw}">
           ${kw?`<button class="btn btn-sm" onclick="kw='';rIP()" style="height:42px;padding:0 12px">✕ クリア</button>`:''}
         </div>
         ${kw?`<div style="font-size:11px;color:#888;margin-bottom:6px;padding:0 4px">「${kw}」の検索結果：<strong>${sr.length}件</strong></div>
