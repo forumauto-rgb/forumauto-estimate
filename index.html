@@ -3638,7 +3638,7 @@ function renderCustomerPanel(){
         </select>
       </div>
       <div class="fg" style="flex:none;min-width:150px"><label>車格区分 <span style="font-size:10px;color:#999;font-weight:normal">${(GRADE_MASTER.find(x=>x.name===customer.grade)||{desc:''}).desc}</span></label>
-        <select id="cG" onchange="customer.grade=this.value;render()" style="width:100%">
+        <select id="cG" onchange="changeCarGrade(this.value)" style="width:100%">
           ${GRADE_MASTER.map(g=>`<option value="${g.name}"${customer.grade===g.name?' selected':''}>${g.name}</option>`).join('')}
         </select>
       </div>
@@ -5735,6 +5735,28 @@ function goPreview(){
       return;
     }
   }
+}
+
+// ★ 車格区分変更時：確認の上、既存の見積行の工賃をすべて新しい車格係数で再計算する
+function changeCarGrade(newGrade){
+  if(newGrade === customer.grade) return;
+  customer.grade = newGrade;
+  if(sel.length > 0 && confirm('車格区分が変わりました。既存の見積行の工賃を再計算しますか？')){
+    recalcLaborByGrade();
+  }
+  render();
+}
+
+// 割増バッジ（_panelMult）は工数(h)に既に反映済みのため、現在のhをそのまま使って
+// 新しい車格係数でLRのみ再計算すれば割増率は維持される
+function recalcLaborByGrade(){
+  sel.forEach(function(item){
+    var h = (item.h!=null && item.h!=='') ? parseFloat(item.h) : 0;
+    if(!h) return; // 行政書士手数料など時間に基づかない固定額の行は対象外
+    var lr = effectiveLR(item);
+    item.cost = Math.round(h*lr);
+    item.price = item.cost;
+  });
 }
 
 function selUpdateH(i,v){
