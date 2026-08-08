@@ -408,5 +408,164 @@ document.getElementById('editModal').addEventListener('click', function(e) {
 
 loadData();
 </script>
+<!-- ===== 取扱説明書モーダル ===== -->
+<style>
+#manualBtn {
+  position: fixed;
+  top: 10px;
+  right: 16px;
+  z-index: 9999;
+  background: #b8960c;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+#manualBtn:hover { background: #9a7a0a; }
+
+#manualOverlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 10000;
+  justify-content: center;
+  align-items: center;
+}
+#manualOverlay.open { display: flex; }
+
+#manualBox {
+  background: #fff;
+  border-radius: 12px;
+  width: min(720px, 96vw);
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 32px 36px;
+  position: relative;
+  font-family: sans-serif;
+}
+#manualBox h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  color: #0b1c35;
+  border-bottom: 3px solid #b8960c;
+  padding-bottom: 8px;
+}
+#manualBox .subtitle {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 20px;
+}
+#manualBox h3 {
+  font-size: 15px;
+  color: #0b1c35;
+  margin: 20px 0 6px;
+  padding-left: 8px;
+  border-left: 4px solid #b8960c;
+}
+#manualBox p, #manualBox li {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #333;
+}
+#manualBox ul { padding-left: 20px; margin: 4px 0; }
+#manualBox .warn {
+  background: #fff8e1;
+  border-left: 4px solid #f5a623;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  margin: 8px 0;
+}
+#manualBox .tip {
+  background: #e8f4fd;
+  border-left: 4px solid #2196f3;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  margin: 8px 0;
+}
+#manualClose {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  font-size: 22px;
+  cursor: pointer;
+  color: #666;
+  background: none;
+  border: none;
+}
+</style>
+
+<button id="manualBtn" onclick="document.getElementById('manualOverlay').classList.add('open')">📖 使い方</button>
+
+<div id="manualOverlay" onclick="if(event.target===this)this.classList.remove('open')">
+  <div id="manualBox">
+    <button id="manualClose" onclick="document.getElementById('manualOverlay').classList.remove('open')">✕</button>
+    <h2>📋 見積システム 簡易取扱説明書</h2>
+    <p class="subtitle">フォーラムオートDX ／ 困ったときはこちらを確認してください</p>
+
+    <h3>① 基本的な流れ</h3>
+    <p>受付登録 → 見積作成 → 保存・印刷 の順で進めます。</p>
+    <ul>
+      <li>まず <strong>受付画面</strong> でお客様・車両情報を登録してください</li>
+      <li>受付番号が発行されたら <strong>見積画面</strong> を開いてください</li>
+      <li>画面上部「受付番号」欄に番号を入力すると顧客・車両情報が自動で入ります</li>
+    </ul>
+
+    <h3>② 車格の選択（重要）</h3>
+    <div class="warn">⚠️ 車格を最初に選ばないと工賃の自動計算が正しく動きません。必ず最初に設定してください。</div>
+    <ul>
+      <li>車格は16クラスから選択します（軽・小型・中型・大型・輸入車など）</li>
+      <li>車格を途中で変更した場合は「全行再計算しますか？」のダイアログが出ます → <strong>必ず「はい」を押してください</strong></li>
+    </ul>
+
+    <h3>③ 塗装係数の選択</h3>
+    <ul>
+      <li>カラー番号を入力すると自動判定されます</li>
+      <li>マツダ46G・51K など <strong>特殊色は係数が上がります</strong>（自動で警告が出ます）</li>
+      <li>パール・マイカ・3コートは係数を手動確認してください</li>
+    </ul>
+
+    <h3>④ 工賃の追加方法</h3>
+    <ul>
+      <li><strong>個別追加</strong>：パネル名を選んで「追加」ボタン</li>
+      <li><strong>脱着セット</strong>：バンパー等は「脱着セット」ボタンで関連部品をまとめて追加できます</li>
+      <li><strong>AIアシスト</strong>：損傷状況を文章で入力するとAIが工賃を自動提案します</li>
+    </ul>
+    <div class="tip">💡 AIアシストは「右フロントバンパー擦り傷・凹みあり」のように具体的に入力するほど精度が上がります</div>
+
+    <h3>⑤ 部品代の入力</h3>
+    <div class="warn">⚠️ 部品代は「部品名・単価・数量」をすべて入力してから「追加」を押してください。どれか空欄だと保存されません。</div>
+
+    <h3>⑥ 材料費</h3>
+    <ul>
+      <li>塗装工賃合計の <strong>40%</strong> が自動計算されます</li>
+      <li>手動変更も可能です</li>
+    </ul>
+
+    <h3>⑦ 見積の保存・印刷</h3>
+    <ul>
+      <li>「保存」ボタンでSupabaseに自動保存されます</li>
+      <li>「印刷」ボタンで見積書PDFが出力できます</li>
+      <li><strong>保存前にブラウザを閉じるとデータが消えます</strong>。こまめに保存してください</li>
+    </ul>
+    <div class="warn">⚠️ 日本語入力（IME）で文字を確定するときはEnterキーを押しても送信されません。変換確定後に別のボックスをクリックしてから操作してください。</div>
+
+    <h3>⑧ よくあるトラブル</h3>
+    <ul>
+      <li><strong>工賃が0円のまま</strong> → 車格が未選択の可能性があります</li>
+      <li><strong>顧客情報が入らない</strong> → 受付番号の入力後にEnterキーまたは検索ボタンを押してください</li>
+      <li><strong>AIアシストが動かない</strong> → インターネット接続を確認してください</li>
+      <li><strong>保存できない</strong> → ブラウザの通信エラーの場合があります。F5で再読み込み後に再度保存してください</li>
+    </ul>
+  </div>
+</div>
+<!-- ===== 取扱説明書モーダル ここまで ===== -->
+
 </body>
 </html>
