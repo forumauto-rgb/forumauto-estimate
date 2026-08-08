@@ -1168,12 +1168,16 @@ function getPaintCoef4(){
   const s=PAINT_MASTERS.special.find(x=>x.name===pc4.special);
   return (f?f.val:1)*(p?p.val:1)*(c?c.val:1)*(s?s.val:1);
 }
-function getTotalPaintCoef(){return getGradeCoef();}
-function getPaintLR(){
+function getTotalPaintCoef(){
   var gc=getGradeCoef();
+  var fc=(PAINT_MASTERS.film.find(function(x){return x.name===pc4.film;})||{val:1}).val;
+  var pc=(PAINT_MASTERS.paint.find(function(x){return x.name===pc4.paint;})||{val:1}).val;
   var cc=(PAINT_MASTERS.clear.find(function(x){return x.name===pc4.clear;})||{val:1}).val;
   var sc=(PAINT_MASTERS.special.find(function(x){return x.name===pc4.special;})||{val:1}).val;
-  return Math.round(RATE*gc*cc*sc);
+  return gc*fc*pc*cc*sc;
+}
+function getPaintLR(){
+  return Math.round(RATE*getTotalPaintCoef());
 }
 function getTotalLaborCoef(){return getGradeCoef();}
 function effectiveLR(item){
