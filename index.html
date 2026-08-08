@@ -854,18 +854,18 @@ const GRADE_MASTER=[
 const PAINT_MASTERS={
   film:[
     {name:'2コートソリッド',val:1.00,choH:0.0},
-    {name:'2コートメタリック',val:1.00,choH:0.1},
-    {name:'2コートパール',val:1.00,choH:0.2},
-    {name:'3コートパール',val:1.00,choH:0.4},
-    {name:'キャンディ',val:1.00,choH:0.5},
-    {name:'マット塗装',val:1.00,choH:0.3},
-    {name:'特殊塗料',val:1.00,choH:0.5},
+    {name:'2コートメタリック',val:1.15,choH:0.1},
+    {name:'2コートパール',val:1.20,choH:0.2},
+    {name:'3コートパール',val:1.50,choH:0.4},
+    {name:'キャンディ',val:1.80,choH:0.5},
+    {name:'マット塗装',val:1.30,choH:0.3},
+    {name:'特殊塗料',val:1.50,choH:0.5},
   ],
   paint:[
     {name:'溶剤(2K標準)',val:1.00},
-    {name:'水性(PPG)',val:1.00},
-    {name:'水性(外資系)',val:1.00},
-    {name:'水性(国産)',val:1.00},
+    {name:'水性(PPG)',val:1.50},
+    {name:'水性(外資系)',val:1.40},
+    {name:'水性(国産)',val:1.20},
   ],
   clear:[
     {name:'標準クリヤー',val:1.00},
@@ -1159,8 +1159,8 @@ const TC4={paint:'tag-paint',remove:'tag-remove',attach:'tag-attach'};
 
 function getGradeCoef(){const g=GRADE_MASTER.find(x=>x.name===customer.grade);return g?g.coef:1.1;}
 function getPaintCoef4(){
-  const f={val:1.0};
-  const p={val:1.0};
+  const f=PAINT_MASTERS.film.find(x=>x.name===pc4.film);
+  const p=PAINT_MASTERS.paint.find(x=>x.name===pc4.paint);
   const c=PAINT_MASTERS.clear.find(x=>x.name===pc4.clear);
   const s=PAINT_MASTERS.special.find(x=>x.name===pc4.special);
   return (f?f.val:1)*(p?p.val:1)*(c?c.val:1)*(s?s.val:1);
