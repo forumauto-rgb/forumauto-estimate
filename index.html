@@ -8483,7 +8483,7 @@ async function aiAnalyzePhotos(){
     + '```choices\n[{"q":"質問（20字以内）","opts":["選択肢1","選択肢2","選択肢3"]}]\n```\n'
     + '選択肢は質問ごとに2〜4個、実務的な語（例：新品交換／中古交換／修理）で簡潔に。確認事項がない場合はchoicesブロックを出力しないこと。\n'
     + '車名：' + (customer.car||'不明') + '　車格：' + (customer.grade||'中型') + '　色：' + (customer.color||'不明')
-    + '　実効LR：¥' + ((typeof RATE!=='undefined'&&typeof getGradeCoef==='function'&&typeof getTotalPaintCoef==='function')?Math.round(RATE*getGradeCoef()*getTotalPaintCoef()).toLocaleString():'不明') + '/h';
+    + '　実効LR：¥' + ((typeof RATE!=='undefined'&&typeof getGradeCoef==='function'&&typeof getTotalPaintCoef==='function')?Math.round(RATE*getTotalPaintCoef()).toLocaleString():'不明') + '/h';
 
   // ユーザー登録ルールをプロンプトに注入
   await refreshAiUserRulesCache();
@@ -8808,7 +8808,7 @@ async function aiChatCallAPI(){
     + '塗膜：' + ((typeof pc4!=='undefined'&&pc4)?pc4.film:'不明') + '\n'
     + '塗料：' + ((typeof pc4!=='undefined'&&pc4)?pc4.paint:'不明') + '\n'
     + 'クリヤー：' + ((typeof pc4!=='undefined'&&pc4)?pc4.clear:'不明') + '\n'
-    + '実効LR：¥' + ((typeof RATE!=='undefined'&&typeof getGradeCoef==='function'&&typeof getTotalPaintCoef==='function')?Math.round(RATE*getGradeCoef()*getTotalPaintCoef()).toLocaleString():'不明') + '/h'
+    + '実効LR：¥' + ((typeof RATE!=='undefined'&&typeof getGradeCoef==='function'&&typeof getTotalPaintCoef==='function')?Math.round(RATE*getTotalPaintCoef()).toLocaleString():'不明') + '/h'
     + (ragContext ? '\n' + ragContext : '');
 
   // messagesを構築（写真があれば最初のuserメッセージに画像を添付）
@@ -9195,7 +9195,7 @@ function renderAiAssist(){
   var _ccar  = (customer.car||'').replace(/"/g,'&quot;');
   var _grade = customer.grade||'中型';
   var _coef  = (typeof getGradeCoef==='function') ? getGradeCoef().toFixed(2) : '1.10';
-  var _lr    = (typeof RATE!=='undefined'&&typeof getGradeCoef==='function'&&typeof getTotalPaintCoef==='function') ? Math.round(RATE*getGradeCoef()*getTotalPaintCoef()).toLocaleString() : '-';
+  var _lr    = (typeof RATE!=='undefined'&&typeof getGradeCoef==='function'&&typeof getTotalPaintCoef==='function') ? Math.round(RATE*getTotalPaintCoef()).toLocaleString() : '-';
   var _color = (customer.color||'') + (customer.colorCode ? '（'+customer.colorCode+'）' : '');
   var _film  = (typeof pc4!=='undefined'&&pc4) ? pc4.film : ''; var _paint=(typeof pc4!=='undefined'&&pc4)?pc4.paint:''; var _clear=(typeof pc4!=='undefined'&&pc4)?pc4.clear:'';
   var customerInfo = _cname
