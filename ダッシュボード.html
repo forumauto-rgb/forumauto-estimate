@@ -1898,7 +1898,8 @@ function goToEstimateWithReceptionId(id){
     plate: r.plate || '',
     car: r.car_model || '',
     type: r.type || '',
-    note: r.note || ''
+    note: r.note || '',
+    car_category: r.car_category || ''
   });
   window.location.href = 'index.html?' + qs.toString();
 }
