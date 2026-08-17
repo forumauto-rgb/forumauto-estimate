@@ -6704,7 +6704,7 @@ async function saveDraft(){
     customer.no=estNo;
     customer._draftNo=estNo;
     var tots=calcTotals();
-    var estData={estimate_no:estNo,customer_name:customer.name||'（未入力）',customer_id:customer.cid||null,car_name:customer.car||'',plate:customer.plate||'',color_name:customer.color||'',color_code:customer.colorCode||'',estimate_date:customer.date||new Date().toISOString().split('T')[0],grade:customer.grade||'中型',grade_coef:getGradeCoef(),film_type:pc4.film,paint_type:pc4.paint,clear_type:pc4.clear,special:pc4.special,labor_total:tots.labor,parts_total:Math.round(tots.pt),mat_total:Math.round(tots.mt),subtotal:Math.round(tots.sub),tax_total:tots.tax,grand_total:Math.round(tots.sub)+tots.tax,repair_type:customer.repairType||'insurance',ins_company:customer.insCompany||'',aj_company:customer.ajCompany||'',aj_staff:customer.ajStaff||'',deductible:parseInt(customer.deductible)||0,status:'draft',repair_status:customer.repairStatus||'受付',staff_name:customer.staffName||'',delivery_date:customer.deliveryDate||'',memo:customer.estNote||'',payment_memo:customer.paymentMemo||'',chk1:customer.chk1||'',chk2:customer.chk2||'',chk3:customer.chk3||'',chk4:customer.chk4||'',chk5:customer.chk5||'',chk6:customer.chk6||'',reception_id:customer.receptionId||null,coating:customer.coating||null,transport_destination:customer.destAddr||null};
+    var estData={estimate_no:estNo,customer_name:customer.name||'（未入力）',customer_id:customer.cid||null,car_name:customer.car||'',plate:customer.plate||'',color_name:customer.color||'',color_code:customer.colorCode||'',estimate_date:customer.date||new Date().toISOString().split('T')[0],grade:customer.grade||'中型',grade_coef:getGradeCoef(),film_type:pc4.film,paint_type:pc4.paint,clear_type:pc4.clear,special:pc4.special,labor_total:tots.labor,parts_total:Math.round(tots.pt),mat_total:Math.round(tots.mt),subtotal:Math.round(tots.sub),tax_total:tots.tax,grand_total:Math.round(tots.sub)+tots.tax,repair_type:customer.repairType||'insurance',ins_company:customer.insCompany||'',aj_company:customer.ajCompany||'',aj_staff:customer.ajStaff||'',deductible:parseInt(customer.deductible)||0,status:'draft',repair_status:customer.repairStatus||'受付',staff_name:customer.staffName||'',delivery_date:customer.deliveryDate||'',memo:customer.estNote||'',payment_memo:customer.paymentMemo||'',chk1:customer.chk1||'',chk2:customer.chk2||'',chk3:customer.chk3||'',chk4:customer.chk4||'',chk5:customer.chk5||'',chk6:customer.chk6||'',reception_id:customer.receptionId||null,coating:customer.coating||null,transport_destination:customer.destAddr||null,mat_auto_mode:matAutoMode};
     var estId=customer._estId||null;
     if(estId){
       // 既存IDで上書き（重複しない）
@@ -6878,7 +6878,8 @@ async function saveEstimate(){
       memo:customer.estNote||'',
       reception_id:customer.receptionId||null,
       coating:customer.coating||null,
-      transport_destination:customer.destAddr||null
+      transport_destination:customer.destAddr||null,
+      mat_auto_mode:matAutoMode
     };
     // 既存見積を検索
     var rCheck=await fetch(SUPABASE_URL+'/rest/v1/estimates?estimate_no=eq.'+encodeURIComponent(estNo)+'&select=id',{
@@ -7231,8 +7232,10 @@ async function loadEstimate(estId,estNo){
   try{
     var r0=await fetch(SUPABASE_URL+'/rest/v1/estimates?id=eq.'+estId,{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
     var headers=await r0.json();
+    var matAutoModeFromDB=null;
     if(headers&&headers[0]){
       var h=headers[0];
+      matAutoModeFromDB=h.mat_auto_mode;
       customer.name=h.customer_name||'';customer.car=h.car_name||'';
       customer.plate=h.plate||'';customer.color=h.color_name||'';
       customer.colorCode=h.color_code||'';customer.date=h.estimate_date||'';
@@ -7266,9 +7269,9 @@ async function loadEstimate(estId,estNo){
     var parts2=await r2.json();
     partsItems=parts2.filter(function(p){return p.item_type==='parts';}).map(function(p){return{name:p.name||'',partNo:p.part_no||'',cost:p.cost||'',profit:p.profit||0,qty:p.qty||1};});
     matItems=parts2.filter(function(m){return m.item_type==='material';}).map(function(m){return{name:m.name||'',cost:m.cost||'',profit:m.profit||30};});
-    // ★保存時に材料費を手入力していた場合は手動モードで復元する（常に自動計算モードで開き直すと、
-    // 保存済みの材料費と異なる金額が再計算され、一覧の合計と印刷金額がズレる不具合があったため）
-    matAutoMode = matItems.length===0;
+    // ★materials自動/手動モードはestimates.mat_auto_mode列で復元する。
+    // 列がnull（未保存の古い見積）の場合のみ、材料明細の有無から推定する
+    matAutoMode = (matAutoModeFromDB!=null) ? !!matAutoModeFromDB : matItems.length===0;
     if(!partsItems.length)partsItems=[{name:'',cost:'',profit:0}];
     if(!matItems.length)matItems=[{name:'',cost:'',profit:30}];
     // 写真を復元（Supabase）
