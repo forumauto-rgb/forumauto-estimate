@@ -4640,7 +4640,7 @@ function renderPreview(){
     if(matItems.filter(m=>m.name||m.cost).length>0){
       rows+='<tr><td colspan="6" style="background:#f3e5f5;color:#6a1b9a;font-size:10px;font-weight:bold;padding:3px 8px;border-left:4px solid #6a1b9a;">材料</td></tr>';
       matItems.filter(m=>m.name||m.cost).forEach(m=>{
-        rows+=`<tr><td class="c">${pNo}</td><td>${m.name||'材料'}</td><td class="c" style="font-size:10px;color:#666">材料代</td><td></td><td class="r">${Math.round((parseFloat(m.cost)||0)*((100+(parseFloat(m.profit)||0))/100)).toLocaleString()}</td><td></td></tr>`;
+        rows+=`<tr><td class="c">${pNo}</td><td>${m.name||'材料'}</td><td class="c" style="font-size:10px;color:#666">材料代</td><td></td><td class="r">${Math.round(parseFloat(m.cost)||0).toLocaleString()}</td><td></td></tr>`;
         pNo++;
       });
     }
@@ -5130,7 +5130,8 @@ function calcTotals(){
   if(matAutoMode){
     mt = calcPaintMatAuto();
   } else {
-    mt = matItems.reduce((s,m)=>s+(parseFloat(m.cost)||0)*((100+(parseFloat(m.profit)||0))/100),0);
+    // 手動入力時はcostをそのまま合算する（profitは乗算しない）
+    mt = matItems.reduce((s,m)=>s+(parseFloat(m.cost)||0),0);
   }
   const sub=labor+pt+mt;
   const tax=Math.floor(sub*0.1);
@@ -6043,7 +6044,7 @@ function partsMaterialHTML(){
   h+='<th style="width:64px">\u4ed5\u5165(&yen;)</th><th style="width:42px">\u7c97\u5229%</th>';
   h+='<th style="width:60px">\u58f2\u4fa1</th><th style="width:20px"></th></tr></thead><tbody>';
   matItems.forEach(function(m,i){
-    var sell=Math.round((parseFloat(m.cost)||0)*((100+(parseFloat(m.profit)||0))/100));
+    var sell=Math.round(parseFloat(m.cost)||0);
     h+='<tr><td><input value="'+(m.name||'')+'" list="mat-name-dl" oninput="matItems['+i+'].name=this.value" onblur="recordNameHistory(MAT_NAME_HISTORY,\'fa_mat_name_history\',this.value)" placeholder="\u6750\u6599\u540d"></td>';
     h+='<td><input type="number" value="'+(m.cost||'')+'" oninput="matItems['+i+'].cost=this.value;uS()" style="text-align:right"></td>';
     h+='<td><input type="number" value="'+(m.profit||'')+'" oninput="matItems['+i+'].profit=this.value;uS()" style="text-align:right"></td>';
