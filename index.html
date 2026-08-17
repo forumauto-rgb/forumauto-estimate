@@ -3859,10 +3859,11 @@ function sumHTML(labor,pt,mt,sub,tax){
     <div class="sum-row" style="cursor:pointer;" onclick="matAutoMode=!matAutoMode;rIP()">
       <span>材料合計
         <span style="font-size:10px;color:#888;margin-left:4px;">
-          ${matAutoMode?'(塗装工数×'+(Math.round((customer.matProfit||0.40)*100))+'% 自動)':' (手入力)'}
+          ${matAutoMode?'(塗装工数×LR×'+(Math.round((customer.matProfit||0.40)*100))+'% 自動)':'(手入力)'}
         </span>
       </span>
       <span style="display:flex;align-items:center;gap:6px;">
+        ${matAutoMode?'<span onclick="event.stopPropagation();showMatRateInfo()" style="font-size:10px;background:#ff9800;color:white;padding:1px 6px;border-radius:3px;cursor:pointer;">'+(Math.round((customer.matProfit||0.40)*100))+'%</span>':''}
         <span style="font-size:10px;background:${matAutoMode?'#43a047':'#888'};color:white;padding:1px 6px;border-radius:3px;">${matAutoMode?'自動':'手動'}</span>
         ¥${Math.round(mt).toLocaleString()}
       </span>
@@ -4652,7 +4653,9 @@ function renderPreview(){
     var html = '';
       html += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #eee"><span>工賃合計</span><span style="font-weight:bold">¥'+labor.toLocaleString()+'</span></div>';
       html += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #eee;background:#fafafa"><span>部品合計</span><span style="font-weight:bold">¥'+Math.round(pt).toLocaleString()+'</span></div>';
-      html += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #eee"><span>材料合計'+(matAutoMode?'<span style="font-size:10px;color:#888;margin-left:3px;">(自動)</span>':'')+'</span><span style="font-weight:bold">¥'+Math.round(mt).toLocaleString()+'</span></div>';
+      var matRatePct=Math.round((customer.matProfit!=null?customer.matProfit:0.40)*100);
+      var matLabel=matAutoMode?'(塗装工数×LR×'+matRatePct+'% 自動)':'(手入力)';
+      html += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #eee"><span>材料合計<span style="font-size:10px;color:#888;margin-left:3px;">'+matLabel+'</span></span><span style="font-weight:bold">¥'+Math.round(mt).toLocaleString()+'</span></div>';
       html += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-top:2px solid #1a3a6b;font-weight:bold"><span>修理代小計</span><span>¥'+Math.round(sub).toLocaleString()+'</span></div>';
       html += '<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #eee;background:#fafafa"><span>消費税(10%)</span><span>¥'+tax.toLocaleString()+'</span></div>';
       // 値引き種別：loss=損金（非表示）/ service=サービス値引き（表示）
@@ -7878,6 +7881,10 @@ async function savePaintToVehicle(){
     }catch(e){console.warn('Supabase保存失敗:',e);}
   }
   render();
+}
+function showMatRateInfo(){
+  var pct=Math.round((customer.matProfit!=null?customer.matProfit:0.40)*100);
+  showNotify('材料費（自動）＝ 塗装工数 × 塗装LR × '+pct+'%\n塗装作業がある部位の工数と塗装レートから自動計算しています。\n率は「材料」タブの粗利率欄で変更できます。');
 }
 function showNotify(msg){
   let el=document.getElementById('notify');
