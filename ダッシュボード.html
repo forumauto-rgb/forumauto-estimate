@@ -2001,7 +2001,7 @@ async function pkOpenHistory(customerName, plate){
       body.innerHTML = '<div style="font-size:20px;color:#c00;">検索条件がありません</div>';
       return;
     }
-    var url = SB_URL + '/rest/v1/estimates?select=id,estimate_no,customer_name,car_name,plate,estimate_date,labor_total,parts_total,mat_total,subtotal,grand_total,confirmed_amount,mat_auto_mode&or=(' + ors.join(',') + ')&order=estimate_date.desc&limit=100';
+    var url = SB_URL + '/rest/v1/estimates?select=id,estimate_no,customer_name,car_name,plate,estimate_date,labor_total,parts_total,mat_total,subtotal,grand_total,confirmed_amount,confirmed_at,payment_memo,mat_auto_mode&or=(' + ors.join(',') + ')&order=estimate_date.desc&limit=100';
     var res = await fetch(url, {headers: SB_H});
     if(!res.ok) throw new Error('HTTP ' + res.status);
     var list = await res.json();
@@ -2117,7 +2117,52 @@ function pkRenderHistory(list, confirmations){
     });
   }
 
+  // ⑤ 完成品質チェック記録
+  // ★ process_check/payment_statusは独立列ではなく、品質チェックモーダル(saveQualityCheck)が
+  //   estimates.payment_memoに「【ラベル】値」形式で連結保存しているため、そこから復元する
+  h += '<div class="pk-sec-title">⑤ 完成品質チェック記録</div>';
+  var hasAnyQC = false;
+  list.forEach(function(e){
+    var qc = pkParseQC(e.payment_memo);
+    if(!qc) return;
+    hasAnyQC = true;
+    h += '<div class="pk-confirm-card">';
+    h += '<div class="pk-confirm-head">' + esc(e.estimate_no || '') + '</div>';
+    h += '<div class="pk-qc-date">確認日：' + esc(qc.confirmDate || (e.confirmed_at||'').slice(0,10) || '-') + '</div>';
+    h += '<div class="pk-check-list">';
+    Object.keys(qc.checks).forEach(function(k){
+      h += '<div class="pk-check-item">' + (qc.checks[k] ? '✅' : '□') + ' ' + esc(k) + '</div>';
+    });
+    h += '</div>';
+    h += '<div class="pk-qc-foot">確定金額：' + (e.confirmed_amount != null ? '¥' + e.confirmed_amount.toLocaleString() : '-') + '</div>';
+    h += '<div class="pk-qc-foot">入金状況：' + esc(qc.paymentStatus) + '</div>';
+    h += '</div>';
+  });
+  if(!hasAnyQC){
+    h += '<div style="font-size:20px;color:#aaa;padding:12px 0;">品質チェック未入力</div>';
+  }
+
   body.innerHTML = h;
+}
+
+// payment_memoに埋め込まれた「【ラベル】値」形式の品質チェック記録を復元する
+function pkParseQC(memo){
+  if(!memo) return null;
+  var parts = String(memo).split(' | ');
+  var map = {};
+  parts.forEach(function(p){
+    var m = p.match(/^【([^】]+)】([\s\S]*)$/);
+    if(m) map[m[1]] = m[2];
+  });
+  if(!map['process_check']) return null;
+  var checks = null;
+  try{ checks = JSON.parse(map['process_check']); }catch(e){ checks = null; }
+  if(!checks) return null;
+  return {
+    checks: checks,
+    paymentStatus: map['入金状況'] || '未確認',
+    confirmDate: map['確認日'] || ''
+  };
 }
 </script>
 <!-- ===== 過去見積検索モーダル ===== -->
@@ -2143,8 +2188,10 @@ function pkRenderHistory(list, confirmations){
 .pk-confirm-card{border:1px solid #ddd;border-radius:8px;padding:12px 16px;margin-bottom:10px;}
 .pk-confirm-head{font-size:20px;font-weight:bold;color:#1a3a6b;margin-bottom:8px;}
 .pk-check-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:4px;}
-.pk-check-item{font-size:18px;color:#333;}
-.pk-sign{font-size:18px;margin-top:8px;font-weight:bold;}
+.pk-check-item{font-size:20px;color:#333;}
+.pk-sign{font-size:20px;margin-top:8px;font-weight:bold;}
+.pk-qc-date{font-size:20px;color:#555;margin-bottom:8px;}
+.pk-qc-foot{font-size:20px;font-weight:bold;color:#1a3a6b;margin-top:4px;}
 </style>
 <div class="pk-overlay" id="pkModal" onclick="pkOverlayClick(event)">
   <div class="pk-box">
