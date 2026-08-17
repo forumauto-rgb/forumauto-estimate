@@ -7258,6 +7258,9 @@ async function loadEstimate(estId,estNo){
     var parts2=await r2.json();
     partsItems=parts2.filter(function(p){return p.item_type==='parts';}).map(function(p){return{name:p.name||'',partNo:p.part_no||'',cost:p.cost||'',profit:p.profit||0,qty:p.qty||1};});
     matItems=parts2.filter(function(m){return m.item_type==='material';}).map(function(m){return{name:m.name||'',cost:m.cost||'',profit:m.profit||30};});
+    // ★保存時に材料費を手入力していた場合は手動モードで復元する（常に自動計算モードで開き直すと、
+    // 保存済みの材料費と異なる金額が再計算され、一覧の合計と印刷金額がズレる不具合があったため）
+    matAutoMode = matItems.length===0;
     if(!partsItems.length)partsItems=[{name:'',cost:'',profit:0}];
     if(!matItems.length)matItems=[{name:'',cost:'',profit:30}];
     // 写真を復元（Supabase）
