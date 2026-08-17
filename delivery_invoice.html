@@ -130,6 +130,15 @@ body{font-family:'Meiryo','Hiragino Kaku Gothic Pro',sans-serif;background:#f0f2
   <!-- タイトル -->
   <div class="doc-title">納　品　請　求　書</div>
 
+  <!-- 受付案件検索（印刷非表示） -->
+  <div class="recept-search-block no-print" style="margin-bottom:6mm;position:relative;max-width:420px;">
+    <div class="client-label">受付案件を検索（顧客名または車名）</div>
+    <input type="text" id="receptSearchInput" placeholder="例：ランクラフト／ムーヴキャンバス" autocomplete="off"
+      oninput="onReceptSearchInput()"
+      style="width:100%;font-size:12pt;padding:6px 8px;border:1px solid #aaa;border-radius:4px;">
+    <div id="receptSearchResults" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #ccc;border-radius:4px;max-height:240px;overflow-y:auto;z-index:50;box-shadow:0 4px 10px rgba(0,0,0,0.15);"></div>
+  </div>
+
   <!-- ヘッダー -->
   <div class="doc-header">
     <div class="doc-left">
@@ -139,14 +148,14 @@ body{font-family:'Meiryo','Hiragino Kaku Gothic Pro',sans-serif;background:#f0f2
       </div>
       <div class="client-block">
         <div class="client-label">宛名</div>
-        <div class="client-row">
-          <select class="client-select" id="clientSelect" onchange="onClientSelect()">
-            <option value="">— 選択 —</option>
+        <div class="client-row no-print" style="margin-bottom:4px;">
+          <select class="client-select" id="clientSelect" onchange="onClientSelect()" style="font-size:12pt;font-weight:normal;min-width:200px;max-width:340px;">
+            <option value="">— 外注先から選択 —</option>
           </select>
-          <span class="client-suffix">御中</span>
         </div>
-        <div class="client-row" style="margin-top:4px;">
-          <input type="text" class="client-input" id="clientName" placeholder="または手入力">
+        <div class="client-row">
+          <input type="text" class="client-input" id="clientName" placeholder="宛名を入力、または上で選択">
+          <span class="client-suffix">御中</span>
         </div>
       </div>
       <div class="vehicle-row">
@@ -222,6 +231,12 @@ window.addEventListener('DOMContentLoaded',function(){
   document.getElementById('histPanel').addEventListener('mouseleave',function(){
     document.getElementById('histPanel').classList.remove('open');
   });
+  document.addEventListener('click',function(e){
+    var block=document.querySelector('.recept-search-block');
+    if(block&&!block.contains(e.target)){
+      document.getElementById('receptSearchResults').style.display='none';
+    }
+  });
 });
 
 function setTodayDate(){
@@ -244,8 +259,59 @@ function loadOutsourceMaster(){
   }catch(e){}
 }
 function onClientSelect(){
-  var v=document.getElementById('clientSelect').value;
+  var sel=document.getElementById('clientSelect');
+  var v=sel.value;
   if(v)document.getElementById('clientName').value=v;
+  // 宛名の表示はclientName欄1箇所のみにするため、選択後はプルダウンを選択前の状態に戻す
+  sel.value='';
+}
+
+// ── 受付案件検索（車名・登録番号の自動入力） ──
+var receptSearchTimer=null;
+var receptSearchCache=[];
+function onReceptSearchInput(){
+  var kw=document.getElementById('receptSearchInput').value.trim();
+  clearTimeout(receptSearchTimer);
+  var box=document.getElementById('receptSearchResults');
+  if(!kw){box.style.display='none';box.innerHTML='';return;}
+  receptSearchTimer=setTimeout(function(){searchReceptions(kw);},300);
+}
+async function searchReceptions(kw){
+  var box=document.getElementById('receptSearchResults');
+  box.style.display='block';
+  box.innerHTML='<div style="padding:8px;color:#999;font-size:12px;">検索中...</div>';
+  try{
+    var enc=encodeURIComponent(kw);
+    var url=SUPABASE_URL+'/rest/v1/receptions'
+      +'?or=(customer_name.ilike.*'+enc+'*,car_model.ilike.*'+enc+'*)'
+      +'&select=id,customer_name,car_model,plate,reception_datetime'
+      +'&order=reception_datetime.desc&limit=20';
+    var res=await fetch(url,{headers:HEADERS});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    var list=await res.json();
+    receptSearchCache=list;
+    if(!list.length){
+      box.innerHTML='<div style="padding:8px;color:#999;font-size:12px;">該当する受付案件がありません</div>';
+      return;
+    }
+    box.innerHTML=list.map(function(r){
+      var d=(r.reception_datetime||'').slice(0,10);
+      return '<div class="recept-result-item" data-id="'+r.id+'" onmousedown="selectReception(\''+r.id+'\')" '
+        +'style="padding:8px 10px;border-bottom:1px solid #eee;cursor:pointer;font-size:12px;">'
+        +escHtml(r.customer_name||'（顧客名なし）')+' / '+escHtml(r.car_model||'')+' / '+escHtml(r.plate||'')+' / '+escHtml(d)
+        +'</div>';
+    }).join('');
+  }catch(e){
+    box.innerHTML='<div style="padding:8px;color:#c00;font-size:12px;">検索失敗: '+e.message+'</div>';
+  }
+}
+function selectReception(id){
+  var r=receptSearchCache.find(function(x){return String(x.id)===String(id);});
+  if(!r)return;
+  document.getElementById('carName').value=r.car_model||'';
+  document.getElementById('plate').value=r.plate||'';
+  document.getElementById('receptSearchInput').value=(r.customer_name||'')+' / '+(r.car_model||'');
+  document.getElementById('receptSearchResults').style.display='none';
 }
 
 // ── 明細行 ──
