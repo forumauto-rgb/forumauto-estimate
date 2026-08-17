@@ -516,6 +516,7 @@ tr:hover td { background:var(--bg3); }
 
   <div class="sec-label">サブ機能</div>
   <div class="sub-grid">
+    <a href="javascript:void(0)" onclick="openPastEstModal()" class="sub-card"><span class="sub-card-icon">🔍</span><div class="sub-card-name">過去見積検索</div><div class="sub-card-desc">条件検索・修理履歴まとめ</div></a>
     <a href="delivery_invoice.html" class="sub-card"><span class="sub-card-icon">🧾</span><div class="sub-card-name">納品請求書</div><div class="sub-card-desc">外注先への請求</div></a>
     <a href="photo_upload.html" class="sub-card"><span class="sub-card-icon">📸</span><div class="sub-card-name">写真転送</div><div class="sub-card-desc">QRコード</div></a>
     <a href="kosu_master.html" class="sub-card"><span class="sub-card-icon">⏱️</span><div class="sub-card-name">標準工数</div><div class="sub-card-desc">マスタ管理</div></a>
@@ -1908,7 +1909,287 @@ function goToEstimateWithReceptionId(id){
 setTimeout(checkUnprocessedReceptions, 2000);
 // 5分ごとに更新
 setInterval(checkUnprocessedReceptions, 5*60*1000);
+
+// ===== 過去見積検索モーダル =====
+function pkQ(s){ return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+
+function openPastEstModal(){
+  document.getElementById('pkModal').classList.add('open');
+  pkBackToSearch();
+}
+function closePastEstModal(){
+  document.getElementById('pkModal').classList.remove('open');
+}
+function pkOverlayClick(ev){
+  if(ev.target === document.getElementById('pkModal')) closePastEstModal();
+}
+function pkBackToSearch(){
+  document.getElementById('pkViewHistory').style.display = 'none';
+  document.getElementById('pkViewSearch').style.display = 'block';
+}
+
+async function pkSearch(){
+  var kw = document.getElementById('pk-kw').value.trim();
+  var from = document.getElementById('pk-from').value;
+  var to = document.getElementById('pk-to').value;
+  var status = document.getElementById('pk-status');
+  var tbody = document.getElementById('pk-results');
+  status.textContent = '🔄 検索中...';
+  tbody.innerHTML = '';
+  try{
+    var conds = [];
+    if(kw){
+      var enc = encodeURIComponent(kw);
+      conds.push('or=(customer_name.ilike.*' + enc + '*,car_name.ilike.*' + enc + '*,plate.ilike.*' + enc + '*)');
+    }
+    if(from) conds.push('estimate_date=gte.' + from);
+    if(to) conds.push('estimate_date=lte.' + to);
+    conds.push('order=estimate_date.desc');
+    conds.push('limit=200');
+    var url = SB_URL + '/rest/v1/estimates?select=id,estimate_no,customer_name,car_name,plate,grand_total,confirmed_amount,estimate_date&' + conds.join('&');
+    var res = await fetch(url, {headers: SB_H});
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    var list = await res.json();
+    pkRenderResults(list);
+    status.textContent = list.length + '件見つかりました';
+  }catch(e){
+    status.textContent = '⚠ 検索エラー: ' + e.message;
+  }
+}
+
+function pkRenderResults(list){
+  var tbody = document.getElementById('pk-results');
+  if(!list.length){
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px;font-size:20px;">該当する見積が見つかりませんでした</td></tr>';
+    return;
+  }
+  var h = '';
+  list.forEach(function(e){
+    h += '<tr style="border-bottom:1px solid #eee;">';
+    h += '<td style="padding:10px;">' + esc(e.customer_name || '') + '</td>';
+    h += '<td style="padding:10px;">' + esc(e.car_name || '') + '</td>';
+    h += '<td style="padding:10px;">' + esc(e.plate || '') + '</td>';
+    h += '<td style="padding:10px;text-align:right;">¥' + (e.grand_total || 0).toLocaleString() + '</td>';
+    h += '<td style="padding:10px;text-align:right;">' + (e.confirmed_amount != null ? '¥' + e.confirmed_amount.toLocaleString() : '-') + '</td>';
+    h += '<td style="padding:10px;">' + esc((e.estimate_date || '').slice(0,10)) + '</td>';
+    h += '<td style="padding:10px;white-space:nowrap;">';
+    h += '<button onclick="pkOpenEstimate(\'' + pkQ(e.id) + '\')" style="font-size:18px;padding:6px 14px;background:#1a3a6b;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-right:6px;">呼出し</button>';
+    h += '<button onclick="pkOpenHistory(\'' + pkQ(e.customer_name) + '\',\'' + pkQ(e.plate) + '\')" style="font-size:18px;padding:6px 14px;background:#b8960c;color:#fff;border:none;border-radius:6px;cursor:pointer;">履歴</button>';
+    h += '</td>';
+    h += '</tr>';
+  });
+  tbody.innerHTML = h;
+}
+
+function pkOpenEstimate(id){
+  window.location.href = 'index.html?est_id=' + encodeURIComponent(id);
+}
+
+async function pkOpenHistory(customerName, plate){
+  document.getElementById('pkViewSearch').style.display = 'none';
+  var hv = document.getElementById('pkViewHistory');
+  hv.style.display = 'block';
+  document.getElementById('pk-history-header').textContent =
+    (customerName || '（顧客名なし）') + (plate ? '　／　' + plate : '');
+  var body = document.getElementById('pk-history-body');
+  body.innerHTML = '<div style="font-size:20px;color:#888;padding:20px;">🔄 読み込み中...</div>';
+  try{
+    var ors = [];
+    if(customerName) ors.push('customer_name.eq.' + encodeURIComponent(customerName));
+    if(plate) ors.push('plate.eq.' + encodeURIComponent(plate));
+    if(!ors.length){
+      body.innerHTML = '<div style="font-size:20px;color:#c00;">検索条件がありません</div>';
+      return;
+    }
+    var url = SB_URL + '/rest/v1/estimates?select=id,estimate_no,customer_name,car_name,plate,estimate_date,labor_total,parts_total,mat_total,subtotal,grand_total,confirmed_amount,mat_auto_mode&or=(' + ors.join(',') + ')&order=estimate_date.desc&limit=100';
+    var res = await fetch(url, {headers: SB_H});
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    var list = await res.json();
+
+    var confirmations = [];
+    var ids = list.map(function(e){ return e.id; });
+    if(ids.length){
+      var curl = SB_URL + '/rest/v1/delivery_confirmations?estimate_id=in.(' + ids.join(',') + ')&select=id,estimate_id,checks,signature_data,delivered_at';
+      var cres = await fetch(curl, {headers: SB_H});
+      if(cres.ok) confirmations = await cres.json();
+    }
+    pkRenderHistory(list, confirmations);
+  }catch(e){
+    body.innerHTML = '<div style="font-size:20px;color:#c00;">読込失敗: ' + e.message + '</div>';
+  }
+}
+
+function pkRenderHistory(list, confirmations){
+  var body = document.getElementById('pk-history-body');
+  if(!list.length){
+    body.innerHTML = '<div style="font-size:20px;color:#aaa;padding:20px;text-align:center;">過去の修理履歴が見つかりませんでした</div>';
+    return;
+  }
+
+  // ① 過去修理一覧
+  var h = '<div class="pk-sec-title">① 過去修理一覧</div>';
+  h += '<div style="overflow-x:auto;"><table class="pk-table"><thead><tr>';
+  h += '<th>受付日</th><th>見積番号</th><th style="text-align:right">見積金額</th><th style="text-align:right">確定金額</th><th style="text-align:right">差額</th><th style="text-align:right">材料費</th>';
+  h += '</tr></thead><tbody>';
+  list.forEach(function(e){
+    var grand = e.grand_total || 0;
+    var confirmed = (e.confirmed_amount != null) ? e.confirmed_amount : null;
+    var diff = (confirmed != null) ? (confirmed - grand) : null;
+    var diffCls = diff == null ? '' : (diff > 0 ? 'pk-plus' : diff < 0 ? 'pk-minus' : '');
+    h += '<tr>';
+    h += '<td>' + esc((e.estimate_date || '').slice(0,10)) + '</td>';
+    h += '<td>' + esc(e.estimate_no || '') + '</td>';
+    h += '<td style="text-align:right">¥' + grand.toLocaleString() + '</td>';
+    h += '<td style="text-align:right">' + (confirmed != null ? '¥' + confirmed.toLocaleString() : '-') + '</td>';
+    h += '<td style="text-align:right" class="' + diffCls + '">' + (diff != null ? (diff >= 0 ? '+' : '') + '¥' + diff.toLocaleString() : '-') + '</td>';
+    h += '<td style="text-align:right">¥' + (e.mat_total || 0).toLocaleString() + '</td>';
+    h += '</tr>';
+  });
+  h += '</tbody></table></div>';
+
+  // ② 材料費の確認
+  h += '<div class="pk-sec-title">② 材料費の確認<span class="pk-sec-note">手動入力かつ材料費比率40%以上は黄色警告</span></div>';
+  h += '<div style="overflow-x:auto;"><table class="pk-table"><thead><tr>';
+  h += '<th>見積番号</th><th style="text-align:right">材料費</th><th>計算方法</th><th style="text-align:right">材料費比率</th>';
+  h += '</tr></thead><tbody>';
+  list.forEach(function(e){
+    var matTotal = parseFloat(e.mat_total) || 0;
+    var sub = parseFloat(e.subtotal) || ((parseFloat(e.labor_total)||0) + (parseFloat(e.parts_total)||0) + matTotal);
+    var ratio = sub > 0 ? (matTotal / sub * 100) : 0;
+    var isAuto = e.mat_auto_mode !== false;
+    var warn = (!isAuto) && ratio >= 40;
+    h += '<tr' + (warn ? ' style="background:#fff8d6;"' : '') + '>';
+    h += '<td>' + esc(e.estimate_no || '') + '</td>';
+    h += '<td style="text-align:right">¥' + matTotal.toLocaleString() + '</td>';
+    h += '<td>' + (isAuto ? '自動' : '手動') + '</td>';
+    h += '<td style="text-align:right">' + ratio.toFixed(1) + '%' + (warn ? ' ⚠️' : '') + '</td>';
+    h += '</tr>';
+  });
+  h += '</tbody></table></div>';
+
+  // ③ 見積 vs 確定金額の差額
+  h += '<div class="pk-sec-title">③ 見積 vs 確定金額の差額</div>';
+  h += '<div style="overflow-x:auto;"><table class="pk-table"><thead><tr>';
+  h += '<th>見積番号</th><th style="text-align:right">見積金額</th><th style="text-align:right">確定金額</th><th style="text-align:right">差額</th><th style="text-align:right">差額率</th>';
+  h += '</tr></thead><tbody>';
+  list.forEach(function(e){
+    var grand = e.grand_total || 0;
+    var confirmed = (e.confirmed_amount != null) ? e.confirmed_amount : null;
+    var diff = (confirmed != null) ? (confirmed - grand) : null;
+    var pct = (diff != null && grand > 0) ? (diff / grand * 100) : null;
+    var cls = diff == null ? '' : (diff > 0 ? 'pk-plus' : diff < 0 ? 'pk-minus' : '');
+    h += '<tr>';
+    h += '<td>' + esc(e.estimate_no || '') + '</td>';
+    h += '<td style="text-align:right">¥' + grand.toLocaleString() + '</td>';
+    h += '<td style="text-align:right">' + (confirmed != null ? '¥' + confirmed.toLocaleString() : '-') + '</td>';
+    h += '<td style="text-align:right" class="' + cls + '">' + (diff != null ? (diff >= 0 ? '+' : '') + '¥' + diff.toLocaleString() : '-') + '</td>';
+    h += '<td style="text-align:right" class="' + cls + '">' + (pct != null ? (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%' : '-') + '</td>';
+    h += '</tr>';
+  });
+  h += '</tbody></table></div>';
+
+  // ④ 納車確認チェック
+  h += '<div class="pk-sec-title">④ 納車確認チェック</div>';
+  var confMap = {};
+  confirmations.forEach(function(c){
+    if(!confMap[c.estimate_id]) confMap[c.estimate_id] = [];
+    confMap[c.estimate_id].push(c);
+  });
+  var hasAnyConfirmation = confirmations.length > 0;
+  if(!hasAnyConfirmation){
+    h += '<div style="font-size:20px;color:#aaa;padding:12px 0;">納車確認記録が見つかりませんでした</div>';
+  } else {
+    list.forEach(function(e){
+      var cs = confMap[e.id];
+      if(!cs || !cs.length) return;
+      cs.forEach(function(c){
+        h += '<div class="pk-confirm-card">';
+        h += '<div class="pk-confirm-head">' + esc(e.estimate_no || '') + '　' + esc((c.delivered_at||'').slice(0,10)) + '</div>';
+        var checks = c.checks || {};
+        h += '<div class="pk-check-list">';
+        Object.keys(checks).forEach(function(k){
+          h += '<div class="pk-check-item">' + (checks[k] ? '✅' : '❌') + ' ' + esc(k) + '</div>';
+        });
+        h += '</div>';
+        h += '<div class="pk-sign">サイン：' + (c.signature_data ? '✅ 有り' : '❌ 無し') + '</div>';
+        h += '</div>';
+      });
+    });
+  }
+
+  body.innerHTML = h;
+}
 </script>
+<!-- ===== 過去見積検索モーダル ===== -->
+<style>
+.pk-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:10500;justify-content:center;align-items:center;}
+.pk-overlay.open{display:flex;}
+.pk-box{background:#fff;border-radius:14px;width:min(1100px,96vw);max-height:90vh;overflow-y:auto;padding:28px 32px;position:relative;font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;}
+.pk-title{font-size:24px;font-weight:bold;color:#0b1c35;border-bottom:3px solid #b8960c;padding-bottom:10px;margin-bottom:20px;}
+.pk-close{position:absolute;top:18px;right:22px;font-size:28px;cursor:pointer;color:#888;line-height:1;}
+.pk-close:hover{color:#1a3a6b;}
+.pk-field-label{display:block;font-size:16px;color:#555;margin-bottom:4px;}
+.pk-input{font-size:20px;padding:8px 10px;border:1px solid #bbb;border-radius:6px;}
+.pk-search-btn{font-size:20px;padding:10px 24px;background:#1a3a6b;color:#fff;border:none;border-radius:8px;font-weight:bold;cursor:pointer;}
+.pk-status{font-size:18px;color:#888;margin-bottom:8px;}
+.pk-table{width:100%;border-collapse:collapse;font-size:20px;}
+.pk-table th{background:#f0f2f5;color:#1a3a6b;padding:10px;text-align:left;border-bottom:2px solid #ddd;white-space:nowrap;}
+.pk-table td{padding:10px;border-bottom:1px solid #eee;}
+.pk-plus{color:#2e7d32;font-weight:bold;}
+.pk-minus{color:#c62828;font-weight:bold;}
+.pk-back-btn{font-size:18px;padding:8px 18px;background:#eee;border:none;border-radius:8px;cursor:pointer;margin-bottom:12px;}
+.pk-sec-title{font-size:20px;font-weight:bold;color:#1a3a6b;margin:20px 0 10px;padding-left:10px;border-left:4px solid #b8960c;}
+.pk-sec-note{font-size:14px;color:#888;font-weight:normal;margin-left:10px;}
+.pk-confirm-card{border:1px solid #ddd;border-radius:8px;padding:12px 16px;margin-bottom:10px;}
+.pk-confirm-head{font-size:20px;font-weight:bold;color:#1a3a6b;margin-bottom:8px;}
+.pk-check-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:4px;}
+.pk-check-item{font-size:18px;color:#333;}
+.pk-sign{font-size:18px;margin-top:8px;font-weight:bold;}
+</style>
+<div class="pk-overlay" id="pkModal" onclick="pkOverlayClick(event)">
+  <div class="pk-box">
+    <span class="pk-close" onclick="closePastEstModal()">✕</span>
+    <div class="pk-title">🔍 過去見積検索</div>
+
+    <div id="pkViewSearch">
+      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px;">
+        <div>
+          <label class="pk-field-label">顧客名・車名・登録番号</label>
+          <input type="text" id="pk-kw" class="pk-input" style="width:280px;" placeholder="例：山田太郎／プリウス" onkeydown="if(event.key==='Enter')pkSearch()">
+        </div>
+        <div>
+          <label class="pk-field-label">受付日 開始</label>
+          <input type="date" id="pk-from" class="pk-input">
+        </div>
+        <div>
+          <label class="pk-field-label">受付日 終了</label>
+          <input type="date" id="pk-to" class="pk-input">
+        </div>
+        <button onclick="pkSearch()" class="pk-search-btn">🔍 検索</button>
+      </div>
+      <div id="pk-status" class="pk-status"></div>
+      <div style="overflow-x:auto;">
+        <table class="pk-table">
+          <thead>
+            <tr>
+              <th>顧客名</th><th>車名</th><th>登録番号</th>
+              <th style="text-align:right">見積金額</th><th style="text-align:right">確定金額</th>
+              <th>受付日</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="pk-results"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="pkViewHistory" style="display:none;">
+      <button onclick="pkBackToSearch()" class="pk-back-btn">← 検索結果に戻る</button>
+      <div id="pk-history-header" style="font-size:22px;font-weight:bold;color:#1a3a6b;margin-bottom:10px;"></div>
+      <div id="pk-history-body"></div>
+    </div>
+  </div>
+</div>
+<!-- ===== 過去見積検索モーダル ここまで ===== -->
 <!-- ===== 取扱説明書モーダル ===== -->
 <style>
 #manualBtn {
