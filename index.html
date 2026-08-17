@@ -6735,9 +6735,13 @@ async function saveDraft(){
         // ★ 部品代はestimate_itemsではなくestimate_partsに保存する（loadEstimate()の読込先と統一）
         var delPartsR=await fetch(SUPABASE_URL+'/rest/v1/estimate_parts?estimate_id=eq.'+estId,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
         if(!delPartsR.ok){var delPartsErrTxt=await delPartsR.text().catch(function(){return '';});showNotify('❌ 部品代の保存に失敗しました');throw new Error('部品削除失敗: '+delPartsErrTxt);}
-        if(partsItems&&partsItems.filter(function(p){return p.name||p.cost;}).length>0){
-          var pItems=partsItems.filter(function(p){return p.name||p.cost;}).map(function(p,i){return{estimate_id:estId,item_type:'parts',name:p.name||'',cost:parseInt(p.cost)||0,profit:parseInt(p.profit)||0,sort_order:i};});
-          var postP=await fetch(SUPABASE_URL+'/rest/v1/estimate_parts',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(pItems)});
+        // ★ 材料明細(matItems)も保存する（従来は部品(partsItems)のみでmatItemsが欠落していたため、
+        // 手動入力した材料費が下書き自動保存では失われ、見積を開き直すと自動計算モードに置き換わっていた）
+        var pItems2=(partsItems||[]).filter(function(p){return p.name||p.cost;}).map(function(p,i){return{estimate_id:estId,item_type:'parts',name:p.name||'',cost:parseInt(p.cost)||0,profit:parseInt(p.profit)||0,sort_order:i};});
+        var mItems2=(matItems||[]).filter(function(m){return m.name||m.cost;}).map(function(m,i){return{estimate_id:estId,item_type:'material',name:m.name||'',cost:parseInt(m.cost)||0,profit:parseInt(m.profit)||30,sort_order:i};});
+        var allItems2=pItems2.concat(mItems2);
+        if(allItems2.length>0){
+          var postP=await fetch(SUPABASE_URL+'/rest/v1/estimate_parts',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(allItems2)});
           if(!postP.ok){var errP=await postP.text().catch(function(){return '';});showNotify('❌ 部品代の保存に失敗しました');throw new Error('部品保存失敗: '+errP);}
       }
         customer._estId=estId;
