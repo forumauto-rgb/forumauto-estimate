@@ -1973,7 +1973,7 @@ function pkRenderResults(list){
     h += '<td style="padding:10px;text-align:right;">' + (e.confirmed_amount != null ? '¥' + e.confirmed_amount.toLocaleString() : '-') + '</td>';
     h += '<td style="padding:10px;">' + esc((e.estimate_date || '').slice(0,10)) + '</td>';
     h += '<td style="padding:10px;white-space:nowrap;">';
-    h += '<button onclick="pkOpenEstimate(\'' + pkQ(e.id) + '\')" style="font-size:18px;padding:6px 14px;background:#1a3a6b;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-right:6px;">呼出し</button>';
+    h += '<button onclick="pkOpenEstimate(\'' + pkQ(e.estimate_no) + '\')" style="font-size:18px;padding:6px 14px;background:#1a3a6b;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-right:6px;">呼出し</button>';
     h += '<button onclick="pkOpenHistory(\'' + pkQ(e.customer_name) + '\',\'' + pkQ(e.plate) + '\')" style="font-size:18px;padding:6px 14px;background:#b8960c;color:#fff;border:none;border-radius:6px;cursor:pointer;">履歴</button>';
     h += '</td>';
     h += '</tr>';
@@ -1981,8 +1981,8 @@ function pkRenderResults(list){
   tbody.innerHTML = h;
 }
 
-function pkOpenEstimate(id){
-  window.location.href = 'index.html?est_id=' + encodeURIComponent(id);
+function pkOpenEstimate(estimateNo){
+  window.location.href = 'index.html?load=' + encodeURIComponent(estimateNo);
 }
 
 async function pkOpenHistory(customerName, plate){
