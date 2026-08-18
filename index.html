@@ -6995,16 +6995,27 @@ function autoSaveToMaster(){
     var vi = vMaster.findIndex(function(v){ return v.plate===customer.plate; });
     var g = GRADE_MASTER.find(function(x){ return x.name===customer.grade; })||{coef:1.1,foreign:1.0};
     var newVid = 'V'+(vMaster.length+1).toString().padStart(4,'0');
-    var vo = {
-      id: vi>=0 ? vMaster[vi].id : newVid,
-      cid: actualCid, plate:customer.plate||'',
-      maker:'', name:customer.car||'', model:customer.model||'', vin:'', year:'', drive:'2WD',
-      grade:customer.grade, gradeCoef:g.coef, foreignCoef:g.foreign||1.0,
-      evhv:'', color:customer.color||'',
-      film:pc4.film, paint:pc4.paint, clear:pc4.clear, special:pc4.special, memo:''
-    };
-    if(vi>=0) vMaster[vi]=Object.assign({},vMaster[vi],vo);
-    else vMaster.unshift(vo);
+    if(vi>=0){
+      // ★ 見積画面に入力欄がないメーカー・車体番号・年式・駆動方式は上書きしない
+      //   （以前はmaker:''等を強制上書きしており、車両マスターで入力済みの値が
+      //   見積保存のたびに消えてしまう不具合があった）
+      vMaster[vi] = Object.assign({}, vMaster[vi], {
+        cid: actualCid, plate:customer.plate||'',
+        name:customer.car||'', model:customer.model||vMaster[vi].model||'',
+        grade:customer.grade, gradeCoef:g.coef, foreignCoef:g.foreign||1.0,
+        color:customer.color||'',
+        film:pc4.film, paint:pc4.paint, clear:pc4.clear, special:pc4.special
+      });
+    } else {
+      vMaster.unshift({
+        id:newVid,
+        cid: actualCid, plate:customer.plate||'',
+        maker:'', name:customer.car||'', model:customer.model||'', vin:'', year:'', drive:'2WD',
+        grade:customer.grade, gradeCoef:g.coef, foreignCoef:g.foreign||1.0,
+        evhv:'', color:customer.color||'',
+        film:pc4.film, paint:pc4.paint, clear:pc4.clear, special:pc4.special, memo:''
+      });
+    }
   }
   try{
     localStorage.setItem('fa_c6',JSON.stringify(cMaster));
