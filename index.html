@@ -3647,7 +3647,7 @@ function renderCustomerPanel(){
       </div>
       <button class="btn btn-sm" onclick="showVL()" style="height:30px;padding:0 8px;font-size:11px;font-weight:bold;white-space:nowrap;flex:none;">🚗 一覧から選択</button>
       <div class="fg" style="flex:none"><label>ナンバー</label><input id="cP" value="${customer.plate}" oninput="customer.plate=this.value;awResize(this,16,24)" placeholder="浜松583ろ4831" style="${awStyle(customer.plate,16,24)}"></div>
-      <div class="fg" style="flex:none"><label>型式</label><input id="cModel" value="${customer.model||''}" oninput="customer.model=this.value;awResize(this,9,16)" placeholder="ZVW30" style="${awStyle(customer.model||'',9,16)}"></div>
+      <div class="fg" style="flex:none"><label>型式</label><input id="cModel" value="${customer.model||''}" oninput="customer.model=this.value;awResize(this,9,16)" placeholder="型式を入力" style="${awStyle(customer.model||'',9,16)}"></div>
       <div class="fg" style="flex:none"><label>車色名</label><input id="cCol" value="${customer.color||''}" oninput="customer.color=this.value;awResize(this,16,24)" placeholder="パールホワイト" style="${awStyle(customer.color||'',16,24)}"></div>
       <div class="fg" style="flex:none"><label>色番号</label><input id="cColCode" value="${customer.colorCode||''}" oninput="customer.colorCode=this.value;cAutoColorName(this.value);awResize(this,7,12)" placeholder="040" style="${awStyle(customer.colorCode||'',7,12,'font-family:monospace;')}"></div>
       <div class="fg" style="flex:none;min-width:150px"><label>車格区分 <span style="font-size:10px;color:#999;font-weight:normal">${(GRADE_MASTER.find(x=>x.name===customer.grade)||{desc:''}).desc}</span></label>
@@ -4149,7 +4149,7 @@ function renderMaster(){
       h+='</div></td>';
       h+='<td><select onchange="vMaster['+i+'].maker=this.value;autoSaveM();render()" style="height:26px;border:1px solid #e0e0e0;border-radius:4px;font-size:11px;width:80px">'+getMakerOptions(v.maker||'')+'</select></td>';
       h+='<td><input list="cl'+i+'" value="'+(v.name||'').replace(/"/g,'&quot;')+'" oninput="vMaster['+i+'].name=this.value;autoSaveM()" placeholder="車種" style="height:26px;border:1px solid #e0e0e0;border-radius:4px;font-size:11px;width:90px;padding:0 4px;"><datalist id="cl'+i+'">'+getCarDatalist(v.maker||'')+'</datalist></td>';
-      h+='<td><input value="'+(v.model||'').replace(/"/g,'&quot;')+'" oninput="vMaster['+i+'].model=this.value;autoSaveM();awResize(this,9,16)" placeholder="ZVW30" style="'+awStyle(v.model||'',9,16)+'"></td>';
+      h+='<td><input value="'+(v.model||'').replace(/"/g,'&quot;')+'" oninput="vMaster['+i+'].model=this.value;autoSaveM();awResize(this,9,16)" placeholder="型式を入力" style="'+awStyle(v.model||'',9,16)+'"></td>';
       h+='<td><input value="'+(v.vin||'').replace(/"/g,'&quot;')+'" oninput="vMaster['+i+'].vin=this.value;awResize(this,18,28)" placeholder="ZVW50-80115294" style="'+awStyle(v.vin||'',18,28)+'"></td>';
       h+='<td style="text-align:center"><input id="year_'+i+'" value="'+(v.year||'')+'" oninput="vMaster['+i+'].year=this.value;" onblur="var y=convertToWesternYear(this.value);vMaster['+i+'].year=y;this.value=y;autoSaveM();var sp=document.getElementById(\'year_disp_\'+'+i+');if(sp)sp.textContent=y?\'(\'+y+\')\':\'\';" placeholder="例:R2/02" title="例: R2/02 または 2020/02" style="width:50px"><br><span id="year_disp_'+i+'" style="font-size:9px;color:#1565c0;">'+(v.year?'('+v.year+')':'')+'</span></td>';
       h+='<td><select onchange="vMaster['+i+'].drive=this.value" style="height:26px;border:1px solid #e0e0e0;border-radius:4px;font-size:11px;width:48px">';
@@ -6998,10 +6998,11 @@ function autoSaveToMaster(){
     if(vi>=0){
       // ★ 見積画面に入力欄がないメーカー・車体番号・年式・駆動方式は上書きしない
       //   （以前はmaker:''等を強制上書きしており、車両マスターで入力済みの値が
-      //   見積保存のたびに消えてしまう不具合があった）
+      //   見積保存のたびに消えてしまう不具合があった）。車名・型式も空欄の場合は
+      //   既存データを消さず、入力がある場合のみ反映する
       vMaster[vi] = Object.assign({}, vMaster[vi], {
         cid: actualCid, plate:customer.plate||'',
-        name:customer.car||'', model:customer.model||vMaster[vi].model||'',
+        name:customer.car||vMaster[vi].name||'', model:customer.model||vMaster[vi].model||'',
         grade:customer.grade, gradeCoef:g.coef, foreignCoef:g.foreign||1.0,
         color:customer.color||'',
         film:pc4.film, paint:pc4.paint, clear:pc4.clear, special:pc4.special
