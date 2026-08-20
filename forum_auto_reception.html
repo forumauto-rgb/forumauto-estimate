@@ -871,6 +871,7 @@ var damages = [];
 var signCtx = null;
 var incomingPhotos = []; // 入庫時写真（base64）
 var ocrData = {};        // OCR読み取り結果
+var ocrPhotoBase64 = null; // 車検証OCRに使用した写真（base64、受付保存時にestimate_photosへ保存）
 var allCasesCache = [];
 var showOnlyAvailable = false;
 var map = null, mainMap = null, geocoder = null, directionsService = null, marker = null;
@@ -994,6 +995,7 @@ async function processOCR(input) {
   document.getElementById('ocrDropArea').style.display='none';
   try {
     var base64 = await fileToBase64(input.files[0]);
+    ocrPhotoBase64 = base64;
     var imageData = base64.split(',')[1];
     var resp = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
@@ -1019,6 +1021,7 @@ async function processOCR(input) {
     // APIキーなしの場合はSupabase Edge Function経由で
     try {
       var base64b = await fileToBase64(input.files[0]);
+      ocrPhotoBase64 = base64b;
       var respB = await fetch(SUPABASE_URL+'/functions/v1/ai-proxy',{
         method:'POST',
         headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},
@@ -1567,6 +1570,21 @@ async function saveReception() {
     }
   }
 
+  // 車検証OCRに使用した写真をestimate_photosに保存
+  if(ocrPhotoBase64&&recId){
+    try{
+      await supabaseQuery('estimate_photos','POST',{
+        reception_id: recId,
+        category: 'shakensho',
+        data_url: ocrPhotoBase64,
+        sort_order: 0
+      });
+    }catch(ope){
+      postSaveWarnings.push('車検証写真の保存');
+      console.error('車検証写真保存エラー:',ope);
+    }
+  }
+
   // localStorageに引き継ぎデータをセット（写真データを含むため容量超過で失敗することがある）
   var transferData = {
     customer_name: custName,
@@ -1802,6 +1820,7 @@ function clearForm() {
   selectedRentalCar=null; rentalNeeded=false;
   selectedBusinessType='';
   ocrData={};
+  ocrPhotoBase64=null;
   var ocBtns=document.getElementById('outsourceCompanyBtns');
   if(ocBtns) ocBtns.querySelectorAll('.outsource-co-btn').forEach(function(b){b.classList.remove('selected');});
   document.querySelectorAll('.type-select-btn').forEach(function(b){b.classList.remove('active');});
