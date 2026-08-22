@@ -6931,7 +6931,7 @@ async function saveEstimate(){
       part_name:s._part||s.part||'',
       item_name:s.name||'',
       process:s.process||'',
-      tag:s.tag||'remove',
+  　  tag: s.tag || '',
       hours:s.hours||0,
       actual_hours:(s._actualH>0?s._actualH:(_pm2.actual_hours||null)),
       staff_name:s._staff||_pm2.staff_name||'',
@@ -7286,7 +7286,7 @@ async function loadEstimate(estId,estNo){
     }
     var r1=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId+'&order=sort_order.asc',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
     var items=await r1.json();
-    sel=items.map(function(t){return{name:t.item_name||'',process:t.process||'',tag:t.tag||'remove',hours:t.hours||0,h:t.actual_hours||0,cost:t.cost||0,price:t.cost||0,part:t.part_name||'',_part:t.part_name||'',id:Date.now()+Math.random(),ai_reason:t.ai_reason||''};});
+    sel=items.map(function(t){return{name:t.item_name||'',process:t.process||'',tag:t.tag||'',hours:t.hours||0,h:t.actual_hours||0,cost:t.cost||0,price:t.cost||0,part:t.part_name||'',_part:t.part_name||'',id:Date.now()+Math.random(),ai_reason:t.ai_reason||''};});
     var r2=await fetch(SUPABASE_URL+'/rest/v1/estimate_parts?estimate_id=eq.'+estId+'&order=sort_order.asc',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
     var parts2=await r2.json();
     partsItems=parts2.filter(function(p){return p.item_type==='parts';}).map(function(p){return{name:p.name||'',partNo:p.part_no||'',cost:p.cost||'',profit:p.profit||0,qty:p.qty||1};});
