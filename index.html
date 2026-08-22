@@ -6910,6 +6910,16 @@ async function saveEstimate(){
     // DELETE前に実作業時間を退避（item_name+processをキーに引き継ぎ）
     var _prevActualMap2={};
     if(estId){var _pR2=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId+'&select=item_name,process,actual_hours,staff_name,photo_checked,ai_reason',{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});if(_pR2.ok){(await _pR2.json()).forEach(function(p){_prevActualMap2[(p.item_name||'')+'|'+(p.process||'')]={actual_hours:(p.actual_hours>0?p.actual_hours:null),staff_name:p.staff_name||'',photo_checked:p.photo_checked||false,ai_reason:p.ai_reason||''};});}}
+    // 工数未入力チェック
+    var missingHours = sel.filter(function(s){
+      return (s.hours === 0 || s.hours === '' || s.hours === null) && (s.cost === 0 || s.cost === '');
+    });
+    if(missingHours.length > 0){
+      var names = missingHours.map(function(s){ return '・' + s.name; }).join('\n');
+      if(!confirm('⚠️ 工数未入力の行があります：\n' + names + '\n\nこのまま保存しますか？')){
+        return;
+      }
+    }
     // 明細は先に全削除してから再挿入
     await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId,{
       method:'DELETE',
