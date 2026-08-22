@@ -6732,7 +6732,7 @@ async function saveDraft(){
     var delR=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
     if(!delR.ok){var delErrTxt=await delR.text().catch(function(){return '';});console.warn('items DELETE failed:',delR.status,delErrTxt); throw new Error('明細削除失敗 status='+delR.status+' '+delErrTxt);}
 　　　if(sel.length>0){
-          var items=sel.map(function(s,i){var _ak=(s.name||'')+'|'+(s.process||'');var _pm=_prevActualMap[_ak]||{};return{estimate_id:estId,part_name:s._part||s.part||'',item_name:s.name||'',process:s.process||'',tag:s.tag||'remove',hours:s.hours||0,actual_hours:(s._actualH>0?s._actualH:(_pm.actual_hours||null)),staff_name:s._staff||_pm.staff_name||'',photo_checked:_pm.photo_checked||false,cost:s.cost||0,sort_order:i,ai_reason:s.ai_reason||_pm.ai_reason||''};});
+          var items=sel.map(function(s,i){var _ak=(s.name||'')+'|'+(s.process||'');var _pm=_prevActualMap[_ak]||{};return{estimate_id:estId,part_name:s._part||s.part||'',item_name:s.name||'',process:s.process||'',tag:s.tag||'',hours:s.hours||0,actual_hours:(s._actualH>0?s._actualH:(_pm.actual_hours||null)),staff_name:s._staff||_pm.staff_name||'',photo_checked:_pm.photo_checked||false,cost:s.cost||0,sort_order:i,ai_reason:s.ai_reason||_pm.ai_reason||''};});
           var postR=await fetch(SUPABASE_URL+'/rest/v1/estimate_items',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(items)});
           if(!postR.ok){var errTxt=await postR.text(); throw new Error('明細登録失敗: '+errTxt);}
         }
@@ -6931,7 +6931,7 @@ async function saveEstimate(){
       part_name:s._part||s.part||'',
       item_name:s.name||'',
       process:s.process||'',
-  　  tag: s.tag || '',
+      tag:s.tag||'',
       hours:s.hours||0,
       actual_hours:(s._actualH>0?s._actualH:(_pm2.actual_hours||null)),
       staff_name:s._staff||_pm2.staff_name||'',
