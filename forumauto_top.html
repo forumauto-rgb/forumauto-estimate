@@ -355,6 +355,52 @@ a { text-decoration:none; color:inherit; }
 }
 
 /* ══════════════════════════════════════
+   SECTION 1.5：修理の流れバナー
+══════════════════════════════════════ */
+.story-banner {
+  background: var(--navy2);
+  padding: 40px 60px;
+  text-align: center;
+  border-bottom: 1px solid rgba(184,150,12,0.2);
+}
+.story-banner-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+  background: var(--gold);
+  color: var(--navy);
+  padding: 20px 40px;
+  border-radius: 50px;
+  font-weight: 700;
+  box-shadow: 0 4px 20px rgba(184,150,12,0.4);
+  transition: all 0.25s;
+}
+.story-banner-btn:hover {
+  background: var(--gold2);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(184,150,12,0.5);
+}
+.story-banner-icon { font-size: 28px; line-height: 1; }
+.story-banner-text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  gap: 3px;
+}
+.story-banner-title {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.story-banner-sub {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(13,31,60,0.7);
+  letter-spacing: 0.05em;
+}
+.story-banner-arrow { font-size: 22px; }
+
+/* ══════════════════════════════════════
    SECTION 2：代表メッセージ
 ══════════════════════════════════════ */
 .message-section {
@@ -1034,6 +1080,7 @@ a { text-decoration:none; color:inherit; }
   .hero::after { display: none; }
   .message-section, .strengths-section, .services-section,
   .agents-section, .voices-section, .access-section { padding: 80px 24px; }
+  .story-banner { padding: 32px 24px; }
   .message-grid { max-width: 100%; }
   .strengths-grid { grid-template-columns: 1fr; gap: 2px; }
   .services-grid { grid-template-columns: 1fr 1fr; }
@@ -1049,6 +1096,8 @@ a { text-decoration:none; color:inherit; }
 @media (max-width: 600px) {
   .services-grid { grid-template-columns: 1fr; }
   .floating-cta { bottom: 16px; right: 16px; }
+  .story-banner-btn { flex-direction: column; gap: 8px; padding: 22px 28px; }
+  .story-banner-text { text-align: center; }
 }
 
 @media (max-width: 480px) {
@@ -1143,6 +1192,18 @@ a { text-decoration:none; color:inherit; }
     <span class="scroll-line"></span>
     <span>Scroll</span>
   </div>
+</section>
+
+<!-- S1.5：修理の流れバナー -->
+<section class="story-banner">
+  <a href="repair_story.html" class="story-banner-btn">
+    <span class="story-banner-icon">🎬</span>
+    <span class="story-banner-text">
+      <span class="story-banner-title">修理の流れを見る</span>
+      <span class="story-banner-sub">全16話で分かる、愛車が生まれ変わるまでの物語</span>
+    </span>
+    <span class="story-banner-arrow">→</span>
+  </a>
 </section>
 
 <!-- S2：代表メッセージ -->
