@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>修理ストーリー</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%;
+    height: 100%;
+    background: #000;
+    overflow: hidden;
+    font-family: "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+  }
+  .stage {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .slide-img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  .home-btn {
+    position: fixed;
+    top: env(safe-area-inset-top, 16px);
+    right: 16px;
+    z-index: 20;
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.4);
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-size: 14px;
+    text-decoration: none;
+    backdrop-filter: blur(4px);
+  }
+  .home-btn:active { background: rgba(255,255,255,0.3); }
+
+  .nav-btn {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 25%;
+    max-width: 120px;
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.55);
+    font-size: 40px;
+    cursor: pointer;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .nav-btn:active { color: rgba(255,255,255,0.9); }
+  .nav-prev { left: 0; justify-content: flex-start; padding-left: 8px; }
+  .nav-next { right: 0; justify-content: flex-end; padding-right: 8px; }
+
+  .footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: env(safe-area-inset-bottom, 14px);
+    z-index: 20;
+    text-align: center;
+    color: #fff;
+    pointer-events: none;
+  }
+  .episode {
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  }
+  .page-num {
+    margin-top: 4px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.75);
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  }
+
+  .progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    z-index: 20;
+    display: flex;
+    gap: 3px;
+    padding: 6px 8px 0;
+  }
+  .progress-seg {
+    flex: 1;
+    height: 3px;
+    background: rgba(255,255,255,0.25);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-seg .fill {
+    height: 100%;
+    width: 0%;
+    background: #fff;
+  }
+  .progress-seg.done .fill { width: 100%; transition: none; }
+  .progress-seg.active .fill { transition: width linear; }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<a href="ダッシュボード.html" class="home-btn">🏠 ホーム</a>
+
+<div class="stage">
+  <img id="slideImg" class="slide-img" src="" alt="story">
+</div>
+
+<button class="nav-btn nav-prev" id="prevBtn" aria-label="前へ">‹</button>
+<button class="nav-btn nav-next" id="nextBtn" aria-label="次へ">›</button>
+
+<div class="footer">
+  <div class="episode" id="episodeLabel">第1話</div>
+  <div class="page-num" id="pageLabel">1 / 16</div>
+</div>
+
+<script>
+  const TOTAL = 16;
+  const DURATION = 15000; // 15秒
+  const BASE_URL = "https://forumauto-rgb.github.io/forumauto-estimate/";
+
+  let current = 0; // 0-indexed
+  let timer = null;
+  let segStart = 0;
+
+  const imgEl = document.getElementById('slideImg');
+  const episodeEl = document.getElementById('episodeLabel');
+  const pageEl = document.getElementById('pageLabel');
+  const progressBar = document.getElementById('progressBar');
+
+  function pad2(n) { return n.toString().padStart(2, '0'); }
+
+  // プログレスバーのセグメントを生成
+  for (let i = 0; i < TOTAL; i++) {
+    const seg = document.createElement('div');
+    seg.className = 'progress-seg';
+    const fill = document.createElement('div');
+    fill.className = 'fill';
+    seg.appendChild(fill);
+    progressBar.appendChild(seg);
+  }
+  const segs = progressBar.querySelectorAll('.progress-seg');
+
+  function render() {
+    const num = current + 1;
+    imgEl.src = BASE_URL + 'story_' + pad2(num) + '.png';
+    episodeEl.textContent = '第' + num + '話';
+    pageEl.textContent = num + ' / ' + TOTAL;
+
+    segs.forEach((seg, i) => {
+      seg.classList.remove('done', 'active');
+      const fill = seg.querySelector('.fill');
+      fill.style.transition = 'none';
+      if (i < current) {
+        seg.classList.add('done');
+        fill.style.width = '100%';
+      } else {
+        fill.style.width = '0%';
+      }
+    });
+  }
+
+  function startSegAnimation() {
+    const seg = segs[current];
+    seg.classList.add('active');
+    const fill = seg.querySelector('.fill');
+    fill.style.transition = 'none';
+    fill.style.width = '0%';
+    // 強制リフロー後にアニメーション開始
+    void fill.offsetWidth;
+    fill.style.transition = 'width ' + DURATION + 'ms linear';
+    fill.style.width = '100%';
+  }
+
+  function goTo(index, autoAdvance) {
+    current = ((index % TOTAL) + TOTAL) % TOTAL;
+    render();
+    startSegAnimation();
+    resetTimer(autoAdvance);
+  }
+
+  function next() { goTo(current + 1, true); }
+  function prev() { goTo(current - 1, true); }
+
+  function resetTimer() {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(next, DURATION);
+  }
+
+  document.getElementById('nextBtn').addEventListener('click', () => next());
+  document.getElementById('prevBtn').addEventListener('click', () => prev());
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') next();
+    if (e.key === 'ArrowLeft') prev();
+  });
+
+  goTo(0);
+</script>
+
+</body>
+</html>
