@@ -358,47 +358,63 @@ a { text-decoration:none; color:inherit; }
    SECTION 1.5：修理の流れバナー
 ══════════════════════════════════════ */
 .story-banner {
-  background: var(--navy2);
-  padding: 40px 60px;
+  background: linear-gradient(135deg, var(--gold-lt), var(--gold) 55%, var(--gold2));
+  padding: 80px 60px;
   text-align: center;
-  border-bottom: 1px solid rgba(184,150,12,0.2);
+  position: relative;
+  overflow: hidden;
+}
+.story-banner::before {
+  content: '';
+  position: absolute;
+  top: -160px; left: -120px;
+  width: 420px; height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(13,31,60,0.10) 0%, transparent 70%);
+  pointer-events: none;
+}
+.story-banner-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  position: relative;
+}
+.story-banner-catch {
+  font-family: 'Noto Serif JP', serif;
+  font-size: clamp(24px, 3.6vw, 40px);
+  font-weight: 900;
+  color: var(--navy);
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  margin-bottom: 18px;
+}
+.story-banner-sub {
+  font-size: clamp(15px, 1.8vw, 19px);
+  color: rgba(13,31,60,0.78);
+  line-height: 1.9;
+  letter-spacing: 0.03em;
+  margin-bottom: 40px;
+  font-weight: 500;
 }
 .story-banner-btn {
   display: inline-flex;
   align-items: center;
-  gap: 18px;
-  background: var(--gold);
-  color: var(--navy);
-  padding: 20px 40px;
-  border-radius: 50px;
-  font-weight: 700;
-  box-shadow: 0 4px 20px rgba(184,150,12,0.4);
-  transition: all 0.25s;
-}
-.story-banner-btn:hover {
-  background: var(--gold2);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(184,150,12,0.5);
-}
-.story-banner-icon { font-size: 28px; line-height: 1; }
-.story-banner-text {
-  display: flex;
-  flex-direction: column;
-  text-align: left;
-  gap: 3px;
-}
-.story-banner-title {
+  gap: 12px;
+  background: var(--navy);
+  color: var(--gold-lt);
   font-size: 19px;
   font-weight: 700;
   letter-spacing: 0.08em;
+  padding: 22px 48px;
+  border-radius: 50px;
+  border: 2px solid var(--navy);
+  box-shadow: 0 8px 28px rgba(13,31,60,0.35);
+  transition: all 0.25s;
 }
-.story-banner-sub {
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(13,31,60,0.7);
-  letter-spacing: 0.05em;
+.story-banner-btn:hover {
+  background: var(--navy2);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 36px rgba(13,31,60,0.45);
 }
-.story-banner-arrow { font-size: 22px; }
 
 /* ══════════════════════════════════════
    SECTION 2：代表メッセージ
@@ -1080,7 +1096,7 @@ a { text-decoration:none; color:inherit; }
   .hero::after { display: none; }
   .message-section, .strengths-section, .services-section,
   .agents-section, .voices-section, .access-section { padding: 80px 24px; }
-  .story-banner { padding: 32px 24px; }
+  .story-banner { padding: 56px 24px; }
   .message-grid { max-width: 100%; }
   .strengths-grid { grid-template-columns: 1fr; gap: 2px; }
   .services-grid { grid-template-columns: 1fr 1fr; }
@@ -1096,8 +1112,7 @@ a { text-decoration:none; color:inherit; }
 @media (max-width: 600px) {
   .services-grid { grid-template-columns: 1fr; }
   .floating-cta { bottom: 16px; right: 16px; }
-  .story-banner-btn { flex-direction: column; gap: 8px; padding: 22px 28px; }
-  .story-banner-text { text-align: center; }
+  .story-banner-btn { width: 100%; justify-content: center; padding: 20px 28px; }
 }
 
 @media (max-width: 480px) {
@@ -1196,14 +1211,11 @@ a { text-decoration:none; color:inherit; }
 
 <!-- S1.5：修理の流れバナー -->
 <section class="story-banner">
-  <a href="repair_story.html" class="story-banner-btn">
-    <span class="story-banner-icon">🎬</span>
-    <span class="story-banner-text">
-      <span class="story-banner-title">修理の流れを見る</span>
-      <span class="story-banner-sub">全16話で分かる、愛車が生まれ変わるまでの物語</span>
-    </span>
-    <span class="story-banner-arrow">→</span>
-  </a>
+  <div class="story-banner-inner">
+    <h2 class="story-banner-catch">保険修理って何？<br>全てお答えします。</h2>
+    <p class="story-banner-sub">事故対応から保険金受取まで、全16話で分かりやすく解説します。</p>
+    <a href="repair_story.html" class="story-banner-btn">📖 修理・保険の流れを見る</a>
+  </div>
 </section>
 
 <!-- S2：代表メッセージ -->
