@@ -520,11 +520,11 @@ async function submitPhotos() {
         if(!existSet[cat + '||' + dataUrl]) {
           maxSort[cat]++;
           var row = {
-            estimate_no: estimateId || '',
             category: cat,
             data_url: dataUrl,
             sort_order: maxSort[cat]
           };
+          if(estimateId) row.estimate_no = estimateId;
           if(dbId) row.estimate_id = dbId;
           if(receptionUuid) row.reception_id = receptionUuid;
           rows.push(row);
