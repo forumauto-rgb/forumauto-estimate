@@ -5804,13 +5804,16 @@ function selUpdateH(i,v){
 function renderSelectedTasks(fullMode){
   var lH=fullMode?'calc(100vh - 160px)':'auto';
   if(!sel.length){
-    return '<div class="card" style="text-align:center;color:#999;padding:40px">\u4f5c\u696d\u304c\u9078\u629e\u3055\u308c\u3066\u3044\u307e\u305b\u3093</div>';
+    return '<div class="card" style="text-align:center;color:#999;padding:40px">\u4f5c\u696d\u304c\u9078\u629e\u3055\u308c\u3066\u3044\u307e\u305b\u3093'
+      +'<div style="margin-top:14px"><button onclick="openFreeItemModal()" style="background:#fff;color:#1a3a6b;border:2px solid #1a3a6b;border-radius:6px;padding:8px 16px;font-size:12px;font-weight:bold;cursor:pointer;">\u270f\ufe0f \u81ea\u7531\u5165\u529b\u3067\u4f5c\u696d\u3092\u8ffd\u52a0</button></div>'
+      +'</div>';
   }
   var h='<div class="card" style="padding:0;overflow:hidden">';
   h+='<div class="sec-hd" style="display:flex;align-items:center;justify-content:space-between;">';
   h+='<span>選択作業一覧　<span style="font-size:11px;font-weight:normal">'+sel.length+'件</span></span>';
   h+='<div style="display:flex;gap:6px;align-items:center;">';
   h+='<button onclick="clearEstimate()" style="background:#e53935;color:white;border:none;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:bold;cursor:pointer;">🗑 作業クリア</button>';
+  h+='<button onclick="openFreeItemModal()" style="background:#fff;color:#1a3a6b;border:2px solid #1a3a6b;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:bold;cursor:pointer;">✏️ 自由入力追加</button>';
   h+='<button onclick="showReasonList()" style="background:#fff;color:#1a3a6b;border:2px solid #1a3a6b;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:bold;cursor:pointer;">📋 理由一覧</button>';
   h+='<button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:white;border-color:rgba(255,255,255,0.3)" onclick="goToPreviewTab();">見積書 &rarr;</button>';
   h+='</div>';
@@ -5918,6 +5921,96 @@ function renderSelectedTasks(fullMode){
     h+=partsMaterialHTML();
   }
   return h;
+}
+
+// ===== 自由入力で作業を追加 =====
+// 工程タグ選択肢（ラベル → 工賃レート区分tag）。tagでeffectiveLRが決まる
+var FREE_ITEM_PROCS=[
+  {g:'板金・脱着（標準工賃）',opts:[
+    ['取外し','remove'],['取付','remove'],['脱着','remove'],['修正','remove'],
+    ['修理','remove'],['交換','remove'],['研磨・磨き','remove'],
+    ['確認・検査','remove'],['エーミング','remove'],['清掃','remove'],['その他','remove']
+  ]},
+  {g:'塗装（塗装工賃）',opts:[
+    ['パネル塗装','paint'],['バンパー塗装','paint'],['ぼかし塗装','paint'],
+    ['下地処理','paint'],['クリア塗装','paint']
+  ]},
+  {g:'ブース（¥2,000/h）',opts:[
+    ['ブース使用','booth'],['焼付乾燥','booth']
+  ]}
+];
+
+function openFreeItemModal(){
+  closeFreeItemModal();
+  var optHtml=FREE_ITEM_PROCS.map(function(grp){
+    return '<optgroup label="'+grp.g+'">'+grp.opts.map(function(o){
+      return '<option value="'+o[0]+'" data-tag="'+o[1]+'">'+o[0]+'</option>';
+    }).join('')+'</optgroup>';
+  }).join('');
+  var bd=document.createElement('div');
+  bd.id='free-item-backdrop';
+  bd.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px;';
+  bd.onclick=function(e){if(e.target===bd)closeFreeItemModal();};
+  bd.innerHTML='<div style="background:#fff;border:3px solid #1a3a6b;border-radius:14px;padding:20px 22px;max-width:420px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.4);">'
+    +'<div style="font-size:15px;font-weight:bold;color:#1a3a6b;margin-bottom:14px;">✏️ 自由入力で作業を追加</div>'
+    +'<label style="font-size:12px;font-weight:bold;color:#555;">作業名</label>'
+    +'<input id="fi-name" placeholder="例：フェンダー内 取り回し確認" style="width:100%;box-sizing:border-box;margin:4px 0 12px;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;">'
+    +'<label style="font-size:12px;font-weight:bold;color:#555;">工程タグ（工賃レート区分）</label>'
+    +'<select id="fi-proc" onchange="updateFreeItemPreview()" style="width:100%;box-sizing:border-box;margin:4px 0 12px;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;">'+optHtml+'</select>'
+    +'<label style="font-size:12px;font-weight:bold;color:#555;">工数（h）</label>'
+    +'<input id="fi-hours" type="number" step="0.1" min="0" value="1" oninput="updateFreeItemPreview()" style="width:100%;box-sizing:border-box;margin:4px 0 12px;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;text-align:right;">'
+    +'<div id="fi-preview" style="background:#eef1f8;border-radius:6px;padding:8px 12px;font-size:13px;color:#1a3a6b;font-weight:bold;margin-bottom:16px;">工賃：¥0</div>'
+    +'<div style="display:flex;gap:10px;">'
+    +'<button onclick="closeFreeItemModal()" style="flex:1;background:#f1f3f5;color:#555;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:bold;cursor:pointer;">キャンセル</button>'
+    +'<button onclick="confirmFreeItem()" style="flex:1;background:#1a3a6b;color:#fff;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:bold;cursor:pointer;">追加する</button>'
+    +'</div>'
+    +'</div>';
+  document.body.appendChild(bd);
+  updateFreeItemPreview();
+  setTimeout(function(){var el=document.getElementById('fi-name');if(el)el.focus();},50);
+}
+
+function closeFreeItemModal(){
+  var el=document.getElementById('free-item-backdrop');
+  if(el)el.remove();
+}
+
+// モーダルの現在入力値を {process, tag, h} で返す
+function _freeItemInputs(){
+  var ps=document.getElementById('fi-proc');
+  var opt=ps&&ps.options[ps.selectedIndex];
+  return {
+    process: ps?ps.value:'その他',
+    tag: opt?(opt.getAttribute('data-tag')||'remove'):'remove',
+    h: parseFloat((document.getElementById('fi-hours')||{}).value)||0
+  };
+}
+
+function updateFreeItemPreview(){
+  var v=_freeItemInputs();
+  var lr=effectiveLR({tag:v.tag});
+  var cost=Math.round(v.h*lr);
+  var pv=document.getElementById('fi-preview');
+  if(pv) pv.innerHTML='工賃：¥'+cost.toLocaleString()
+    +' <span style="font-weight:normal;font-size:11px;color:#888;">（¥'+lr.toLocaleString()+'/h × '+v.h+'h）</span>';
+}
+
+function confirmFreeItem(){
+  var name=((document.getElementById('fi-name')||{}).value||'').trim();
+  if(!name){ showNotify('⚠ 作業名を入力してください'); return; }
+  var v=_freeItemInputs();
+  var obj={
+    id:Date.now()+Math.random(),
+    name:name, process:v.process, tag:v.tag,
+    hours:v.h, h:v.h,
+    _part:'', _viewTab:BODY_VIEW_TAB, _free:true
+  };
+  obj.cost=Math.round(v.h*effectiveLR(obj));
+  obj.price=obj.cost;
+  sel.push(obj);
+  closeFreeItemModal();
+  rIP();
+  showNotify('✅ 「'+name+'」を追加しました');
 }
 
 function closeReasonPopup(){
