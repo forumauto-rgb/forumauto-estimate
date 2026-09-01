@@ -34,6 +34,8 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(
 .cs-filter{display:flex;gap:8px;padding:12px 12px 0;}
 .cs-fbtn{flex:1;min-height:44px;border:2px solid var(--border2);border-radius:10px;background:#fff;color:var(--txt2);font-size:13px;font-weight:800;cursor:pointer;}
 .cs-fbtn-on{background:var(--navy);border-color:var(--navy);color:#fff;}
+.cs-search{padding:10px 12px 0;}
+.cs-search input{width:100%;min-height:46px;font-size:15px;padding:8px 12px;border:2px solid var(--border2);border-radius:10px;background:#fff;}
 .case-badge{display:inline-block;font-size:12px;font-weight:800;padding:3px 10px;border-radius:12px;margin-top:6px;}
 .badge-done{background:var(--green2);color:var(--green);}
 .badge-wip{background:var(--red2);color:var(--red);}
@@ -134,6 +136,9 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(
       <button class="cs-fbtn cs-fbtn-on" data-f="all" onclick="setCaseFilter('all')">全件</button>
       <button class="cs-fbtn" data-f="done" onclick="setCaseFilter('done')">✅ 完了</button>
       <button class="cs-fbtn" data-f="wip" onclick="setCaseFilter('wip')">⏳ 未完了</button>
+    </div>
+    <div class="cs-search">
+      <input type="search" id="csSearch" placeholder="🔍 顧客名・ナンバーで検索" oninput="onCaseSearch(this.value)" autocomplete="off">
     </div>
     <div id="caseListArea" class="case-list"><div class="loading-msg">読み込み中...</div></div>
   </div>
@@ -294,6 +299,16 @@ function receptionCaseLabel(c) {
 var caseListData = [];
 var caseCheckMap = {};
 var caseFilter = 'all';
+var caseSearch = '';
+
+// 検索比較用に正規化（空白除去・小文字化）
+function normSearch(s) {
+  return String(s == null ? '' : s).replace(/[\s　-]/g, '').toLowerCase();
+}
+function onCaseSearch(v) {
+  caseSearch = normSearch(v);
+  renderCaseList();
+}
 
 function setCaseFilter(f) {
   caseFilter = f;
@@ -349,10 +364,16 @@ function renderCaseList() {
     return;
   }
   var rows = caseListData.filter(function(c) {
-    if (caseFilter === 'all') return true;
-    var k = caseStatus(c.id).key;
-    if (caseFilter === 'done') return k === 'done';
-    return k !== 'done'; // 未完了（wip + none）
+    if (caseFilter !== 'all') {
+      var k = caseStatus(c.id).key;
+      if (caseFilter === 'done' && k !== 'done') return false;
+      if (caseFilter === 'wip' && k === 'done') return false;
+    }
+    if (caseSearch) {
+      var hay = normSearch(c.customer_name) + normSearch(c.plate);
+      if (hay.indexOf(caseSearch) === -1) return false;
+    }
+    return true;
   });
   if (!rows.length) {
     area.innerHTML = '<div class="loading-msg">該当する案件がありません</div>';
