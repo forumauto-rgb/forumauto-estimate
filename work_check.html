@@ -53,6 +53,8 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(
 .role-indicator.role-indicator-warn{color:#ffd54f;opacity:1;}
 .back-to-list-btn{display:inline-block;min-height:40px;padding:8px 16px;background:rgba(255,213,79,0.1);border:2px solid #ffd54f;border-radius:20px;color:#ffd54f;font-size:13px;font-weight:800;cursor:pointer;margin-bottom:8px;}
 .back-to-list-btn:active{background:rgba(255,213,79,0.25);}
+.print-btn{display:inline-block;min-height:40px;padding:8px 16px;background:rgba(255,255,255,0.12);border:2px solid #fff;border-radius:20px;color:#fff;font-size:13px;font-weight:800;cursor:pointer;margin:0 0 8px 8px;}
+.print-btn:active{background:rgba(255,255,255,0.3);}
 
 .role-bar{background:#fff;padding:12px 16px;border-bottom:1px solid var(--border);}
 .role-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
@@ -123,6 +125,22 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(
 .notify{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.25);opacity:0;transition:opacity .3s;z-index:300;pointer-events:none;max-width:90vw;text-align:center;}
 .notify.show{opacity:1;}
 .notify.err{background:var(--red);}
+
+/* ── 印刷 ── */
+#printArea{display:none;}
+@media print{
+  html,body{background:#fff;}
+  #appWrap,#manualBtn,#manualOverlay,.notify,.lightbox{display:none !important;}
+  #printArea{display:block !important;padding:0;color:#000;font-size:11px;}
+  #printArea .pa-h1{font-size:17px;font-weight:800;margin-bottom:6px;}
+  #printArea .pa-meta{font-size:11px;line-height:1.8;margin-bottom:10px;border-bottom:2px solid #000;padding-bottom:6px;}
+  #printArea .pa-type{font-size:13px;font-weight:800;margin:12px 0 4px;background:#e5e7eb;padding:3px 8px;page-break-after:avoid;}
+  #printArea table.pa-tbl{width:100%;border-collapse:collapse;margin-bottom:2px;}
+  #printArea table.pa-tbl td{border:1px solid #999;padding:3px 6px;vertical-align:top;line-height:1.4;}
+  #printArea .pa-item{page-break-inside:avoid;margin-bottom:6px;}
+  #printArea .pa-photos{margin:2px 0 4px;}
+  #printArea .pa-photos img{width:118px;height:88px;object-fit:cover;border:1px solid #999;margin:0 4px 4px 0;}
+}
 </style>
 </head>
 <body>
@@ -147,6 +165,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(
   <div id="mainScreen" style="display:none;">
     <div class="top-header">
       <button class="back-to-list-btn" onclick="backToCaseList()">← 案件一覧へ戻る</button>
+      <button class="print-btn" onclick="printChecks()">🖨 印刷</button>
       <div class="case-name" id="hdrCaseName">---</div>
       <div class="case-sub" id="hdrCaseSub">---</div>
       <div class="overall-progress" id="overallProgress">全体 0/0完了</div>
@@ -200,6 +219,9 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(
 <input type="file" id="photoInput" accept="image/*" capture="environment" multiple style="display:none" onchange="handlePhotoFiles(this.files)">
 
 <div class="notify" id="notify"></div>
+
+<!-- 印刷用（画面では非表示、@media printでのみ表示） -->
+<div id="printArea"></div>
 
 <script>
 var SB_URL = 'https://uhppgdwbyrijnqpvusxw.supabase.co';
@@ -265,6 +287,7 @@ async function supabaseFetchAll(url) {
 function init() {
   if (estimateId) {
     showMainScreen();
+    loadCaseMeta();
     loadStaff();
     loadRecipes();
     loadChecksAndPhotos();
@@ -283,6 +306,80 @@ function showMainScreen() {
   document.getElementById('mainScreen').style.display = 'block';
   document.getElementById('hdrCaseName').textContent = (custParam ? custParam + ' 様' : '---');
   document.getElementById('hdrCaseSub').textContent = [carParam, estimateNo].filter(Boolean).join('　');
+}
+
+// 受付レコードから顧客名・車種・ナンバー・受付日を補完取得（印刷・ヘッダー表示用）
+var caseMeta = {};
+async function loadCaseMeta() {
+  caseMeta = {};
+  if (!estimateId) return;
+  try {
+    var res = await fetch(SB_URL + '/rest/v1/receptions?id=eq.' + encodeURIComponent(estimateId) + '&select=customer_name,car_model,plate,reception_datetime,note,type', { headers: SB_H });
+    if (!res.ok) return;
+    var rows = await res.json();
+    if (!rows || !rows[0]) return;
+    caseMeta = rows[0];
+    if (!custParam && caseMeta.customer_name) {
+      custParam = caseMeta.customer_name;
+      document.getElementById('hdrCaseName').textContent = custParam + ' 様';
+    }
+    if (!carParam && caseMeta.car_model) carParam = caseMeta.car_model;
+    document.getElementById('hdrCaseSub').textContent = [carParam, caseMeta.plate, estimateNo].filter(Boolean).join('　');
+  } catch(e) {}
+}
+
+// =========================================================
+// 印刷（顧客情報＋作業種類ごとの項目・チェック者・時刻・写真）
+// =========================================================
+function printChecks() {
+  if (!checks.length) { showNotify('印刷する点検項目がありません', true); return; }
+  buildPrintArea();
+  window.print();
+}
+
+function buildPrintArea() {
+  var m = caseMeta || {};
+  var cusName = custParam || m.customer_name || '---';
+  var car = carParam || m.car_model || '';
+  var plate = m.plate || '';
+  var rDate = fmtDate(m.reception_datetime);
+  var overall = overallProgress();
+  var d = new Date();
+  var nowStr = d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate() + ' '
+    + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+
+  var body = uniqueWorkTypes().map(function(t) {
+    var items = checks.filter(function(c) { return c.work_type === t; });
+    var doneCount = items.filter(isDone).length;
+    var rowsHtml = items.map(function(c) {
+      var done = isDone(c);
+      var photos = (c.photos || []).map(function(p) {
+        return '<img src="' + esc(p.data_url) + '">';
+      }).join('');
+      var worker = c.worker_name ? esc(c.worker_name) + '<br>' + esc(fmtTime(c.worker_at)) : '—';
+      var inspector = c.inspector_name ? esc(c.inspector_name) + '<br>' + esc(fmtTime(c.inspector_at)) : '—';
+      return '<div class="pa-item">'
+        + '<table class="pa-tbl"><tr>'
+        +   '<td style="width:38%;">' + esc(c.item_name) + (c.photo_required ? ' 📷必須' : '') + '</td>'
+        +   '<td style="width:14%;">' + (done ? '✅ 完了' : '⏳ 未') + '</td>'
+        +   '<td style="width:24%;">作業：' + worker + '</td>'
+        +   '<td style="width:24%;">検査：' + inspector + '</td>'
+        + '</tr></table>'
+        + (photos ? '<div class="pa-photos">' + photos + '</div>' : '')
+        + '</div>';
+    }).join('');
+    return '<div class="pa-type">' + esc(t) + '（' + doneCount + '/' + items.length + ' 完了）</div>' + rowsHtml;
+  }).join('');
+
+  document.getElementById('printArea').innerHTML =
+    '<div class="pa-h1">点検チェック記録</div>'
+    + '<div class="pa-meta">'
+    +   '顧客名：' + esc(cusName) + ' 様<br>'
+    +   '車種：' + esc(car) + '　／　ナンバー：' + esc(plate || '—') + '<br>'
+    +   '受付日：' + esc(rDate || '—') + '　／　案件番号：' + esc(estimateNo || '—') + '<br>'
+    +   '全体進捗：' + overall.done + '/' + overall.total + ' 完了　／　印刷日時：' + esc(nowStr)
+    + '</div>'
+    + body;
 }
 
 // =========================================================
@@ -404,6 +501,7 @@ function selectCase(id, no, cus, car) {
     history.replaceState(null, '', url.toString());
   } catch(e) {}
   showMainScreen();
+  loadCaseMeta();
   loadStaff();
   loadRecipes();
   loadChecksAndPhotos();
