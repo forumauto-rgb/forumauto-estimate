@@ -1015,7 +1015,13 @@ function showAliasConflictDialog(conflict,onDone){
   document.body.appendChild(ov);
   function choose(action){
     if(action==='both'){ensureStandardHoursRegistered(nw);applyPanelMultiplier(nw);sel.push(nw);}
-    else if(action==='replace'){sel=sel.filter(function(s){return s!==ex;});ensureStandardHoursRegistered(nw);applyPanelMultiplier(nw);sel.push(nw);}
+    else if(action==='replace'){
+      // 置き換え時、既存行が持つ実績値（AI理由・実工数・担当者）を新行に引き継ぐ（DELETE+INSERT保存での消失防止）
+      if(ex.ai_reason && !nw.ai_reason) nw.ai_reason = ex.ai_reason;
+      if(ex._actualH != null && ex._actualH !== '' && (nw._actualH == null || nw._actualH === '')) nw._actualH = ex._actualH;
+      if(ex._staff && !nw._staff) nw._staff = ex._staff;
+      sel=sel.filter(function(s){return s!==ex;});ensureStandardHoursRegistered(nw);applyPanelMultiplier(nw);sel.push(nw);
+    }
     document.body.removeChild(ov);
     render();
     onDone();
