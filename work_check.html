@@ -31,6 +31,9 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(
 .case-row-name{font-size:16px;font-weight:800;color:var(--navy);}
 .case-row-sub{font-size:13px;color:var(--txt2);margin-top:3px;}
 .case-row-no{font-size:12px;color:var(--txt3);margin-top:4px;}
+.cs-filter{display:flex;gap:8px;padding:12px 12px 0;}
+.cs-fbtn{flex:1;min-height:44px;border:2px solid var(--border2);border-radius:10px;background:#fff;color:var(--txt2);font-size:13px;font-weight:800;cursor:pointer;}
+.cs-fbtn-on{background:var(--navy);border-color:var(--navy);color:#fff;}
 .case-badge{display:inline-block;font-size:12px;font-weight:800;padding:3px 10px;border-radius:12px;margin-top:6px;}
 .badge-done{background:var(--green2);color:var(--green);}
 .badge-wip{background:var(--red2);color:var(--red);}
@@ -127,6 +130,11 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(
   <!-- 画面1: 案件選択（IDパラメータなしのとき） -->
   <div id="caseSelectScreen" style="display:none;">
     <div class="cs-header">🔧 点検チェック - 案件を選択</div>
+    <div class="cs-filter" id="csFilter">
+      <button class="cs-fbtn cs-fbtn-on" data-f="all" onclick="setCaseFilter('all')">全件</button>
+      <button class="cs-fbtn" data-f="done" onclick="setCaseFilter('done')">✅ 完了</button>
+      <button class="cs-fbtn" data-f="wip" onclick="setCaseFilter('wip')">⏳ 未完了</button>
+    </div>
     <div id="caseListArea" class="case-list"><div class="loading-msg">読み込み中...</div></div>
   </div>
 
@@ -285,6 +293,16 @@ function receptionCaseLabel(c) {
 
 var caseListData = [];
 var caseCheckMap = {};
+var caseFilter = 'all';
+
+function setCaseFilter(f) {
+  caseFilter = f;
+  var btns = document.querySelectorAll('#csFilter .cs-fbtn');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].classList.toggle('cs-fbtn-on', btns[i].getAttribute('data-f') === f);
+  }
+  renderCaseList();
+}
 
 async function loadCaseList() {
   var area = document.getElementById('caseListArea');
@@ -330,7 +348,17 @@ function renderCaseList() {
     area.innerHTML = '<div class="loading-msg">対象の案件がありません（車検・点検の受付なし）</div>';
     return;
   }
-  var html = caseListData.map(function(c) {
+  var rows = caseListData.filter(function(c) {
+    if (caseFilter === 'all') return true;
+    var k = caseStatus(c.id).key;
+    if (caseFilter === 'done') return k === 'done';
+    return k !== 'done'; // 未完了（wip + none）
+  });
+  if (!rows.length) {
+    area.innerHTML = '<div class="loading-msg">該当する案件がありません</div>';
+    return;
+  }
+  var html = rows.map(function(c) {
     var st = caseStatus(c.id);
     var id = String(c.id||'').replace(/'/g,"\\'");
     var no = receptionCaseLabel(c).replace(/'/g,"\\'");
