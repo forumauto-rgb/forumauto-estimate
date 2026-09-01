@@ -9051,6 +9051,7 @@ function aiChatApplyChecked(){
   // ★ 提案・履歴はクリアしない → 見積タブから戻っても残る
   try{ localStorage.setItem('fa_ai_proposals', JSON.stringify(aiChatProposals)); }catch(e){}
   autoSaveM();
+  autoSave(); // 追加行のai_reasonをestimate_itemsにもDB保存する（原因B-3）
   showNotify('✅ AI提案から ' + added + ' 件追加しました');
   ST('estimate', document.querySelector('.tab'));
 }
@@ -9395,6 +9396,7 @@ function aiApplyChecked(){
   aiState.proposals = null;
   aiState.checkedItems = {};
   autoSaveM();
+  autoSave(); // 追加行のai_reasonをestimate_itemsにもDB保存する（原因B-3）
   showNotify('✅ AI提案から ' + added + ' 件の作業を追加しました');
   ST('estimate', document.querySelector('.tab'));
 }
