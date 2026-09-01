@@ -31,6 +31,10 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:var(
 .case-row-name{font-size:16px;font-weight:800;color:var(--navy);}
 .case-row-sub{font-size:13px;color:var(--txt2);margin-top:3px;}
 .case-row-no{font-size:12px;color:var(--txt3);margin-top:4px;}
+.case-badge{display:inline-block;font-size:12px;font-weight:800;padding:3px 10px;border-radius:12px;margin-top:6px;}
+.badge-done{background:var(--green2);color:var(--green);}
+.badge-wip{background:var(--red2);color:var(--red);}
+.badge-none{background:#eef0f4;color:var(--txt2);}
 .loading-msg,.error-msg{text-align:center;padding:30px;color:var(--txt3);font-size:13px;}
 .error-msg{color:var(--red);}
 
@@ -279,28 +283,67 @@ function receptionCaseLabel(c) {
   return note || (fmtDate(c.reception_datetime) + '受付');
 }
 
+var caseListData = [];
+var caseCheckMap = {};
+
 async function loadCaseList() {
   var area = document.getElementById('caseListArea');
   area.innerHTML = '<div class="loading-msg">🔄 案件を読み込み中...</div>';
   try {
     var typeFilter = INSPECTION_RECEPTION_TYPES.join(',');
     var url = SB_URL + '/rest/v1/receptions?type=in.(' + typeFilter + ')&select=id,type,customer_name,car_model,plate,reception_datetime,note&order=reception_datetime.desc';
-    var list = await supabaseFetchAll(url);
-    if (!list.length) { area.innerHTML = '<div class="loading-msg">対象の案件がありません（車検・点検・部品の受付なし）</div>'; return; }
-    area.innerHTML = list.map(function(c) {
-      var id = String(c.id||'').replace(/'/g,"\\'");
-      var no = receptionCaseLabel(c).replace(/'/g,"\\'");
-      var cus = String(c.customer_name||'').replace(/'/g,"\\'");
-      var car = String(c.car_model||'').replace(/'/g,"\\'");
-      return '<div class="case-row" onclick="selectCase(\'' + id + '\',\'' + no + '\',\'' + cus + '\',\'' + car + '\')">'
-        + '<div class="case-row-name">' + esc(c.customer_name||'---') + ' 様</div>'
-        + '<div class="case-row-sub">' + esc(c.car_model||'') + '　' + esc(c.plate||'') + '</div>'
-        + '<div class="case-row-no">' + esc(fmtDate(c.reception_datetime)) + ' 受付　' + esc(c.type||'') + '</div>'
-        + '</div>';
-    }).join('');
+    caseListData = await supabaseFetchAll(url);
+    caseCheckMap = await loadCaseCheckMap();
+    renderCaseList();
   } catch(e) {
     area.innerHTML = '<div class="error-msg">読み込み失敗: ' + esc(e.message) + '</div>';
   }
+}
+
+// 全案件の点検進捗を estimate_id ごとに {total, done} で集計
+async function loadCaseCheckMap() {
+  var map = {};
+  try {
+    var rows = await supabaseFetchAll(SB_URL + '/rest/v1/work_checks?select=estimate_id,worker_name,inspector_name');
+    rows.forEach(function(r) {
+      var m = map[r.estimate_id] = map[r.estimate_id] || { total: 0, done: 0 };
+      m.total++;
+      if (r.worker_name && r.inspector_name) m.done++;
+    });
+  } catch(e) {
+    showNotify('点検状況の取得に失敗しました: ' + e.message, true);
+  }
+  return map;
+}
+
+// 案件の完了状態バッジ（key: done=完了 / wip=一部未完了 / none=未着手）
+function caseStatus(id) {
+  var s = caseCheckMap[id];
+  if (!s || !s.total) return { key: 'none', label: '⏳ 未着手', cls: 'badge-none' };
+  if (s.done >= s.total) return { key: 'done', label: '✅ 完了', cls: 'badge-done' };
+  return { key: 'wip', label: '⏳ 未完了 ' + s.done + '/' + s.total, cls: 'badge-wip' };
+}
+
+function renderCaseList() {
+  var area = document.getElementById('caseListArea');
+  if (!caseListData.length) {
+    area.innerHTML = '<div class="loading-msg">対象の案件がありません（車検・点検の受付なし）</div>';
+    return;
+  }
+  var html = caseListData.map(function(c) {
+    var st = caseStatus(c.id);
+    var id = String(c.id||'').replace(/'/g,"\\'");
+    var no = receptionCaseLabel(c).replace(/'/g,"\\'");
+    var cus = String(c.customer_name||'').replace(/'/g,"\\'");
+    var car = String(c.car_model||'').replace(/'/g,"\\'");
+    return '<div class="case-row" onclick="selectCase(\'' + id + '\',\'' + no + '\',\'' + cus + '\',\'' + car + '\')">'
+      + '<div class="case-row-name">' + esc(c.customer_name||'---') + ' 様</div>'
+      + '<div class="case-row-sub">' + esc(c.car_model||'') + '　' + esc(c.plate||'') + '</div>'
+      + '<div class="case-row-no">' + esc(fmtDate(c.reception_datetime)) + ' 受付　' + esc(c.type||'') + '</div>'
+      + '<div><span class="case-badge ' + st.cls + '">' + st.label + '</span></div>'
+      + '</div>';
+  }).join('');
+  area.innerHTML = html;
 }
 
 function selectCase(id, no, cus, car) {
