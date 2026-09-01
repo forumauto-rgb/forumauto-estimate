@@ -5925,15 +5925,16 @@ function renderSelectedTasks(fullMode){
 
 // ===== 自由入力で作業を追加 =====
 // 工程タグ選択肢（ラベル → 工賃レート区分tag）。tagでeffectiveLRが決まる
+// ラベルは可能な限り PROCESS_ORDER のキーに合わせ、並び替え時のセクション分けを正しくする
 var FREE_ITEM_PROCS=[
   {g:'板金・脱着（標準工賃）',opts:[
     ['取外し','remove'],['取付','remove'],['脱着','remove'],['修正','remove'],
-    ['修理','remove'],['交換','remove'],['研磨・磨き','remove'],
-    ['確認・検査','remove'],['エーミング','remove'],['清掃','remove'],['その他','remove']
+    ['修理','remove'],['交換','remove'],['磨き肌調整','remove'],
+    ['確認','remove'],['エーミング','remove'],['清掃','remove'],['その他','remove']
   ]},
   {g:'塗装（塗装工賃）',opts:[
     ['パネル塗装','paint'],['バンパー塗装','paint'],['ぼかし塗装','paint'],
-    ['下地処理','paint'],['クリア塗装','paint']
+    ['下地処理（中）','paint'],['クリア塗装','paint']
   ]},
   {g:'ブース（¥2,000/h）',opts:[
     ['ブース使用','booth'],['焼付乾燥','booth']
