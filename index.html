@@ -6760,8 +6760,10 @@ async function generateEstimateNo(){
 
 // ===== 下書き保存・再開 =====
 
+var _isDirty = false;
 var _autoSaveTimer = null;
 function autoSave(){
+  _isDirty = true;
   // 作業が0件の時は保存しない
   if(!sel || sel.length === 0) return;
   // 3秒のdebounce（連続操作中は保存しない）
@@ -6858,6 +6860,7 @@ async function saveDraft(isAuto){
     if((customer.photoIncoming&&customer.photoIncoming.length)||(customer.photoWork&&customer.photoWork.length)||(customer.photoDone&&customer.photoDone.length)){
       await savePhotosToSupabase(estId, estNo);
     }
+    _isDirty = false;
     showNotify('✅ 下書き保存完了 '+estNo, 2500);
     if(!isAuto){
       setTimeout(function(){
@@ -10121,6 +10124,13 @@ function renderAnalyticsContent(){
 
   if(el)el.innerHTML=h;
 }
+
+window.addEventListener('beforeunload', function(e){
+  if(_isDirty){
+    e.preventDefault();
+    e.returnValue = '保存されていない変更があります。このページを離れますか？';
+  }
+});
 </script>
 <!-- ===== 取扱説明書モーダル ===== -->
 <style>
