@@ -6858,7 +6858,10 @@ async function saveDraft(){
     if((customer.photoIncoming&&customer.photoIncoming.length)||(customer.photoWork&&customer.photoWork.length)||(customer.photoDone&&customer.photoDone.length)){
       await savePhotosToSupabase(estId, estNo);
     }
-    showNotify('✅ 下書き保存完了 '+estNo);
+    showNotify('✅ 下書き保存完了 '+estNo, 2500);
+    setTimeout(function(){
+      showNotify('📋 工程管理・担当者・納車予定日を設定して\n「ダッシュボードに反映」を押してください', 6000);
+    }, 2600);
   }catch(e){showNotify('❌ 下書き保存失敗: '+e.message);}
 }
 
@@ -8037,7 +8040,7 @@ function showMatRateInfo(){
   var pct=Math.round((customer.matProfit!=null?customer.matProfit:0.40)*100);
   showNotify('材料費（自動）＝ 塗装工数 × 塗装LR × '+pct+'%\n塗装作業がある部位の工数と塗装レートから自動計算しています。\n率は「材料」タブの粗利率欄で変更できます。');
 }
-function showNotify(msg){
+function showNotify(msg,dur){
   let el=document.getElementById('notify');
   if(!el){el=document.createElement('div');el.id='notify';
    el.style.cssText='position:fixed;top:56px;right:16px;background:#1a3a6b;color:white;padding:10px 16px;border-radius:8px;font-size:12px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.3);white-space:pre-line;line-height:1.7;max-width:280px;opacity:0;transition:opacity 0.3s;pointer-events:none;';
@@ -8046,7 +8049,7 @@ function showNotify(msg){
   el.textContent=msg;
   el.style.opacity='1';
   clearTimeout(el._t);
-  el._t=setTimeout(()=>{el.style.opacity='0';},3000);
+  el._t=setTimeout(()=>{el.style.opacity='0';},dur||3000);
 }
 function goToPreviewTab(){
   var tabs = document.querySelectorAll('.tab');
