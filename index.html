@@ -6768,13 +6768,13 @@ function autoSave(){
   if(_autoSaveTimer) clearTimeout(_autoSaveTimer);
   _autoSaveTimer = setTimeout(async function(){
     try{
-      await saveDraft();
+      await saveDraft(true);
     }catch(e){
       console.warn('自動保存失敗:', e.message);
     }
   }, 3000);
 }
-async function saveDraft(){
+async function saveDraft(isAuto){
   if(!customer.name && !sel.length){showNotify('⚠ 顧客名または作業を入力してください');return;}
   var ok=await testConnection();
   if(!ok){
@@ -6859,9 +6859,11 @@ async function saveDraft(){
       await savePhotosToSupabase(estId, estNo);
     }
     showNotify('✅ 下書き保存完了 '+estNo, 2500);
-    setTimeout(function(){
-      showNotify('📋 工程管理・担当者・納車予定日を設定して\n「ダッシュボードに反映」を押してください', 6000);
-    }, 2600);
+    if(!isAuto){
+      setTimeout(function(){
+        showNotify('📋 工程管理・担当者・納車予定日を設定して\n「ダッシュボードに反映」を押してください', 6000);
+      }, 2600);
+    }
   }catch(e){showNotify('❌ 下書き保存失敗: '+e.message);}
 }
 
