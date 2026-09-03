@@ -518,7 +518,7 @@ tr:hover td { background:var(--bg3); }
   <div class="sub-grid">
     <a href="javascript:void(0)" onclick="openPastEstModal()" class="sub-card"><span class="sub-card-icon">🔍</span><div class="sub-card-name">過去見積検索</div><div class="sub-card-desc">条件検索・修理履歴まとめ</div></a>
     <a href="delivery_invoice.html" class="sub-card"><span class="sub-card-icon">🧾</span><div class="sub-card-name">納品請求書</div><div class="sub-card-desc">外注先への請求</div></a>
-    <a href="photo_upload.html" class="sub-card"><span class="sub-card-icon">📸</span><div class="sub-card-name">写真転送</div><div class="sub-card-desc">QRコード</div></a>
+    <a href="javascript:void(0)" onclick="openPhotoUploadSelect()" class="sub-card"><span class="sub-card-icon">📸</span><div class="sub-card-name">写真転送</div><div class="sub-card-desc">QRコード</div></a>
     <a href="kosu_master.html" class="sub-card"><span class="sub-card-icon">⏱️</span><div class="sub-card-name">標準工数</div><div class="sub-card-desc">マスタ管理</div></a>
     <a href="check_recipe_master.html" class="sub-card"><span class="sub-card-icon">🔧</span><div class="sub-card-name">点検レシピ</div><div class="sub-card-desc">ダブルチェック項目</div></a>
     <a href="work_check.html" class="sub-card"><span class="sub-card-icon">🔧</span><div class="sub-card-name">点検チェック</div><div class="sub-card-desc">車検・点検の実施</div></a>
@@ -2164,6 +2164,41 @@ function pkParseQC(memo){
     paymentStatus: map['入金状況'] || '未確認',
     confirmDate: map['確認日'] || ''
   };
+}
+
+// ★ 写真転送カード：進行中の案件を選んで photo_upload.html を開く
+function closePhotoUploadSelect(){
+  var el = document.getElementById('photoUploadSelectOverlay');
+  if(el) el.remove();
+}
+function openPhotoUploadSelect(){
+  var cases = _casesData || [];
+  if(cases.length === 0){
+    alert('進行中の案件がありません');
+    return;
+  }
+  var html = '<div style="background:#0d1b3e;border-radius:14px;padding:18px;max-width:420px;width:92%;max-height:80vh;overflow-y:auto;">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">';
+  html += '<h3 style="font-size:15px;color:#64b5f6;margin:0;">📷 写真を送る案件を選んでください</h3>';
+  html += '<button onclick="closePhotoUploadSelect()" style="background:none;border:none;color:#90a4ae;font-size:22px;line-height:1;cursor:pointer;">&times;</button>';
+  html += '</div>';
+  cases.forEach(function(c){
+    var no = c.estimate_no || '';
+    var name = encodeURIComponent(c.customer_name || '');
+    var car = encodeURIComponent((c.car_name || '') + ' ' + (c.plate || ''));
+    var url = 'photo_upload.html?session=1&eid=' + encodeURIComponent(no) + '&name=' + name + '&car=' + car + '&cat=photoWork';
+    html += '<div style="margin-bottom:8px;">';
+    html += '<a href="' + url + '" target="_blank" style="display:block;padding:10px 14px;background:#1a2a4a;border-radius:8px;color:#fff;text-decoration:none;font-size:13px;">';
+    html += '🚗 ' + (c.customer_name || '') + '　' + (c.car_name || '') + '　' + (c.plate || '');
+    html += '</a></div>';
+  });
+  html += '</div>';
+  var overlay = document.createElement('div');
+  overlay.id = 'photoUploadSelectOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
+  overlay.innerHTML = html;
+  document.body.appendChild(overlay);
 }
 </script>
 <!-- ===== 過去見積検索モーダル ===== -->
