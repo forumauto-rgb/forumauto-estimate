@@ -347,14 +347,14 @@ function showShootScreen(name, car, eid, cat) {
   var isMobile = /iPhone|iPad|Android/i.test(ua);
   if(!isMobile && eid){
     var uploadUrl = 'https://forumauto-rgb.github.io/forumauto-estimate/photo_upload.html?session=1&eid='+encodeURIComponent(eid)+'&name='+encodeURIComponent(name)+'&car='+encodeURIComponent(car)+'&cat='+cat;
-    var qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='+encodeURIComponent(uploadUrl);
+    var qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=140x140&data='+encodeURIComponent(uploadUrl);
     var qrDiv = document.getElementById('pcQrArea');
     if(!qrDiv){
       qrDiv = document.createElement('div');
       qrDiv.id = 'pcQrArea';
-      qrDiv.style.cssText = 'text-align:center;padding:20px;background:#1a2a4a;border-radius:12px;margin:16px';
-      qrDiv.innerHTML = '<p style="color:#aaa;margin-bottom:8px">📱 スマホで読み取って撮影してください</p>'
-        +'<img src="'+qrUrl+'" style="width:200px;height:200px;border-radius:8px">';
+      qrDiv.style.cssText = 'text-align:center;padding:12px;background:#1a2a4a;border-radius:12px;margin:12px';
+      qrDiv.innerHTML = '<p style="color:#aaa;margin-bottom:6px;font-size:13px">📱 スマホで読み取って撮影してください</p>'
+        +'<img src="'+qrUrl+'" style="width:140px;height:140px;border-radius:8px">';
       document.getElementById('submitArea').before(qrDiv);
     } else {
       qrDiv.querySelector('img').src = qrUrl;
