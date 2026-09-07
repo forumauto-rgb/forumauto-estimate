@@ -864,5 +864,64 @@ document.getElementById('detailModal').addEventListener('click',function(e){if(e
 </div>
 <!-- ===== 取扱説明書モーダル ここまで ===== -->
 
+<!-- AIマニュアル検索 -->
+<div id="manualFloat" style="position:fixed;bottom:24px;right:20px;z-index:950">
+  <button onclick="openManualChat()" style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);border:none;color:#fff;font-size:22px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.3)">❓</button>
+</div>
+<div id="manualChatOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:951;align-items:flex-end;justify-content:center">
+  <div style="background:#1a1f35;width:100%;max-width:520px;height:70vh;border-radius:16px 16px 0 0;display:flex;flex-direction:column">
+    <div style="padding:14px 16px;border-bottom:1px solid #2a3050;display:flex;justify-content:space-between;align-items:center">
+      <span style="color:#fff;font-weight:bold">❓ 操作マニュアル検索</span>
+      <button onclick="closeManualChat()" style="background:none;border:none;color:#aaa;font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div id="manualMessages" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px"></div>
+    <div style="padding:10px;border-top:1px solid #2a3050;display:flex;gap:8px">
+      <input id="manualInput" type="text" placeholder="例：見積を保存するには？" style="flex:1;padding:10px;border-radius:8px;border:1px solid #3a4060;background:#0d1225;color:#fff;font-size:14px" onkeydown="if(event.key==='Enter')sendManual()">
+      <button onclick="sendManual()" style="padding:10px 16px;background:#667eea;border:none;border-radius:8px;color:#fff;cursor:pointer">送信</button>
+    </div>
+  </div>
+</div>
+<script>
+function openManualChat(){
+  var el=document.getElementById('manualChatOverlay');
+  el.style.display='flex';
+  if(document.getElementById('manualMessages').children.length===0){
+    addManualMsg('assistant','こんにちは！操作について何でも聞いてください。\n例：「見積を保存するには？」「写真を送るには？」');
+  }
+  setTimeout(function(){document.getElementById('manualInput').focus();},100);
+}
+function closeManualChat(){document.getElementById('manualChatOverlay').style.display='none';}
+function addManualMsg(role,text){
+  var div=document.createElement('div');
+  div.style.cssText=role==='user'?'align-self:flex-end;background:#667eea;color:#fff;padding:8px 12px;border-radius:12px 12px 2px 12px;max-width:80%;font-size:13px;white-space:pre-wrap':'align-self:flex-start;background:#2a3050;color:#e0e0e0;padding:8px 12px;border-radius:12px 12px 12px 2px;max-width:85%;font-size:13px;white-space:pre-wrap';
+  div.textContent=text;
+  document.getElementById('manualMessages').appendChild(div);
+  document.getElementById('manualMessages').scrollTop=99999;
+}
+async function sendManual(){
+  var input=document.getElementById('manualInput');
+  var q=input.value.trim();
+  if(!q)return;
+  input.value='';
+  addManualMsg('user',q);
+  addManualMsg('assistant','考え中...');
+  var sbKey=document.querySelector('script[src*="supabase"]')||'';
+  var key=typeof SB_KEY!=='undefined'?SB_KEY:(typeof SUPABASE_KEY!=='undefined'?SUPABASE_KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVocHBnZHdieXJpam5xcHZ1c3h3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NDEyMDksImV4cCI6MjA4OTExNzIwOX0.mJ2GXQUsRZAZ-VL6XTVTz3gfG3MTNtfnWxsIPU_DK60');
+  try{
+    var res=await fetch('https://uhppgdwbyrijnqpvusxw.supabase.co/functions/v1/ai-proxy',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:'あなたはフォーラムオート（自動車板金塗装店）の業務システム操作マニュアルのアシスタントです。以下の操作について日本語で簡潔に答えてください。\n\n【主な操作】\n1.新規受付：ダッシュボード→新規受付→入庫/レッカー/レンタカー/問診を選択\n2.見積作成：見積・請求→見積作成→車両情報入力→工程追加→下書き保存\n3.ダッシュボード反映：見積画面下部で工程管理・担当者・納車予定日を設定→「ダッシュボードに反映」ボタンを押す\n4.写真転送：ダッシュボード→写真転送→案件選択→表示されたQRコードをスマホで読み取る\n5.進捗URL送信：ダッシュボード→進行中の案件→案件選択→「進捗」ボタン→LINE/メールで送信\n6.レンタカー貸出：新規受付→レンタカー→案件・車両選択→運転者情報入力→サイン→貸出登録\n7.工程管理変更：見積画面下部の工程管理プルダウンで変更→「ダッシュボードに反映」を押す\n8.カレンダー確認：ダッシュボード→カレンダータブ\n9.社員管理：ダッシュボード→社員管理タブ\n10.TV表示：ダッシュボード→TV表示',messages:[{role:'user',content:q}]})
+    });
+    var data=await res.json();
+    var text=data.result||(data.content&&data.content[0]&&data.content[0].text)||'回答を取得できませんでした';
+    var msgs=document.getElementById('manualMessages').children;
+    msgs[msgs.length-1].textContent=text;
+  }catch(e){
+    var msgs=document.getElementById('manualMessages').children;
+    msgs[msgs.length-1].textContent='エラーが発生しました。もう一度お試しください。';
+  }
+}
+</script>
 </body>
 </html>
