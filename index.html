@@ -4622,7 +4622,7 @@ function renderPreview(){
   // 明細HTML（共通）
   function makeDetailHTML(){
     var rows='';
-    var sorted=sel.slice().sort((a,b)=>getProcessOrder(a)-getProcessOrder(b));
+    var sorted = (sortMode === 'select') ? sel.slice() : sel.slice().sort((a,b)=>getProcessOrder(a)-getProcessOrder(b));
     var rowNo=1,prevProc=-1,prevGroup='';
     sorted.forEach(t=>{
       var procOrd=getProcessOrder(t);
