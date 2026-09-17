@@ -9630,6 +9630,39 @@ async function aiAnalyze(){
     + '【損傷程度】' + aiState.level + '\n\n'
     + '【作業サンプル（参考）】\n' + JSON.stringify(taskSamples.slice(0, 30));
 
+  // 損傷パターン別必須チェックリスト注入
+  var damageText = (aiState.text || '').toLowerCase();
+  var mandatoryChecklist = '';
+
+  if(damageText.includes('追突') || damageText.includes('後ろ') || damageText.includes('リア') || damageText.includes('後部')){
+    mandatoryChecklist += '\n【追突・後部損傷の必須計上チェックリスト】\n';
+    mandatoryChecklist += '以下の項目を必ず検討し、該当するものは全て見積に計上すること：\n';
+    mandatoryChecklist += '■脱着系：リアバンパー脱着、テールランプ脱着、バックドア脱着、リアシート脱着、クォーターライニング脱着\n';
+    mandatoryChecklist += '■スライドドア関連（スライドドア損傷時）：スライドドア脱着、スライドドアレール交換・調整、ウェザーストリップ交換、スライドドア開閉調整\n';
+    mandatoryChecklist += '■骨格・構造系：リアフロアパネル、リアサイドメンバー、クォーターパネル内部、バックパネル\n';
+    mandatoryChecklist += '■機能確認：バックドア建付け確認・調整、センサー類確認（バックカメラ・PDCセンサー）\n';
+    mandatoryChecklist += '■塗装関連：隣接パネルへの色合わせ塗装の要否確認\n';
+    mandatoryChecklist += '上記リストで計上しない項目がある場合は、理由をreasonフィールドに必ず記載すること。\n';
+  }
+
+  if(damageText.includes('前') || damageText.includes('フロント') || damageText.includes('正面')){
+    mandatoryChecklist += '\n【前部損傷の必須計上チェックリスト】\n';
+    mandatoryChecklist += '■脱着系：フロントバンパー脱着、フロントグリル脱着、ヘッドランプ脱着、ボンネット脱着、フェンダー脱着\n';
+    mandatoryChecklist += '■骨格系：フロントクロスメンバー、ラジエターコアサポート、フロントサイドメンバー\n';
+    mandatoryChecklist += '■機能確認：ラジエター・エアコンコンデンサー確認、エーミング（カメラ・レーダー）\n';
+  }
+
+  if(damageText.includes('側面') || damageText.includes('サイド') || damageText.includes('ドア') || damageText.includes('フェンダー')){
+    mandatoryChecklist += '\n【側面損傷の必須計上チェックリスト】\n';
+    mandatoryChecklist += '■脱着系：該当ドア脱着、ドアミラー脱着、モール・ガーニッシュ類脱着、ステップ脱着\n';
+    mandatoryChecklist += '■骨格系：センターピラー、ロッカーパネル、ホイールハウス\n';
+    mandatoryChecklist += '■機能確認：ドア建付け調整、ウィンドウ昇降確認\n';
+  }
+
+  if(mandatoryChecklist){
+    userMsg += '\n' + mandatoryChecklist;
+  }
+
 
   try{
     var resp = await fetch('https://uhppgdwbyrijnqpvusxw.supabase.co/functions/v1/ai-proxy', {
