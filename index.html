@@ -6358,7 +6358,7 @@ function paintPreviewHTML(paintSel, plr){
     paintSel.forEach(function(t){
       var si=sel.indexOf(t);
       var h2=t.h!=null?t.h:(t.hours||0);
-      var rowLR = (t.process && t.process.indexOf('養生')>=0) ? RATE : plr;
+      var rowLR = (t.process && t.process.indexOf('養生')>=0) ? Math.round(RATE * getGradeCoef()) : plr;
       var cost=Math.round(h2*rowLR);
       totalH+=h2; totalCost+=cost;
       h+='<tr style="border-bottom:1px solid #f0f0f0">';
