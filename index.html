@@ -9134,6 +9134,9 @@ function aiChatApplyChecked(){
   aiChatProposals.tasks.forEach(function(t, i){
     var cb = document.getElementById('aic_cb_' + i);
     if(!cb || !cb.checked) return;
+    if(t.process && t.process.indexOf('養生')>=0){
+      t.tag = 'remove';
+    }
     var isPaint = (t.tag==='paint'||t.tag==='booth');
     var lr = isPaint ? paintLR : laborLR;
     var h = parseFloat(t.hours)||0;
@@ -9474,6 +9477,9 @@ function aiApplyChecked(){
   aiState.proposals.tasks.forEach(function(t, i){
     var cb = document.getElementById('ai_cb_' + i);
     if(!cb || !cb.checked) return;
+    if(t.process && t.process.indexOf('養生')>=0){
+      t.tag = 'remove';
+    }
     var isPaint = (t.tag === 'paint' || t.tag === 'booth');
     var lr = isPaint ? paintLR : laborLR;
     var h = parseFloat(t.hours) || 0;
