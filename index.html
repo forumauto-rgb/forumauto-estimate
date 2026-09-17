@@ -9873,10 +9873,10 @@ async function mergeStandardHours() {
     rows.forEach(function(r) {
       var part = r.part_name;
       if (!PARTS_DATA[part]) PARTS_DATA[part] = [];
-      var exists = PARTS_DATA[part].some(function(t) {
+      var existing = PARTS_DATA[part].find(function(t) {
         return t.name === r.name && t.process === r.process;
       });
-      if (!exists) {
+      if (!existing) {
         PARTS_DATA[part].push({
           name:    r.name,
           process: r.process || '',
@@ -9884,6 +9884,9 @@ async function mergeStandardHours() {
           hours:   r.hours  || 0,
           cost:    0
         });
+        merged++;
+      } else if(existing.hours == null || existing.hours === undefined || existing.hours === ''){
+        existing.hours = r.hours;
         merged++;
       }
       STANDARD_HOURS_KEYS.add(shKey(part, r.name, r.process));
