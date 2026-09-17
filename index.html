@@ -9635,14 +9635,26 @@ async function aiAnalyze(){
   var mandatoryChecklist = '';
 
   if(damageText.includes('追突') || damageText.includes('後ろ') || damageText.includes('リア') || damageText.includes('後部')){
-    mandatoryChecklist += '\n【追突・後部損傷の必須計上チェックリスト】\n';
-    mandatoryChecklist += '以下の項目を必ず検討し、該当するものは全て見積に計上すること：\n';
-    mandatoryChecklist += '■脱着系：リアバンパー脱着、テールランプ脱着、バックドア脱着、リアシート脱着、クォーターライニング脱着\n';
-    mandatoryChecklist += '■スライドドア関連（スライドドア損傷時）：スライドドア脱着、スライドドアレール交換・調整、ウェザーストリップ交換、スライドドア開閉調整\n';
-    mandatoryChecklist += '■骨格・構造系：リアフロアパネル、リアサイドメンバー、クォーターパネル内部、バックパネル\n';
-    mandatoryChecklist += '■機能確認：バックドア建付け確認・調整、センサー類確認（バックカメラ・PDCセンサー）\n';
-    mandatoryChecklist += '■塗装関連：隣接パネルへの色合わせ塗装の要否確認\n';
-    mandatoryChecklist += '上記リストで計上しない項目がある場合は、理由をreasonフィールドに必ず記載すること。\n';
+    mandatoryChecklist += '\n【追突・後部損傷：以下は必須検討項目。必ず全項目をtasksに含めること。省略する場合はreasonに理由を明記すること】\n';
+    if(damageText.includes('スライドドア') || damageText.includes('側面') || damageText.includes('サイド')){
+      mandatoryChecklist += '★スライドドア損傷が明示されています。以下を必ず計上してください：\n';
+      mandatoryChecklist += '・スライドドア 取り外し\n';
+      mandatoryChecklist += '・スライドドア 鈑金または交換\n';
+      mandatoryChecklist += '・スライドドアレール 確認・交換\n';
+      mandatoryChecklist += '・ウェザーストリップ 交換\n';
+      mandatoryChecklist += '・スライドドア 取付\n';
+      mandatoryChecklist += '・スライドドア開閉調整\n';
+      mandatoryChecklist += '・クォーターパネル 鈑金または交換\n';
+      mandatoryChecklist += '・クォーターライニング 取り外し・取付\n';
+    }
+    mandatoryChecklist += '・テールランプ 取り外し・取付\n';
+    mandatoryChecklist += '・リアバンパー 取り外し・取付\n';
+    mandatoryChecklist += '・バックドア（リヤゲート） 確認・鈑金または交換\n';
+    mandatoryChecklist += '・リアフロアパネル 確認・鈑金\n';
+    mandatoryChecklist += '・リアサイドメンバー 確認・修正または交換\n';
+    mandatoryChecklist += '・バックカメラ・PDCセンサー 動作確認\n';
+    mandatoryChecklist += '・バックドア建付け調整\n';
+    mandatoryChecklist += '・隣接パネルへの色合わせ塗装 要否確認\n';
   }
 
   if(damageText.includes('前') || damageText.includes('フロント') || damageText.includes('正面')){
