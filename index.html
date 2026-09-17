@@ -7415,6 +7415,24 @@ async function loadEstimate(estId,estNo){
     // 過去見積パネルを閉じる
     var ep=document.getElementById('estListPanel');
     if(ep) ep.innerHTML='';
+
+    // 工数が未設定/0の項目をkosu_master（PARTS_DATA）の最新値で補完
+    await mergeStandardHoursPromise;
+    sel.forEach(function(item){
+      if(item.hours == null || item.hours === 0 || item.hours === ''){
+        var parts = Object.keys(PARTS_DATA);
+        for(var i=0;i<parts.length;i++){
+          var found = PARTS_DATA[parts[i]].find(function(t){
+            return t.name === item.name && t.process === item.process;
+          });
+          if(found && found.hours){
+            item.hours = found.hours;
+            break;
+          }
+        }
+      }
+    });
+
     render();
     showNotify('✅ 見積読込完了 '+estNo);
   }catch(e){showNotify('\u274c \u8aad\u8fbc\u5931\u6557:'+e.message);}
@@ -9896,7 +9914,7 @@ async function mergeStandardHours() {
     // 失敗時は何もしない。埋め込みデータのみで動作継続
   }
 }
-mergeStandardHours();
+var mergeStandardHoursPromise = mergeStandardHours();
 
 function importPartsFromText(){
   var area=document.getElementById('parts-paste-area');
