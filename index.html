@@ -4184,10 +4184,11 @@ function renderMaster(){
       PAINT_MASTERS.special.forEach(function(o){h+='<option value="'+o.name+'"'+((v.special||'なし')===o.name?' selected':'')+'>'+o.name+'(×'+o.val.toFixed(2)+')</option>';});
       h+='</select></td>';
       h+='<td><select onchange="vMaster['+i+'].coating=this.value;autoSaveM()" style="height:26px;border:1px solid #e0e0e0;border-radius:4px;font-size:10px;width:106px">';
-      h+='<option value="なし"'+(( v.coating||'なし')==='なし'?' selected':'')+'>なし</option>';
-      h+='<option value="ガラスコーティング"'+((v.coating==='ガラスコーティング')?' selected':'')+'>ガラスコーティング</option>';
-      h+='<option value="ポリマーコーティング"'+((v.coating==='ポリマーコーティング')?' selected':'')+'>ポリマーコーティング</option>';
-      h+='<option value="セラミックコーティング"'+((v.coating==='セラミックコーティング')?' selected':'')+'>セラミックコーティング</option>';
+      h+='<option value="">選択してください</option>';
+      h+='<option value="あり(強力)"'+((v.coating==='あり(強力)')?' selected':'')+'>あり(強力)</option>';
+      h+='<option value="あり(通常)"'+((v.coating==='あり(通常)')?' selected':'')+'>あり(通常)</option>';
+      h+='<option value="なし"'+((( v.coating||'なし')==='なし')?' selected':'')+'>なし</option>';
+      h+='<option value="不明"'+((v.coating==='不明')?' selected':'')+'>不明</option>';
       h+='</select></td>';
       h+='<td><input value="'+(v.memo||'').replace(/"/g,'&quot;')+'" oninput="vMaster['+i+'].memo=this.value"></td>';
       h+='<td><button class="del-btn" onclick="deleteVehicle('+i+')">✕</button></td>';
