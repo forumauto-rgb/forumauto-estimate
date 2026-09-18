@@ -6148,6 +6148,7 @@ function partsMaterialHTML(){
   h+='<div id="parts-paste-area" style="display:none;margin-top:8px">';
   h+='<textarea id="parts-paste-text" rows="8" style="width:100%;font-size:11px;border:1px solid #90caf9;border-radius:6px;padding:6px" placeholder="見積書のテキストをここに貼り付けてください&#10;例：&#10;テールゲートガーニッシュクリップ 91513-SJK-003 2 370&#10;リヤーバンパーフェイス 71501-SYY-Z00ZC 1 42,100"></textarea>';
   h+='<button class="btn btn-xs" style="margin-top:4px;background:#388e3c;color:#fff;border:none" onclick="parseAndImportParts()">取込実行</button>';
+  h+='<button class="btn btn-xs" style="margin-top:4px;margin-left:6px;background:#e67e22;color:#fff;border:none" onclick="aiFormatParts()">🤖 AI整形</button>';
   h+='<button class="btn btn-xs" style="margin-top:4px;margin-left:6px" onclick="document.getElementById(\"parts-paste-area\").style.display=\"none\"">閉じる</button>';
   h+='</div>';
   h+='</div>';
@@ -10022,6 +10023,36 @@ async function mergeStandardHours() {
 }
 var mergeStandardHoursPromise = mergeStandardHours();
 
+async function aiFormatParts(){
+  var txt=document.getElementById('parts-paste-text').value.trim();
+  if(!txt){alert('テキストを貼り付けてください');return;}
+  var btn=event.target;
+  btn.disabled=true;btn.textContent='整形中...';
+  try{
+    var res=await fetch('https://uhppgdwbyrijnqpvusxw.supabase.co/functions/v1/ai-proxy',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:4000,
+        messages:[{role:'user',content:'以下は自動車部品のPDFからコピーしたテキストです。部品名が2行に分かれている場合は1行に結合し、各行を「部品名 品番 数量 部品価格」の形式に整形してください。ヘッダー行・合計行・空行は除外してください。RやLなどの左右区分は部品名の先頭に付けてください。数字のカンマは除去してください。整形結果のみ出力し、説明文は不要です。\n\n'+txt}]
+      })
+    });
+    var data=await res.json();
+    var result=data.content&&data.content[0]&&data.content[0].text;
+    if(result){
+      document.getElementById('parts-paste-text').value=result;
+      btn.textContent='✅ 整形完了';
+    }else{
+      alert('AI整形に失敗しました');
+      btn.textContent='🤖 AI整形';
+    }
+  }catch(e){
+    alert('エラー: '+e.message);
+    btn.textContent='🤖 AI整形';
+  }
+  btn.disabled=false;
+}
 function importPartsFromText(){
   var area=document.getElementById('parts-paste-area');
   if(area)area.style.display=area.style.display==='none'?'block':'none';
