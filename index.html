@@ -423,7 +423,7 @@ async function syncMasterToCloud(){
       var vData=vMaster.map(function(v){return{
         vehicle_no:v.id||'',plate:v.plate||'',maker:v.maker||'',name:v.name||'',model:v.model||'',
         vin:v.vin||'',year:v.year||'',year_num:parseInt(v.year)||null,drive:v.drive||'2WD',
-        grade:v.grade||'中型',grade_coef:parseFloat(v.gradeCoef)||1.1,
+        grade:v.grade||'',grade_coef:parseFloat(v.gradeCoef)||1.0,coating:v.coating||'なし',
         customer_id:v.cid||null,color_name:v.color||'',color_code:v.colorCode||'',
         ev_hv:v.evhv||'',film_type:v.film||'2コートソリッド',
         paint_type:v.paint||'2K(標準)',clear_type:v.clear||'標準クリヤー',
@@ -492,8 +492,8 @@ async function syncToCloud(){
         year:v.year||'',
         year_num:parseInt(v.year)||null,
         drive:v.drive||'2WD',
-        grade:v.grade||'中型',
-        grade_coef:parseFloat(v.gradeCoef)||1.1,
+        grade:v.grade||'',
+        grade_coef:parseFloat(v.gradeCoef)||1.0,coating:v.coating||'なし',
         customer_id:v.cid||null,
         color_name:v.color||'',
         color_code:v.colorCode||'',
@@ -5677,7 +5677,7 @@ async function sM(){
       var vData=mergedV.map(function(v){return{
         vehicle_no:v.id||'',plate:v.plate||'',maker:v.maker||'',name:v.name||'',model:v.model||'',
         vin:v.vin||'',year:v.year||'',year_num:parseInt(v.year)||null,drive:v.drive||'2WD',
-        grade:v.grade||'中型',grade_coef:parseFloat(v.gradeCoef)||1.1,
+        grade:v.grade||'',grade_coef:parseFloat(v.gradeCoef)||1.0,coating:v.coating||'なし',
         customer_id:v.cid||null,color_name:v.color||'',color_code:v.colorCode||'',
         ev_hv:v.evhv||'',film_type:v.film||'2コートソリッド',
         paint_type:v.paint||'2K(標準)',clear_type:v.clear||'標準クリヤー',
