@@ -4119,7 +4119,7 @@ function renderMaster(){
     h+=';var ag=GRADE_MASTER.find(function(x){return x.name===customer.grade;})||{coef:1.1,foreign:1.0}';
     h+=';vMaster.push({id:\'V\'+Date.now().toString(36).toUpperCase().slice(-5),cid:ac,plate:customer.plate||\'\'';
     h+=',maker:\'\',name:customer.car||\'\',model:customer.model||\'\'';
-    h+=',vin:\'\',year:\'\',drive:\'2WD\',grade:customer.grade||\'中型\',gradeCoef:ag.coef,foreignCoef:ag.foreign||1.0';
+    h+=',vin:\'\',year:\'\',drive:\'2WD\',grade:customer.grade||\'\',gradeCoef:ag.coef,foreignCoef:ag.foreign||1.0,coating:\'なし\'';
     h+=',evhv:\'\',colorCode:customer.colorCode||\'\',color:customer.color||\'\'';
     h+=',film:pc4.film||\'2コートソリッド\',paint:pc4.paint||\'2K(標準)\',clear:pc4.clear||\'標準クリヤー\',special:pc4.special||\'なし\',memo:\'\',_localNew:true})';
     h+=';render();showNotify(\'🚗 新規車両を追加しました\'+(ac?\'\\n顧客ID: \'+ac+\' を自動設定しました\':\'\'));})()">＋新規車両</button>';
