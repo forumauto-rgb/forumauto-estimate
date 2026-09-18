@@ -10049,9 +10049,9 @@ function parseAndImportParts(){
         // 空行があれば上書き、なければ追加
         var empty=partsItems.find(function(p){return !p.name&&!p.cost;});
         if(empty){
-          empty.name=name;empty.partNo=partNo;empty.qty=qty;empty.cost=(qty>0?Math.round(price/qty):price);empty.profit=0;
+          empty.name=name;empty.partNo=partNo;empty.qty=qty;empty.cost=price;empty.profit=0;
         }else{
-          partsItems.push({name:name,partNo:partNo,qty:qty,cost:(qty>0?Math.round(price/qty):price),profit:0});
+          partsItems.push({name:name,partNo:partNo,qty:qty,cost:price,profit:0});
         }
         added++;
         return;
@@ -10066,9 +10066,9 @@ function parseAndImportParts(){
       if(name&&price>0){
         var empty=partsItems.find(function(p){return !p.name&&!p.cost;});
         if(empty){
-          empty.name=name;empty.partNo='';empty.qty=qty;empty.cost=(qty>0?Math.round(price/qty):price);empty.profit=0;
+          empty.name=name;empty.partNo='';empty.qty=qty;empty.cost=price;empty.profit=0;
         }else{
-          partsItems.push({name:name,partNo:'',qty:qty,cost:(qty>0?Math.round(price/qty):price),profit:0});
+          partsItems.push({name:name,partNo:'',qty:qty,cost:price,profit:0});
         }
         added++;
       }
