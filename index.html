@@ -5593,12 +5593,13 @@ function lV(i){
   customer.plate=v.plate||'';
   customer.color=v.color||'';
   customer.colorCode=v.colorCode||'';
-  customer.grade=v.grade||'中型';
+  customer.grade=v.grade||'';
   // 塗装4係数を車両マスターから復元
   if(v.film) pc4.film=v.film;
   if(v.paint) pc4.paint=v.paint;
   if(v.clear) pc4.clear=v.clear;
   if(v.special) pc4.special=v.special;
+  if(v.coating) customer.coating=v.coating;
   if(v.cid && !customer.name){
     var linkedC=cMaster.find(function(c){return c.id===v.cid;});
     if(linkedC){
