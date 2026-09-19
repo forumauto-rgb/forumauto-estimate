@@ -10031,7 +10031,7 @@ async function aiFormatParts(){
   try{
     var res=await fetch('https://uhppgdwbyrijnqpvusxw.supabase.co/functions/v1/ai-proxy',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY},
       body:JSON.stringify({
         model:'claude-sonnet-4-6',
         max_tokens:4000,
