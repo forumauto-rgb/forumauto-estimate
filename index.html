@@ -10039,7 +10039,7 @@ async function aiFormatParts(){
       })
     });
     var data=await res.json();
-    var result=data.content&&data.content[0]&&data.content[0].text;
+    var result=(data.content&&data.content[0]&&data.content[0].text)||data.result||null;
     console.log('AI整形レスポンス:', JSON.stringify(data));
     if(result){
       document.getElementById('parts-paste-text').value=result;
