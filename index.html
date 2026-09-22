@@ -7667,7 +7667,7 @@ async function applyReceptionParams() {
               vin: existVehRemote.vin || td.vin || '',
               year: existVehRemote.year_num || convertToWesternYear(td.year) || '',
               drive: existVehRemote.drive || '2WD',
-              grade: existVehRemote.grade || '中型',
+              grade: td.car_category || existVehRemote.grade || '中型',
               gradeCoef: existVehRemote.grade_coef || 1.1,
               cid: existVehRemote.customer_id || custId,
               color: existVehRemote.color_name || td.color_name || '',
@@ -7685,7 +7685,7 @@ async function applyReceptionParams() {
             id: 'V' + Date.now().toString(36).toUpperCase().slice(-5),
             cid: custId, name: td.car_model || '', model: td.car_type || '', plate: td.plate || '',
             colorCode: td.color_code || '', color: td.color_name || '',
-            maker: '', grade: '中型', year: convertToWesternYear(td.year) || '',
+            maker: '', grade: td.car_category || '中型', year: convertToWesternYear(td.year) || '',
             vin: td.vin || '', fuel: '', drive: ''
           });
         }
