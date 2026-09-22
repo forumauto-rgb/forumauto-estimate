@@ -584,6 +584,7 @@ async function loadFromCloud(){
         paint: v.paint_type||'2K(標準)',
         clear: v.clear_type||'標準クリヤー',
         special: v.special||'なし',
+        coating: v.coating||'なし',
         memo: v.memo||''
       }));
       localStorage.setItem('fa_v6', JSON.stringify(vMaster));
@@ -641,6 +642,7 @@ async function refreshMasterCache(force){
         paint: v.paint_type||'2K(標準)',
         clear: v.clear_type||'標準クリヤー',
         special: v.special||'なし',
+        coating: v.coating||'なし',
         memo: v.memo||''
       }));
       localStorage.setItem('fa_v6', JSON.stringify(vMaster));
