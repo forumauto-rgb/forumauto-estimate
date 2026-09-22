@@ -413,11 +413,12 @@ async function syncMasterToCloud(){
         tel:c.tel||'',postal:c.postal||'',address:c.address||'',
         insurance:c.insurance||'',aj_staff:c.aj||'',memo:c.memo||''
       };});
-      await fetch(SUPABASE_URL+'/rest/v1/customers?on_conflict=customer_no',{
+      var cRes=await fetch(SUPABASE_URL+'/rest/v1/customers?on_conflict=customer_no',{
         method:'POST',
         headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
         body:JSON.stringify(cData)
       });
+      if(!cRes.ok){var cErr=await cRes.text();console.error('customers保存エラー:',cErr);showNotify('⚠ 顧客マスターのクラウド同期に失敗しました');}
     }
     if(vMaster.length>0){
       var vData=vMaster.map(function(v){return{
@@ -429,11 +430,12 @@ async function syncMasterToCloud(){
         paint_type:v.paint||'2K(標準)',clear_type:v.clear||'標準クリヤー',
         special:v.special||'なし',memo:v.memo||''
       };});
-      await fetch(SUPABASE_URL+'/rest/v1/vehicles?on_conflict=vehicle_no',{
+      var vRes=await fetch(SUPABASE_URL+'/rest/v1/vehicles?on_conflict=vehicle_no',{
         method:'POST',
         headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
         body:JSON.stringify(vData)
       });
+      if(!vRes.ok){var vErr=await vRes.text();console.error('vehicles保存エラー:',vErr);showNotify('⚠ 車両マスターのクラウド同期に失敗しました');}
     }
   }catch(e){ console.warn('マスター自動同期エラー（無視）:',e); }
 }
