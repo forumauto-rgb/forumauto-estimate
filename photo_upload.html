@@ -42,6 +42,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;background:#1a1
 .cat-btn.incoming{background:linear-gradient(135deg,#1565c0,#1976d2);color:white;}
 .cat-btn.work{background:linear-gradient(135deg,#6a1b9a,#8e24aa);color:white;}
 .cat-btn.done{background:linear-gradient(135deg,#1b5e20,#2e7d32);color:white;}
+.cat-btn.qc{background:linear-gradient(135deg,#e65100,#f57c00);color:white;}
 .cat-btn .cat-count{margin-left:auto;background:rgba(255,255,255,0.25);border-radius:12px;padding:2px 10px;font-size:13px;}
 
 /* 撮影画面 */
@@ -121,6 +122,10 @@ input[type=file]{display:none;}
       <span>✅</span><span>完成写真</span>
       <span class="cat-count" id="cc-photoDone">0枚</span>
     </button>
+    <button class="cat-btn qc" onclick="selectCat('photoQC')">
+      <span>📋</span><span>品質チェック表</span>
+      <span class="cat-count" id="cc-photoQC">0枚</span>
+    </button>
   </div>
 </div>
 
@@ -136,6 +141,7 @@ input[type=file]{display:none;}
     <div class="cat-tab" id="tab-photoIncoming" onclick="switchCat('photoIncoming',this)">入庫時<span class="cnt" id="cnt-photoIncoming">0</span></div>
     <div class="cat-tab" id="tab-photoWork" onclick="switchCat('photoWork',this)">作業中<span class="cnt" id="cnt-photoWork">0</span></div>
     <div class="cat-tab" id="tab-photoDone" onclick="switchCat('photoDone',this)">完成<span class="cnt" id="cnt-photoDone">0</span></div>
+    <div class="cat-tab" id="tab-photoQC" onclick="switchCat('photoQC',this)">品質チェック表<span class="cnt" id="cnt-photoQC">0</span></div>
   </div>
   <div class="upload-area pb">
     <div class="status" id="status"></div>
@@ -187,7 +193,7 @@ var carInfoParam = params.get('car') || '';
 var initCat = params.get('cat') || 'photoIncoming';
 var uploadToken = params.get('tok') || ''; // セッショントークン方式（受付STEP3のQR撮影用。案件ID未確定でもestimate_noにトークンを記録して一時保存）
 
-var photos = { photoIncoming:[], photoWork:[], photoDone:[] };
+var photos = { photoIncoming:[], photoWork:[], photoDone:[], photoQC:[] };
 var currentCat = initCat;
 var selectedCase = null; // 選択中の案件
 
@@ -329,7 +335,7 @@ function showShootScreen(name, car, eid, cat) {
   document.getElementById('carInfo').textContent = car || '';
 
   // カテゴリラベル
-  var catLabels = { photoIncoming:'入庫時', photoWork:'作業中', photoDone:'完成' };
+  var catLabels = { photoIncoming:'入庫時', photoWork:'作業中', photoDone:'完成', photoQC:'品質チェック表' };
   document.getElementById('categoryLabel').textContent = '📸 撮影カテゴリ: ' + (catLabels[cat] || cat);
 
   // タブをアクティブに
@@ -371,14 +377,14 @@ function switchCat(cat, el) {
   currentCat = cat;
   document.querySelectorAll('.cat-tab').forEach(function(t){ t.classList.remove('active'); });
   el.classList.add('active');
-  var catLabels = { photoIncoming:'入庫時', photoWork:'作業中', photoDone:'完成' };
+  var catLabels = { photoIncoming:'入庫時', photoWork:'作業中', photoDone:'完成', photoQC:'品質チェック表' };
   document.getElementById('categoryLabel').textContent = '📸 撮影カテゴリ: ' + catLabels[cat];
   toggleMaterialAdjustArea(cat);
   renderGrid();
 }
 
 function updateCatCounts() {
-  ['photoIncoming','photoWork','photoDone'].forEach(function(cat) {
+  ['photoIncoming','photoWork','photoDone','photoQC'].forEach(function(cat) {
     var el = document.getElementById('cc-' + cat);
     if (el) el.textContent = photos[cat].length + '枚';
   });
@@ -468,7 +474,7 @@ function deletePhoto(idx) {
 }
 
 function updateCounts() {
-  ['photoIncoming','photoWork','photoDone'].forEach(function(cat) {
+  ['photoIncoming','photoWork','photoDone','photoQC'].forEach(function(cat) {
     var el = document.getElementById('cnt-' + cat);
     if(el) el.textContent = photos[cat].length;
   });
@@ -476,7 +482,7 @@ function updateCounts() {
 }
 
 function updateSubmitBtn() {
-  var total = photos.photoIncoming.length + photos.photoWork.length + photos.photoDone.length;
+  var total = photos.photoIncoming.length + photos.photoWork.length + photos.photoDone.length + photos.photoQC.length;
   var btn = document.getElementById('submitBtn');
   btn.disabled = (total === 0);
   btn.textContent = total > 0 ? '保存する（合計' + total + '枚）' : '保存する（0枚）';
@@ -508,7 +514,7 @@ async function resolveEstimateDbId() {
 }
 
 async function submitPhotos() {
-  var total = photos.photoIncoming.length + photos.photoWork.length + photos.photoDone.length;
+  var total = photos.photoIncoming.length + photos.photoWork.length + photos.photoDone.length + photos.photoQC.length;
   if(!total) return;
   var btn = document.getElementById('submitBtn');
   btn.disabled = true;
@@ -532,14 +538,14 @@ async function submitPhotos() {
     );
     var existRows = existResp.ok ? (await existResp.json()) : [];
     var existSet = {};
-    var maxSort = {photoIncoming:-1, photoWork:-1, photoDone:-1};
+    var maxSort = {photoIncoming:-1, photoWork:-1, photoDone:-1, photoQC:-1};
     existRows.forEach(function(r){
       existSet[r.category + '||' + r.data_url] = true;
       if (r.sort_order > maxSort[r.category]) maxSort[r.category] = r.sort_order;
     });
 
     var rows = [];
-    ['photoIncoming','photoWork','photoDone'].forEach(function(cat) {
+    ['photoIncoming','photoWork','photoDone','photoQC'].forEach(function(cat) {
       photos[cat].forEach(function(dataUrl) {
         if(!existSet[cat + '||' + dataUrl]) {
           maxSort[cat]++;
@@ -610,7 +616,7 @@ async function submitPhotos() {
 }
 
 function showDoneScreen() {
-  var total = photos.photoIncoming.length + photos.photoWork.length + photos.photoDone.length;
+  var total = photos.photoIncoming.length + photos.photoWork.length + photos.photoDone.length + photos.photoQC.length;
   document.getElementById('doneMsg').textContent = total + '枚 クラウドに保存しました！';
   var done = document.getElementById('doneScreen');
   done.style.cssText = 'display:block;position:fixed;top:0;left:0;right:0;bottom:0;background:#1a1a2e;z-index:999;padding:40px 20px;';
