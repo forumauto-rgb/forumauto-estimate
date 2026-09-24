@@ -983,6 +983,7 @@ function renderCasesRows() {
         var qcCus = (r.customer_name||'').replace(/'/g,'&apos;').replace(/"/g,'&quot;');
         var qcCar = (r.car_name||'').replace(/'/g,'&apos;').replace(/"/g,'&quot;');
         h += '<button class="act-btn qc-btn" data-id="'+qcId+'" data-no="'+qcNo+'" data-cus="'+qcCus+'" data-car="'+qcCar+'" style="color:#fff;border-color:#e65100;background:#e65100;font-weight:700;">✅ 品質チェック</button>';
+        h += '<button class="act-btn qcprint-btn" data-no="'+qcNo+'" data-cus="'+qcCus+'" data-car="'+qcCar+'" style="color:#e65100;border-color:#e65100;background:#fff3e0;font-weight:700;">🖨 チェック表印刷</button>';
       }
       if (rid) {
         h += '<button class="act-btn" style="color:#1a5fa8;border-color:rgba(26,95,168,0.3);background:rgba(26,95,168,0.06);" onclick="openEditModal(\'' + rid + '\',\'' + no + '\',\'' + cus + '\')">✏️ 受付</button>';
@@ -1416,6 +1417,124 @@ document.addEventListener('click', function(e){
     btn.dataset.car
   );
 });
+
+// ★ 品質チェック表（紙）印刷ボタン：イベント委譲（data属性方式）
+document.addEventListener('click', function(e){
+  var btn = e.target.closest('.qcprint-btn');
+  if (!btn) return;
+  e.preventDefault();
+  e.stopPropagation();
+  printQCSheet(btn.dataset.no, btn.dataset.cus, btn.dataset.car);
+});
+
+// ★ 品質チェック表（紙）印刷：白紙のチェック表＋写真撮影QR（cat=photoQC）をA4縦1枚で印刷
+function printQCSheet(estimateNo, customerName, carName) {
+  var sessionId = 'fa_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+  var baseUrl = 'https://forumauto-rgb.github.io/forumauto-estimate/photo_upload.html';
+  var uploadUrl = baseUrl
+    + '?session=' + sessionId
+    + '&eid=' + encodeURIComponent(estimateNo)
+    + '&name=' + encodeURIComponent(customerName)
+    + '&car=' + encodeURIComponent(carName)
+    + '&cat=photoQC';
+  var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(uploadUrl);
+
+  // ポップアップブロック回避のためクリック直後にウィンドウを開き、QR読込完了後に中身を書き込む
+  var w = window.open('', '_blank');
+  if (!w) { showToast('ポップアップがブロックされました。許可してから再度お試しください'); return; }
+  w.document.write('<p style="font-family:sans-serif;padding:20px;">QRコード生成中...</p>');
+
+  var d = new Date();
+  var printDate = d.getFullYear() + '/' + (d.getMonth()+1) + '/' + d.getDate();
+  var box = '<span class="qcs-box"></span>';
+
+  var h = '';
+  h += '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>品質チェック表 ' + esc(estimateNo) + '</title><style>';
+  h += '@page{size:A4 portrait;margin:10mm;}';
+  h += '*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}';
+  h += 'body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;color:#000;margin:0;font-size:14px;}';
+  h += '.qcs-head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:8px;}';
+  h += '.qcs-title{font-size:26px;font-weight:700;margin-bottom:6px;}';
+  h += '.qcs-info td{padding:2px 8px 2px 0;font-size:15px;}';
+  h += '.qcs-info td.lb{color:#444;white-space:nowrap;}';
+  h += '.qcs-info td.val{font-weight:700;}';
+  h += '.qcs-qr{text-align:center;}';
+  h += '.qcs-qr img{width:32mm;height:32mm;display:block;}';
+  h += '.qcs-qr div{font-size:10px;margin-top:2px;}';
+  h += '.qcs-sec{font-size:16px;font-weight:700;margin:8px 0 4px;}';
+  h += 'table.qcs-tbl{width:100%;border-collapse:collapse;}';
+  h += 'table.qcs-tbl th,table.qcs-tbl td{border:1px solid #000;padding:0 6px;height:9mm;font-size:14px;}';
+  h += 'table.qcs-tbl th{background:#eee;font-size:13px;height:7mm;}';
+  h += 'table.qcs-tbl td.no{width:9mm;text-align:center;}';
+  h += 'table.qcs-tbl td.ck{width:24mm;text-align:center;}';
+  h += '.qcs-box{display:inline-block;width:6mm;height:6mm;border:1.5px solid #000;vertical-align:middle;}';
+  h += 'table.qcs-sign td{border:1px solid #000;height:12mm;padding:2px 6px;font-size:13px;vertical-align:top;}';
+  h += 'table.qcs-sign td.lb{width:26mm;background:#eee;vertical-align:middle;font-weight:700;}';
+  h += '.qcs-footer{margin-top:6px;text-align:center;font-size:12px;}';
+  h += '</style></head><body>';
+
+  // ヘッダー：タイトル・案件情報・QR
+  h += '<div class="qcs-head"><div>';
+  h += '<div class="qcs-title">品質チェック表</div>';
+  h += '<table class="qcs-info">';
+  h += '<tr><td class="lb">見積番号</td><td class="val">' + esc(estimateNo) + '</td></tr>';
+  h += '<tr><td class="lb">お客様名</td><td class="val">' + esc(customerName) + ' 様</td></tr>';
+  h += '<tr><td class="lb">車両名</td><td class="val">' + esc(carName) + '</td></tr>';
+  h += '<tr><td class="lb">印刷日</td><td class="val">' + printDate + '</td></tr>';
+  h += '</table></div>';
+  h += '<div class="qcs-qr"><img id="qcsQr" src="' + qrSrc + '"><div>完成後このQRで撮影</div></div>';
+  h += '</div>';
+
+  // 工程チェック
+  h += '<div class="qcs-sec">🔧 工程チェック（' + QC_PROCESS_ITEMS.length + '項目）</div>';
+  h += '<table class="qcs-tbl"><tr><th>No</th><th>項目</th><th>作業者</th><th>検査者</th></tr>';
+  QC_PROCESS_ITEMS.forEach(function(item, i){
+    h += '<tr><td class="no">' + (i+1) + '</td><td>' + esc(item) + '</td><td class="ck">' + box + '</td><td class="ck">' + box + '</td></tr>';
+  });
+  h += '</table>';
+
+  // 写真チェック（2列）
+  h += '<div class="qcs-sec">📷 写真チェック（' + QC_PHOTO_ITEMS.length + '項目）</div>';
+  h += '<table class="qcs-tbl">';
+  for (var i = 0; i < QC_PHOTO_ITEMS.length; i += 2) {
+    h += '<tr>';
+    h += '<td class="ck">' + box + '</td><td>' + esc(QC_PHOTO_ITEMS[i]) + '</td>';
+    if (i + 1 < QC_PHOTO_ITEMS.length) {
+      h += '<td class="ck">' + box + '</td><td>' + esc(QC_PHOTO_ITEMS[i+1]) + '</td>';
+    } else {
+      h += '<td class="ck"></td><td></td>';
+    }
+    h += '</tr>';
+  }
+  h += '</table>';
+
+  // 記入欄
+  h += '<div class="qcs-sec">✍ 記入欄</div>';
+  h += '<table class="qcs-tbl qcs-sign">';
+  h += '<tr><td class="lb">作業者サイン</td><td></td><td class="lb">日付</td><td style="width:40mm;"></td></tr>';
+  h += '<tr><td class="lb">検査者サイン</td><td></td><td class="lb">日付</td><td style="width:40mm;"></td></tr>';
+  h += '<tr><td class="lb">備考</td><td colspan="3" style="height:22mm;"></td></tr>';
+  h += '</table>';
+
+  h += '<div class="qcs-footer">有限会社フォーラムオート　静岡県袋井市下山梨545　TEL 0538-49-0632</div>';
+  h += '</body></html>';
+
+  // QR画像を先読みし、読込完了後に印刷（QRが白紙で印刷されないように）
+  var pre = new Image();
+  pre.onload = function() {
+    w.document.open();
+    w.document.write(h);
+    w.document.close();
+    var img = w.document.getElementById('qcsQr');
+    var doPrint = function(){ w.focus(); w.print(); };
+    if (img && !img.complete) { img.onload = doPrint; } else { doPrint(); }
+  };
+  pre.onerror = function() {
+    w.close();
+    showToast('QRコードの生成に失敗しました。通信状況を確認して再度お試しください');
+  };
+  pre.src = qrSrc;
+}
 
 // ★ 納車確認ボタン：イベント委譲（data属性方式）
 document.addEventListener('click', function(e){
