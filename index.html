@@ -408,7 +408,9 @@ async function syncMasterToCloud(){
   // 見積保存時に顧客・車両マスターを自動でSupabaseに同期（通知なし）
   try{
     if(cMaster.length>0){
-      var cData=cMaster.map(function(c){return{
+      // 送信した行だけ送信成功後に_localNew(未送信の新規行の印)を外す（送信中に追加された行の印は残す）
+      var sentC=cMaster.slice();
+      var cData=sentC.map(function(c){return{
         customer_no:c.id||'',name:c.name||'(名前なし)',honorific:c.honorific||'様',
         tel:c.tel||'',postal:c.postal||'',address:c.address||'',
         insurance:c.insurance||'',aj_staff:c.aj||'',memo:c.memo||''
@@ -419,9 +421,11 @@ async function syncMasterToCloud(){
         body:JSON.stringify(cData)
       });
       if(!cRes.ok){var cErr=await cRes.text();console.error('customers保存エラー:',cErr);showNotify('⚠ 顧客マスターのクラウド同期に失敗しました');}
+      else{sentC.forEach(function(c){delete c._localNew;});}
     }
     if(vMaster.length>0){
-      var vData=vMaster.map(function(v){return{
+      var sentV=vMaster.slice();
+      var vData=sentV.map(function(v){return{
         vehicle_no:v.id||'',plate:v.plate||'',maker:v.maker||'',name:v.name||'',model:v.model||'',
         vin:v.vin||'',year:v.year||'',year_num:parseInt(v.year)||null,drive:v.drive||'2WD',
         grade:v.grade||'',grade_coef:parseFloat(v.gradeCoef)||1.0,coating:v.coating||'なし',
@@ -436,6 +440,7 @@ async function syncMasterToCloud(){
         body:JSON.stringify(vData)
       });
       if(!vRes.ok){var vErr=await vRes.text();console.error('vehicles保存エラー:',vErr);showNotify('⚠ 車両マスターのクラウド同期に失敗しました');}
+      else{sentV.forEach(function(v){delete v._localNew;});}
     }
   }catch(e){ console.warn('マスター自動同期エラー（無視）:',e); }
 }
@@ -606,6 +611,11 @@ async function refreshMasterCache(force){
   try{
     const customers = await dbGetAll('customers');
     if(customers && customers.length>0){
+      // 端末で追加したばかりでまだクラウドに無い行(_localNew)だけは残す。
+      // 印の無い行は他端末で削除済みの可能性があるため残さない（残すと復活の原因になる）
+      var cloudCNo = {};
+      customers.forEach(function(c){ cloudCNo[c.customer_no||c.id.slice(0,8)] = true; });
+      var pendingC = cMaster.filter(function(c){ return c._localNew && !cloudCNo[c.id]; });
       cMaster = customers.map(c=>({
         supabase_id: c.id,
         id: c.customer_no||c.id.slice(0,8),
@@ -617,11 +627,16 @@ async function refreshMasterCache(force){
         insurance: c.insurance||'',
         aj: c.aj_staff||'',
         memo: c.memo||''
-      }));
+      })).concat(pendingC);
+      // 起動時はfa_cMasterが最優先で読まれるため、こちらにも最新を書き戻す（古い一覧からの復活防止）
+      localStorage.setItem('fa_cMaster', JSON.stringify(cMaster));
       localStorage.setItem('fa_c6', JSON.stringify(cMaster));
     }
     const vehicles = await dbGetAll('vehicles');
     if(vehicles && vehicles.length>0){
+      var cloudVNo = {};
+      vehicles.forEach(function(v){ cloudVNo[v.vehicle_no||v.id.slice(0,8)] = true; });
+      var pendingV = vMaster.filter(function(v){ return v._localNew && !cloudVNo[v.id]; });
       vMaster = vehicles.map(v=>({
         supabase_id: v.id,
         id: v.vehicle_no||v.id.slice(0,8),
@@ -644,7 +659,8 @@ async function refreshMasterCache(force){
         special: v.special||'なし',
         coating: v.coating||'なし',
         memo: v.memo||''
-      }));
+      })).concat(pendingV);
+      localStorage.setItem('fa_vMaster', JSON.stringify(vMaster));
       localStorage.setItem('fa_v6', JSON.stringify(vMaster));
     }
     if(curTab==='master') render();
