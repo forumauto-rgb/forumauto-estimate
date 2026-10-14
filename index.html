@@ -1616,6 +1616,68 @@ function showGateAlert(missing, title, sub){
 
 var PHOTO_LIMITS = {photoIncoming:4, photoWork:4, photoDone:1};
 
+// ===== 写真の差分保存用の対応表 =====
+// 表示用配列（customer.photoIncoming等）はdata_url文字列のまま。行の情報はここで持つ。
+// photoRowMeta[data_url] = {id, estimate_id, estimate_no, reception_id, category, sort_order}（DB由来）
+//                        = {isNew:true}（画面で追加・未送信）
+// photoDeletedIds = 画面で×削除した行のid（保存時に最後にDELETE）
+var PHOTO_DIFF_CATS = ['photoIncoming','photoWork','photoDone'];
+var photoRowMeta = {};
+var photoDeletedIds = [];
+var _photoMetaGen = 0;
+function resetPhotoRowMeta(){
+  photoRowMeta = {};
+  photoDeletedIds = [];
+  _photoMetaGen++;
+}
+function setPhotoRowMetaFromRow(row, overwrite){
+  if(!row || !row.data_url || !row.id) return;
+  if(PHOTO_DIFF_CATS.indexOf(row.category) === -1) return;
+  if(photoDeletedIds.indexOf(row.id) !== -1) return;
+  var cur = photoRowMeta[row.data_url];
+  if(cur && cur.id && !overwrite) return;
+  photoRowMeta[row.data_url] = {
+    id: row.id,
+    estimate_id: row.estimate_id || null,
+    estimate_no: row.estimate_no || null,
+    reception_id: row.reception_id || null,
+    category: row.category,
+    sort_order: row.sort_order
+  };
+}
+function isRealEstId(estId){
+  return !!estId && String(estId).indexOf('REC-') !== 0;
+}
+// 対応表にない写真（オフライン下書き復元など）の行をDBから探して対応表を補う
+async function resolveUnknownPhotoMeta(estId){
+  var unknown = {};
+  var hasUnknown = false;
+  PHOTO_DIFF_CATS.forEach(function(cat){
+    (customer[cat]||[]).forEach(function(src){
+      if(!photoRowMeta[src]){ unknown[src] = 1; hasUnknown = true; }
+    });
+  });
+  if(!hasUnknown) return;
+  var gen = _photoMetaGen;
+  var sel = '&category=in.(photoIncoming,photoWork,photoDone)&select=id,estimate_id,estimate_no,reception_id,category,sort_order,data_url&order=sort_order.asc';
+  var hdr = {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}};
+  var rows = [];
+  if(isRealEstId(estId)){
+    var r1 = await fetch(SUPABASE_URL+'/rest/v1/estimate_photos?estimate_id=eq.'+encodeURIComponent(estId)+sel, hdr);
+    if(!r1.ok) throw new Error('写真行の確認に失敗しました: '+r1.status);
+    rows = rows.concat(await r1.json());
+  }
+  var recId = (customer.receptionId||'').replace(/^REC-/i,'');
+  if(recId){
+    var r2 = await fetch(SUPABASE_URL+'/rest/v1/estimate_photos?reception_id=eq.'+encodeURIComponent(recId)+sel, hdr);
+    if(!r2.ok) throw new Error('写真行の確認に失敗しました: '+r2.status);
+    rows = rows.concat(await r2.json());
+  }
+  if(gen !== _photoMetaGen) return;
+  // 見積の行を先に登録（受付行と二重になっている場合は見積の行を採用）
+  rows.forEach(function(row){ if(unknown[row.data_url]) setPhotoRowMetaFromRow(row, false); });
+}
+
 function addPhotos(input, category){
   var cat = category || 'photoIncoming';
   var limit = PHOTO_LIMITS[cat] || 4;
@@ -1649,12 +1711,14 @@ function addPhotos(input, category){
           var compressed = canvas.toDataURL('image/jpeg', 0.75);
           if(!customer[cat]) customer[cat] = [];
           customer[cat].push(compressed);
+          photoRowMeta[compressed] = {isNew:true};
           if(!customer.photos) customer.photos = [];
           customer.photos.push(compressed);
         } catch(err) {
           // 圧縮失敗時はそのまま
           if(!customer[cat]) customer[cat] = [];
           customer[cat].push(e.target.result);
+          photoRowMeta[e.target.result] = {isNew:true};
           if(!customer.photos) customer.photos = [];
           customer.photos.push(e.target.result);
         }
@@ -1664,6 +1728,7 @@ function addPhotos(input, category){
       img.onerror = function(){
         if(!customer[cat]) customer[cat] = [];
         customer[cat].push(e.target.result);
+        photoRowMeta[e.target.result] = {isNew:true};
         autoSavePhotosToCloud();
         rIP();
       };
@@ -1674,8 +1739,25 @@ function addPhotos(input, category){
   });
   input.value = '';
 }
-function delPhoto(cat, idx){
-  if(customer[cat]) customer[cat].splice(idx,1);
+async function delPhoto(cat, idx){
+  var src = (customer[cat]||[])[idx];
+  if(!src) return;
+  // 対応表にない写真はDBの行を確認してから判断する（受付写真の確認ダイアログのため）
+  if(!photoRowMeta[src]){
+    try{ await resolveUnknownPhotoMeta(customer._estId); }catch(e){ console.warn('写真行の確認失敗:', e); }
+    if((customer[cat]||[])[idx] !== src) return; // 確認中に並びが変わった場合は中止
+  }
+  var meta = photoRowMeta[src];
+  if(meta && meta.reception_id){
+    if(!confirm('この写真は受付で撮影した写真です。完全に削除しますか？')) return;
+  }
+  customer[cat].splice(idx,1);
+  // 同じ写真が他に残っていなければ、行を削除対象にする
+  var stillUsed = PHOTO_DIFF_CATS.some(function(c){ return (customer[c]||[]).indexOf(src) !== -1; });
+  if(!stillUsed){
+    if(meta && meta.id && photoDeletedIds.indexOf(meta.id) === -1) photoDeletedIds.push(meta.id);
+    delete photoRowMeta[src];
+  }
   // タグも削除
   if(customer.photoTags){
     delete customer.photoTags[cat+'_'+idx];
@@ -1691,6 +1773,7 @@ function delPhoto(cat, idx){
     customer.photoTags=newTags;
   }
   rIP();
+  autoSavePhotosToCloud();
 }
 
 // 写真タグメニュー表示
@@ -5416,6 +5499,7 @@ function saveToM(){
   alert('マスターに保存しました：'+customer.name+'\n顧客ID：'+actualCid);
 }
 function clearC(){try{localStorage.removeItem('fa_last_draft_id');localStorage.removeItem('fa_last_draft_no');}catch(e){}
+resetPhotoRowMeta();
 customer={name:'',car:'',model:'',plate:'',color:'',grade:'中型',date:customer.date,no:'',photos:[],photoIncoming:[],photoWork:[],photoDone:[],photoTags:{},repairType:'insurance',insCompany:'',ajCompany:'',ajStaff:'',deductible:0,discount:0,discountType:'loss',paymentDue:'',paymentDate:'',mileage:'',estNote:'',signatureData:'',repairStatus:'受付',staffName:'',deliveryDate:'',
   colorCode:'',trim:'',paintType:'',
   photoCheckList:{zenkai:'',kinsetsu:'',shikisa:'',bunkai:'',kansei:''},
@@ -6883,10 +6967,8 @@ async function saveDraft(isAuto){
         customer._draftNo=estNo;
     // 下書きIDをlocalStorageに永続化（ページリロード後も重複しない）
     try{localStorage.setItem('fa_last_draft_id', estId); localStorage.setItem('fa_last_draft_no', estNo);}catch(e){}
-    // 写真をSupabaseにも保存
-    if((customer.photoIncoming&&customer.photoIncoming.length)||(customer.photoWork&&customer.photoWork.length)||(customer.photoDone&&customer.photoDone.length)){
-      await savePhotosToSupabase(estId, estNo);
-    }
+    // 写真をSupabaseにも保存（差分のみ。全削除した場合のDELETEも送るため枚数条件なし）
+    await savePhotosToSupabase(estId, estNo);
     _isDirty = false;
     showNotify('✅ 下書き保存完了 '+estNo, 2500);
     if(!isAuto){
@@ -6965,6 +7047,7 @@ function loadOfflineDraft(){
     var d=JSON.parse(localStorage.getItem('fa_draft_offline')||'null');
     if(!d) return;
     customer=d.customer||customer;
+    resetPhotoRowMeta(); // 写真の行情報は保存時にDBから照合して補う
     sel=d.sel||[];
     partsItems=d.partsItems||[{name:'',cost:'',profit:0}];
     matItems=d.matItems||[{name:'',cost:'',profit:30}];
@@ -7175,66 +7258,125 @@ function autoSaveToMaster(){
 
 // ===== 写真取込後の自動クラウド保存 =====
 async function autoSavePhotosToCloud(){
-  // 見積番号がない場合はスキップ（保存後に自動紐付けされる）
-  if(!customer.no || !customer._estId){
-    showNotify('📷 写真を取込みました（見積保存後にクラウドへ自動送信されます）');
+  // 見積が未保存、または受付からの仮ID（REC-）の場合は送らない（見積保存時に差分保存される）
+  if(!customer.no || !isRealEstId(customer._estId)){
+    showNotify('📷 写真の変更は見積保存後にクラウドへ送信されます');
     return;
   }
-  try {
-    var cats = ['photoIncoming','photoWork','photoDone'];
-    var allPhotos = [];
-    cats.forEach(function(cat){
-      (customer[cat]||[]).forEach(function(src, idx){
-        allPhotos.push({estimate_id:customer._estId, estimate_no:customer.no, category:cat, sort_order:idx, data_url:src});
-      });
-    });
-    if(!allPhotos.length) return;
-    // 既存削除→全件再登録
-    await fetch(SUPABASE_URL+'/rest/v1/estimate_photos?estimate_id=eq.'+customer._estId+'&category=in.(photoIncoming,photoWork,photoDone)',{
-      method:'DELETE', headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
-    });
-    for(var i=0; i<allPhotos.length; i++){
-      await fetch(SUPABASE_URL+'/rest/v1/estimate_photos',{
-        method:'POST',
-        headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
-        body:JSON.stringify(allPhotos[i])
-      });
-    }
-    // localStorage写真キャッシュをクリア（容量節約）
-    var delKeys=[];
-    for(var j=0;j<localStorage.length;j++){var k=localStorage.key(j);if(k&&k.startsWith('fa_photos_'))delKeys.push(k);}
-    delKeys.forEach(function(k){localStorage.removeItem(k);});
-    showNotify('📷 写真 '+allPhotos.length+'枚 クラウドに自動保存しました ✅');
-  } catch(e){
-    showNotify('⚠ 写真クラウド自動保存失敗: '+e.message);
-  }
+  await savePhotosToSupabase(customer._estId, customer.no);
 }
 
 // ===== 写真Supabase保存・読込 =====
-async function savePhotosToSupabase(estId, estNo){
-  var allPhotos = [];
-  var cats = ['photoIncoming','photoWork','photoDone'];
-  cats.forEach(function(cat){
-    (customer[cat]||[]).forEach(function(src, idx){
-      allPhotos.push({estimate_id:estId,estimate_no:estNo,category:cat,sort_order:idx,data_url:src});
-    });
-  });
-  if(!allPhotos.length) return;
-  try {
-    await fetch(SUPABASE_URL+'/rest/v1/estimate_photos?estimate_id=eq.'+estId+'&category=in.(photoIncoming,photoWork,photoDone)',{
-      method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
-    });
-    for(var i=0;i<allPhotos.length;i++){
-      await fetch(SUPABASE_URL+'/rest/v1/estimate_photos',{
-        method:'POST',
-        headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
-        body:JSON.stringify(allPhotos[i])
+// 差分保存：同時実行ロック → 新しい写真だけPOST → 受付行への見積紐付け・並び順・区分の変更はPATCH → 削除した写真だけ最後にDELETE
+// photoQC・shakensho の行には触らない
+var _photoSaveRunning = null;
+var _photoSaveQueued = null;
+var _photoSaveQueuedArgs = null;
+function savePhotosToSupabase(estId, estNo){
+  if(!isRealEstId(estId)) return Promise.resolve();
+  if(_photoSaveRunning){
+    // 実行中なら、終わった後にもう1回だけ実行する（複数枚同時選択などで重複POSTしないため）
+    _photoSaveQueuedArgs = {estId:estId, estNo:estNo};
+    if(!_photoSaveQueued){
+      _photoSaveQueued = _photoSaveRunning.then(function(){
+        _photoSaveQueued = null;
+        var q = _photoSaveQueuedArgs;
+        _photoSaveQueuedArgs = null;
+        return savePhotosToSupabase(q.estId, q.estNo);
       });
     }
-    showNotify('📷 写真 '+allPhotos.length+'枚 クラウド保存完了');
+    return _photoSaveQueued;
+  }
+  _photoSaveRunning = _savePhotosDiff(estId, estNo).finally(function(){ _photoSaveRunning = null; });
+  return _photoSaveRunning;
+}
+async function _savePhotosDiff(estId, estNo){
+  var gen = _photoMetaGen;
+  var hdrJson = {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'};
+  var cntPost = 0, cntPatch = 0, cntDel = 0;
+  try {
+    await resolveUnknownPhotoMeta(estId);
+    if(gen !== _photoMetaGen) return; // 保存中に別の見積へ切り替わった
+
+    // 画面上の写真（同じ写真は1件として扱う）
+    var desired = [];
+    var seen = {};
+    PHOTO_DIFF_CATS.forEach(function(cat){
+      (customer[cat]||[]).forEach(function(src, idx){
+        if(!src || seen[src]) return;
+        seen[src] = 1;
+        desired.push({src:src, cat:cat, idx:idx});
+      });
+    });
+
+    // ① 新しい写真だけPOST
+    for(var i=0; i<desired.length; i++){
+      var d = desired[i];
+      var m = photoRowMeta[d.src];
+      if(m && m.id) continue;
+      var rP = await fetch(SUPABASE_URL+'/rest/v1/estimate_photos?select=id,estimate_id,estimate_no,reception_id,category,sort_order',{
+        method:'POST',
+        headers:Object.assign({'Prefer':'return=representation'}, hdrJson),
+        body:JSON.stringify({estimate_id:estId, estimate_no:estNo, category:d.cat, sort_order:d.idx, data_url:d.src})
+      });
+      if(!rP.ok) throw new Error('写真の追加に失敗しました: '+rP.status);
+      var created = await rP.json();
+      if(gen !== _photoMetaGen) return;
+      if(Array.isArray(created) && created[0]){
+        created[0].data_url = d.src;
+        setPhotoRowMetaFromRow(created[0], true);
+      }
+      cntPost++;
+    }
+
+    // ② 受付行への見積紐付け・並び順・区分の変更をPATCH
+    for(var j=0; j<desired.length; j++){
+      var d2 = desired[j];
+      var m2 = photoRowMeta[d2.src];
+      if(!m2 || !m2.id) continue;
+      var patch = {};
+      if(m2.estimate_id !== estId){ patch.estimate_id = estId; patch.estimate_no = estNo; }
+      else if(m2.estimate_no !== estNo){ patch.estimate_no = estNo; }
+      if(m2.category !== d2.cat) patch.category = d2.cat;
+      if(m2.sort_order !== d2.idx) patch.sort_order = d2.idx;
+      if(!Object.keys(patch).length) continue;
+      var rU = await fetch(SUPABASE_URL+'/rest/v1/estimate_photos?id=eq.'+encodeURIComponent(m2.id),{
+        method:'PATCH',
+        headers:Object.assign({'Prefer':'return=minimal'}, hdrJson),
+        body:JSON.stringify(patch)
+      });
+      if(!rU.ok) throw new Error('写真の更新に失敗しました: '+rU.status);
+      if(gen !== _photoMetaGen) return;
+      Object.keys(patch).forEach(function(k){ m2[k] = patch[k]; });
+      cntPatch++;
+    }
+
+    // ③ 画面で削除した写真だけ最後にDELETE（画面に残っている行は対象外）
+    var keepIds = {};
+    desired.forEach(function(d3){ var m3 = photoRowMeta[d3.src]; if(m3 && m3.id) keepIds[m3.id] = 1; });
+    var delIds = photoDeletedIds.filter(function(id){ return !keepIds[id]; });
+    if(delIds.length){
+      var rD = await fetch(SUPABASE_URL+'/rest/v1/estimate_photos?id=in.('+delIds.map(encodeURIComponent).join(',')+')&category=in.(photoIncoming,photoWork,photoDone)',{
+        method:'DELETE',
+        headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+      });
+      if(!rD.ok) throw new Error('写真の削除に失敗しました: '+rD.status);
+      if(gen !== _photoMetaGen) return;
+      photoDeletedIds = photoDeletedIds.filter(function(id){ return delIds.indexOf(id) === -1; });
+      cntDel = delIds.length;
+    }
+
+    // localStorage写真キャッシュをクリア（容量節約）
+    var delKeys=[];
+    for(var k=0;k<localStorage.length;k++){var key=localStorage.key(k);if(key&&key.startsWith('fa_photos_'))delKeys.push(key);}
+    delKeys.forEach(function(key){localStorage.removeItem(key);});
+
+    if(cntPost || cntPatch || cntDel){
+      showNotify('📷 写真をクラウドに保存しました（追加'+cntPost+'・更新'+cntPatch+'・削除'+cntDel+'）');
+    }
   } catch(e){
     console.error('写真保存エラー:', e);
-    showNotify('⚠ 写真クラウド保存失敗: '+e.message+'（ローカルには保存済）');
+    showNotify('⚠ 写真クラウド保存失敗: '+e.message+'（既存の写真は消えていません。もう一度保存してください）');
   }
 }
 async function loadPhotosFromSupabase(estId, estNo){
@@ -7254,10 +7396,10 @@ async function loadPhotosFromSupabase(estId, estNo){
         });
         var recRows = await r2.json();
         if(Array.isArray(recRows) && recRows.length){
-          var seenUrls = {};
-          rows.forEach(function(row){ seenUrls[row.data_url]=true; });
+          var seenIds = {};
+          rows.forEach(function(row){ seenIds[row.id]=true; });
           recRows.forEach(function(row){
-            if(!seenUrls[row.data_url]){ seenUrls[row.data_url]=true; rows.push(row); }
+            if(!seenIds[row.id]){ seenIds[row.id]=true; rows.push(row); }
           });
         }
       }catch(e2){ /* reception_id側の検索失敗時はestimate_id分のみで継続 */ }
@@ -7267,11 +7409,21 @@ async function loadPhotosFromSupabase(estId, estNo){
       return;
     }
     customer.photoIncoming=[]; customer.photoWork=[]; customer.photoDone=[];
+    // 同じ写真が複数行ある場合（過去の二重保存）は1枚だけ表示し、見積の行を対応表に採用する
+    var seenUrls = {};
+    var shown = 0;
     rows.forEach(function(row){
+      var managed = PHOTO_DIFF_CATS.indexOf(row.category) !== -1;
+      if(managed){
+        if(seenUrls[row.data_url]) return;
+        seenUrls[row.data_url] = true;
+        setPhotoRowMetaFromRow(row, false);
+      }
       if(!customer[row.category])customer[row.category]=[];
       customer[row.category].push(row.data_url);
+      shown++;
     });
-    showNotify('📷 写真 '+rows.length+'枚 復元完了');
+    showNotify('📷 写真 '+shown+'枚 復元完了');
   } catch(e){
     console.warn('写真読み込み失敗:', e);
   }
@@ -7355,6 +7507,9 @@ async function deleteEstimate(estId, estNo){
   try{
     var rItems=await fetch(SUPABASE_URL+'/rest/v1/estimate_items?estimate_id=eq.'+estId,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
     if(!rItems.ok){ showNotify('❌ 明細の削除に失敗しました: '+rItems.status); return; }
+    // 受付の写真（reception_idあり）は見積との紐付けだけ外して残す。先に外してから残りを削除する
+    var rPhotosKeep=await fetch(SUPABASE_URL+'/rest/v1/estimate_photos?estimate_id=eq.'+estId+'&reception_id=not.is.null',{method:'PATCH',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({estimate_id:null,estimate_no:null})});
+    if(!rPhotosKeep.ok){ showNotify('❌ 受付写真の紐付け解除に失敗しました: '+rPhotosKeep.status); return; }
     var rPhotos=await fetch(SUPABASE_URL+'/rest/v1/estimate_photos?estimate_id=eq.'+estId,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
     if(!rPhotos.ok){ showNotify('❌ 写真の削除に失敗しました: '+rPhotos.status); return; }
     var r=await fetch(SUPABASE_URL+'/rest/v1/estimates?id=eq.'+estId,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
@@ -7436,6 +7591,7 @@ async function loadEstimate(estId,estNo){
     if(!matItems.length)matItems=[{name:'',cost:'',profit:30}];
     // 写真を復元（Supabase）
     customer.photoIncoming=[]; customer.photoWork=[]; customer.photoDone=[];
+    resetPhotoRowMeta();
     await loadPhotosFromSupabase(estId, estNo);
     estMode='estimate';
     // 過去見積パネルを閉じる
@@ -7730,7 +7886,7 @@ async function applyReceptionParams() {
       if (recIdForPhotoLoad) {
         var rPhotoLoad = await fetch(
           SUPABASE_URL + '/rest/v1/estimate_photos?reception_id=eq.' + encodeURIComponent(recIdForPhotoLoad)
-          + '&category=eq.photoIncoming&select=data_url&order=sort_order.asc',
+          + '&category=eq.photoIncoming&select=id,estimate_id,estimate_no,reception_id,category,sort_order,data_url&order=sort_order.asc',
           { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
         );
         if (rPhotoLoad.ok) {
@@ -7740,6 +7896,8 @@ async function applyReceptionParams() {
             var existPhotoUrls = {};
             customer.photoIncoming.forEach(function(u){ existPhotoUrls[u] = 1; });
             photoRowsForLoad.forEach(function(row){
+              // 受付から引き継いだ写真（既に配列にある分）も含め、行のidを対応表に記録（保存時にPOSTせずPATCHで見積に紐付ける）
+              setPhotoRowMetaFromRow(row, false);
               if (row.data_url && !existPhotoUrls[row.data_url]) {
                 existPhotoUrls[row.data_url] = 1;
                 customer.photoIncoming.push(row.data_url);
@@ -8262,7 +8420,7 @@ async function pollQRPhotos(){
       // UUIDで直接検索（最も正確）
       var resp = await fetch(
         SUPABASE_URL + '/rest/v1/estimate_photos?estimate_id=eq.' + encodeURIComponent(estId)
-        + '&select=id,category,data_url&order=id.asc',
+        + '&select=id,estimate_id,estimate_no,reception_id,category,sort_order,data_url&order=id.asc',
         {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
       );
       if(resp.ok) rows = await resp.json();
@@ -8270,7 +8428,7 @@ async function pollQRPhotos(){
       // 受付IDで検索（受付からの引き継ぎ）
       var respR = await fetch(
         SUPABASE_URL + '/rest/v1/estimate_photos?reception_id=eq.' + encodeURIComponent(recId)
-        + '&select=id,category,data_url&order=id.asc',
+        + '&select=id,estimate_id,estimate_no,reception_id,category,sort_order,data_url&order=id.asc',
         {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
       );
       if(respR.ok) rows = await respR.json();
@@ -8286,7 +8444,7 @@ async function pollQRPhotos(){
           customer._estId = dNo[0].id;
           var resp2 = await fetch(
             SUPABASE_URL + '/rest/v1/estimate_photos?estimate_id=eq.' + encodeURIComponent(customer._estId)
-            + '&select=id,category,data_url&order=id.asc',
+            + '&select=id,estimate_id,estimate_no,reception_id,category,sort_order,data_url&order=id.asc',
             {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
           );
           if(resp2.ok) rows = await resp2.json();
@@ -8309,6 +8467,9 @@ async function pollQRPhotos(){
 
     var addedIncoming=0, addedWork=0, addedDone=0;
     rows.forEach(function(row){
+      if(photoDeletedIds.indexOf(row.id) !== -1) return; // 画面で削除済み（DELETE送信待ち）
+      // photo_upload.htmlが登録済みの行なので、idを対応表に記録（保存時に再POSTしない）
+      setPhotoRowMetaFromRow(row, false);
       if(existSet[row.data_url]) return; // 重複スキップ
       existSet[row.data_url] = 1;
       if(row.category==='photoIncoming'){
