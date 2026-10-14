@@ -1748,9 +1748,10 @@ async function delPhoto(cat, idx){
     if((customer[cat]||[])[idx] !== src) return; // 確認中に並びが変わった場合は中止
   }
   var meta = photoRowMeta[src];
-  if(meta && meta.reception_id){
-    if(!confirm('この写真は受付で撮影した写真です。完全に削除しますか？')) return;
-  }
+  // ×は小さく、1枚消すと次の写真の×が同じ位置に来るため、連打で複数枚消えないよう必ず確認する
+  var delMsg = (meta && meta.reception_id) ? 'この写真は受付で撮影した写真です。完全に削除しますか？' : 'この写真を削除しますか？';
+  if(!confirm(delMsg)) return;
+  if((customer[cat]||[])[idx] !== src) return; // 確認中に並びが変わった場合は中止
   customer[cat].splice(idx,1);
   // 同じ写真が他に残っていなければ、行を削除対象にする
   var stillUsed = PHOTO_DIFF_CATS.some(function(c){ return (customer[c]||[]).indexOf(src) !== -1; });
