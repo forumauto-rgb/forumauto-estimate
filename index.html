@@ -7595,13 +7595,9 @@ async function loadEstimate(estId,estNo){
     // ★materials自動/手動モードはestimates.mat_auto_mode列で復元する。
     // 列がnull（未保存の古い見積）の場合のみ、材料明細の有無から推定する
     matAutoMode = (matAutoModeFromDB!=null) ? !!matAutoModeFromDB : matItems.length===0;
-    // ★過去の見積は手入力の工数などが保存されていないため、材料代の自動計算が保存時と違う金額になることがある。
-    // その場合は保存時の材料代（estimates.mat_total）で固定する（既存の材料手動モードを使う）
-    if(matAutoMode && matTotalFromDB!=null && matItems.length===0 && Math.abs(calcPaintMatAuto()-matTotalFromDB)>1){
-      matAutoMode=false;
-      matItems=[{name:'塗装材料代（保存時の金額で固定）',cost:matTotalFromDB,profit:0}];
-      showNotify('ℹ️ この見積は保存時の材料代（¥'+Number(matTotalFromDB).toLocaleString()+'）で固定しています。計算し直す時は材料の「自動」を押してください');
-    }
+    // 材料代固定の判定用：DBに材料行が1つも無かったかを控える（この後で空行が補われるため）
+    var matItemsEmptyFromDB = matItems.length===0;
+    var matFixedMsg = '';
     if(!partsItems.length)partsItems=[{name:'',cost:'',profit:0}];
     if(!matItems.length)matItems=[{name:'',cost:'',profit:30}];
     // 写真を復元（Supabase）
@@ -7631,8 +7627,17 @@ async function loadEstimate(estId,estNo){
       }
     });
 
+    // ★過去の見積は手入力の工数などが保存されていないため、材料代の自動計算が保存時と違う金額になることがある。
+    // その場合は保存時の材料代（estimates.mat_total）で固定する（既存の材料手動モードを使う）
+    // 判定は標準工数の補完の後に行い、画面の計算と同じ条件で比べる
+    if(matAutoMode && matTotalFromDB!=null && matItemsEmptyFromDB && Math.abs(calcPaintMatAuto()-matTotalFromDB)>1){
+      matAutoMode=false;
+      matItems=[{name:'塗装材料代（保存時の金額で固定）',cost:matTotalFromDB,profit:0}];
+      matFixedMsg=' ／ ℹ️ 材料代は保存時の金額（¥'+Number(matTotalFromDB).toLocaleString()+'）で固定中。材料合計の行を押すと自動計算に戻ります';
+    }
+
     render();
-    showNotify('✅ 見積読込完了 '+estNo);
+    showNotify('✅ 見積読込完了 '+estNo+matFixedMsg);
   }catch(e){showNotify('\u274c \u8aad\u8fbc\u5931\u6557:'+e.message);}
 }
 
