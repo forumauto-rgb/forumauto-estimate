@@ -7637,7 +7637,7 @@ async function loadEstimate(estId,estNo){
     }
 
     render();
-    showNotify('✅ 見積読込完了 '+estNo+matFixedMsg);
+    showNotify('✅ 見積読込完了 '+estNo+matFixedMsg, (matFixedMsg ? 10000 : undefined));
   }catch(e){showNotify('\u274c \u8aad\u8fbc\u5931\u6557:'+e.message);}
 }
 
