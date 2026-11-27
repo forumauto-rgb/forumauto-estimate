@@ -7554,9 +7554,11 @@ async function loadEstimate(estId,estNo){
     var r0=await fetch(SUPABASE_URL+'/rest/v1/estimates?id=eq.'+estId,{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
     var headers=await r0.json();
     var matAutoModeFromDB=null;
+    var matTotalFromDB=null;
     if(headers&&headers[0]){
       var h=headers[0];
       matAutoModeFromDB=h.mat_auto_mode;
+      matTotalFromDB=h.mat_total;
       customer.name=h.customer_name||'';customer.car=h.car_name||'';
       customer.plate=h.plate||'';customer.color=h.color_name||'';
       customer.colorCode=h.color_code||'';customer.date=h.estimate_date||'';
@@ -7593,6 +7595,13 @@ async function loadEstimate(estId,estNo){
     // ★materials自動/手動モードはestimates.mat_auto_mode列で復元する。
     // 列がnull（未保存の古い見積）の場合のみ、材料明細の有無から推定する
     matAutoMode = (matAutoModeFromDB!=null) ? !!matAutoModeFromDB : matItems.length===0;
+    // ★過去の見積は手入力の工数などが保存されていないため、材料代の自動計算が保存時と違う金額になることがある。
+    // その場合は保存時の材料代（estimates.mat_total）で固定する（既存の材料手動モードを使う）
+    if(matAutoMode && matTotalFromDB!=null && matItems.length===0 && Math.abs(calcPaintMatAuto()-matTotalFromDB)>1){
+      matAutoMode=false;
+      matItems=[{name:'塗装材料代（保存時の金額で固定）',cost:matTotalFromDB,profit:0}];
+      showNotify('ℹ️ この見積は保存時の材料代（¥'+Number(matTotalFromDB).toLocaleString()+'）で固定しています。計算し直す時は材料の「自動」を押してください');
+    }
     if(!partsItems.length)partsItems=[{name:'',cost:'',profit:0}];
     if(!matItems.length)matItems=[{name:'',cost:'',profit:30}];
     // 写真を復元（Supabase）
