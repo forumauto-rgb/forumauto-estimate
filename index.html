@@ -3865,7 +3865,8 @@ function renderCustomerPanel(){
  
       <div style="margin-top:14px;display:flex;gap:6px">
         <span style="font-size:11px;color:#2e7d32;font-weight:bold;">✅ 保存・転記ボタンで自動登録</span>
-        <button class="btn btn-sm" onclick="clearC()">クリア</button>
+        <button class="btn btn-sm" onclick="clearCWithConfirm()">顧客情報クリア</button>
+        <button class="btn btn-sm" style="background:#1565c0;color:white;border-color:#1565c0;" onclick="newEstimate()">🆕 新規見積</button>
       </div>
     
     </div>
@@ -5528,6 +5529,18 @@ customer={name:'',car:'',model:'',plate:'',color:'',grade:'中型',date:customer
   finalSign:{uketsuke:'',bankin:'',toso:'',nosha:''},
   chk1:'',chk2:'',chk3:'',chk4:'',chk5:'',chk6:''
 };render();}
+// 「顧客情報クリア」ボタン：確認してから clearC()（顧客・車両の情報だけを消す。明細・部品・材料は残る）
+function clearCWithConfirm(){
+  if(!confirm('顧客・車両の情報を画面から消します。\n作業明細・部品・材料は残ります。\n（保存済みの見積は消えません）\n\nよろしいですか？')) return;
+  clearC();
+}
+// 「新規見積」ボタン：確認してから、URLのパラメータ（?est_id= や ?load= など）を外したアドレスでページを開き直す
+// （項目を1つずつ消すと消し忘れが出るため、必ず開き直す方式にする）
+function newEstimate(){
+  if(!confirm('画面の内容をすべて消して、新しい見積を始めます。\n・顧客・車両の情報\n・作業明細・部品・材料\n・塗装設定\n\n保存済みの見積は消えません。\n保存していない変更は失われます。\n\nよろしいですか？')) return;
+  _isDirty = false; // 離脱警告を出さない
+  location.href = location.href.split('#')[0].split('?')[0];
+}
 // ===== 受付一覧から案件選択 =====
 var _recCache = [];
 
